@@ -1,0 +1,1041 @@
+{
+  "study": {
+    "id": "ONCO-STAR 301",
+    "protocol": "CA-209-301",
+    "title": "A Phase 3, Randomized Study of Dual Immunotherapy in Advanced NSCLC",
+    "phase": "Phase III Global Pivotal",
+    "therapeuticArea": "Oncology",
+    "indication": "Non-Small Cell Lung Cancer (NSCLC) 2nd Line",
+    "plannedLslv": "2026-11-30",
+    "plannedDbl": "2026-12-15",
+    "forecastDbl": "2026-12-21",
+    "delayDays": 6,
+    "confidenceInterval": "18–22 December 2026",
+    "overallReadinessScore": 72,
+    "targetReadinessScore": 95,
+    "totalSites": 18,
+    "highRiskSitesCount": 3,
+    "totalSubjects": 220,
+    "highRiskSubjectsCount": 14,
+    "criticalBlockersCount": 8,
+    "dblPathOpenItems": 42,
+    "headline": "Forecast DBL delay: 6 days. Driven primarily by safety reconciliation (35%), delayed central laboratory transfer (30%), and ageing critical queries (22%).",
+    "primaryDrivers": [
+      {
+        "id": "drv-1",
+        "factor": "Safety Reconciliation Discrepancies",
+        "weight": 35,
+        "impact": "35%",
+        "delayDays": 2.1,
+        "status": "Critical",
+        "badge": "Critical Blocker",
+        "summary": "2 unresolved SAE discrepancies at Site 104 blocking pharmacovigilance safety freeze."
+      },
+      {
+        "id": "drv-2",
+        "factor": "Central Laboratory Transfer Overdue",
+        "weight": 30,
+        "impact": "30%",
+        "delayDays": 1.8,
+        "status": "Critical",
+        "badge": "Overdue 4 Days",
+        "summary": "Batch #LXB-8921 (ctDNA panel) checksum failure awaiting vendor QA re-export."
+      },
+      {
+        "id": "drv-3",
+        "factor": "Ageing Primary Endpoint Queries",
+        "weight": 22,
+        "impact": "22%",
+        "delayDays": 1.3,
+        "status": "Warning",
+        "badge": "High Priority",
+        "summary": "14 critical queries aged >14 days affecting RECIST tumor restaging at Sites 104 & 317."
+      },
+      {
+        "id": "drv-4",
+        "factor": "Pending Investigator Sign-offs",
+        "weight": 13,
+        "impact": "13%",
+        "delayDays": 0.8,
+        "status": "Attention",
+        "badge": "Routine Path",
+        "summary": "18 case report books completed but awaiting PI electronic signatures."
+      }
+    ]
+  },
+  "dimensions": [
+    {
+      "id": "dim-safety",
+      "name": "Safety Reconciliation",
+      "score": 68,
+      "benchmark": 98,
+      "status": "critical",
+      "color": "rose",
+      "delta": "-4% this week",
+      "blockers": 2,
+      "details": "2 SAE discordances between Rave EDC and Argus Safety. 1 death narrative unconfirmed.",
+      "evidenceCount": "2 SAE Cases",
+      "owner": "Safety / Pharmacovigilance Lead"
+    },
+    {
+      "id": "dim-lab",
+      "name": "External Data Readiness",
+      "score": 76,
+      "benchmark": 95,
+      "status": "warning",
+      "color": "amber",
+      "delta": "4 days overdue",
+      "blockers": 2,
+      "details": "LabCorp ctDNA batch #LXB-8921 failed MD5 hash. Eurofins chemistry batch in QA review.",
+      "evidenceCount": "2 Overdue Batches",
+      "owner": "External Data Manager"
+    },
+    {
+      "id": "dim-queries",
+      "name": "Query Resolution",
+      "score": 82,
+      "benchmark": 95,
+      "status": "warning",
+      "color": "amber",
+      "delta": "-3% vs velocity target",
+      "blockers": 3,
+      "details": "68 total open queries. 14 critical queries aged >14 days on primary efficacy forms.",
+      "evidenceCount": "14 Critical Queries",
+      "owner": "Clinical Data Lead"
+    },
+    {
+      "id": "dim-sdv",
+      "name": "SDV / SDR & Sign-offs",
+      "score": 87,
+      "benchmark": 100,
+      "status": "good",
+      "color": "emerald",
+      "delta": "+5% this week",
+      "blockers": 1,
+      "details": "SDV 93% complete. 18 PI sign-offs remaining at Sites 104, 317 and 405.",
+      "evidenceCount": "18 Pending Signatures",
+      "owner": "CRA / Site Operations"
+    },
+    {
+      "id": "dim-coding",
+      "name": "Medical Coding",
+      "score": 91,
+      "benchmark": 98,
+      "status": "good",
+      "color": "emerald",
+      "delta": "+6% this week",
+      "blockers": 0,
+      "details": "MedDRA 27.0 and WHODrug Global C3 dictionary auto-coding running at 97.4%. 12 terms pending manual coder review.",
+      "evidenceCount": "12 Uncoded Terms",
+      "owner": "Medical Coding Specialist"
+    },
+    {
+      "id": "dim-edc",
+      "name": "EDC Completeness",
+      "score": 94,
+      "benchmark": 100,
+      "status": "good",
+      "color": "emerald",
+      "delta": "+1% this week",
+      "blockers": 0,
+      "details": "94% visits entered within 5 days SLA. 12 non-critical eCRF forms pending data entry.",
+      "evidenceCount": "12 eCRF Pages",
+      "owner": "Data Coordinator"
+    }
+  ],
+  "timelineSnapshots": [
+    {
+      "weekLabel": "Week -4",
+      "date": "2026-10-03",
+      "readinessScore": 54,
+      "forecastDate": "2026-12-17",
+      "delayDays": 2,
+      "saeRecon": 42,
+      "labReadiness": 50,
+      "queryResolution": 62,
+      "notes": "LSLV milestone announced. Initial discrepancy sweeps initiated."
+    },
+    {
+      "weekLabel": "Week -3",
+      "date": "2026-10-10",
+      "readinessScore": 61,
+      "forecastDate": "2026-12-18",
+      "delayDays": 3,
+      "saeRecon": 50,
+      "labReadiness": 60,
+      "queryResolution": 71,
+      "notes": "Routine queries resolved rapidly; external lab batch scheduled."
+    },
+    {
+      "weekLabel": "Week -2",
+      "date": "2026-10-17",
+      "readinessScore": 66,
+      "forecastDate": "2026-12-20",
+      "delayDays": 5,
+      "saeRecon": 58,
+      "labReadiness": 68,
+      "queryResolution": 78,
+      "notes": "Site 104 flagged with 2 critical SAE discrepancies; vendor lab transfer delayed."
+    },
+    {
+      "weekLabel": "Week -1",
+      "date": "2026-10-24",
+      "readinessScore": 69,
+      "forecastDate": "2026-12-22",
+      "delayDays": 7,
+      "saeRecon": 62,
+      "labReadiness": 72,
+      "queryResolution": 80,
+      "notes": "Forecast peaked at +7 days delay due to unresponsive site coordinator at Site 104."
+    },
+    {
+      "weekLabel": "Current (W0)",
+      "date": "2026-10-31",
+      "readinessScore": 72,
+      "forecastDate": "2026-12-21",
+      "delayDays": 6,
+      "saeRecon": 68,
+      "labReadiness": 76,
+      "queryResolution": 82,
+      "notes": "1 delay day clawed back. Decision workbench recommends safety & lab escalations."
+    }
+  ],
+  "sites": [
+    {
+      "id": "104",
+      "code": "SITE-104",
+      "name": "Memorial Oncology Institute",
+      "institution": "Dana-Farber / Harvard Cancer Center",
+      "pi": "Dr. Katherine Vance, MD",
+      "country": "United States",
+      "city": "Boston, MA",
+      "cra": "Marcus Campbell",
+      "openItems": 19,
+      "riskProbability": 86,
+      "forecastImpactDays": "5–7 days",
+      "minDelayDays": 5,
+      "maxDelayDays": 7,
+      "priority": "Critical",
+      "readinessScore": 62,
+      "activeSubjects": 24,
+      "criticalBlockers": 4,
+      "closureVelocity": "1.4 queries/day (Study Avg: 3.8)",
+      "breakdown": {
+        "safetyReconciliation": 35,
+        "labTransferDelay": 30,
+        "ageingQueries": 22,
+        "signOffStatus": 13
+      },
+      "reasons": [
+        "14 ageing critical EDC queries (>14 days unaddressed)",
+        "2 unresolved SAE reconciliation discrepancies (Rave vs Argus)",
+        "Central laboratory ctDNA transfer overdue by 4 days",
+        "Investigator sign-off pending on 6 locked visits",
+        "Query closure rate (1.4/day) is 63% below study average"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC / Argus Safety v8.2 / LabCorp LIMS",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    },
+    {
+      "id": "208",
+      "code": "SITE-208",
+      "name": "Midwest Regional Medical Center",
+      "institution": "Northwestern Medicine",
+      "pi": "Dr. Marcus Reynolds, MD",
+      "country": "United States",
+      "city": "Chicago, IL",
+      "cra": "Elena Rostova",
+      "openItems": 41,
+      "riskProbability": 38,
+      "forecastImpactDays": "1–2 days",
+      "minDelayDays": 1,
+      "maxDelayDays": 2,
+      "priority": "Medium",
+      "readinessScore": 78,
+      "activeSubjects": 36,
+      "criticalBlockers": 1,
+      "closureVelocity": "5.6 queries/day (Study Avg: 3.8)",
+      "breakdown": {
+        "safetyReconciliation": 5,
+        "labTransferDelay": 15,
+        "ageingQueries": 60,
+        "signOffStatus": 20
+      },
+      "reasons": [
+        "High volume of 41 queries, but 88% are routine non-critical con-med spelling checks",
+        "High query burn-down velocity (5.6/day) ensures resolution before LSLV",
+        "Zero SAE discrepancies and zero critical endpoint blockers",
+        "Routine PI sign-off scheduled for weekly CRA visit on Tuesday"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    },
+    {
+      "id": "317",
+      "code": "SITE-317",
+      "name": "Charité Comprehensive Cancer Center",
+      "institution": "Charité Universitätsmedizin Berlin",
+      "pi": "Prof. Dr. Klaus Weber",
+      "country": "Germany",
+      "city": "Berlin",
+      "cra": "Henrik Lindner",
+      "openItems": 8,
+      "riskProbability": 74,
+      "forecastImpactDays": "3–4 days",
+      "minDelayDays": 3,
+      "maxDelayDays": 4,
+      "priority": "High",
+      "readinessScore": 69,
+      "activeSubjects": 18,
+      "criticalBlockers": 2,
+      "closureVelocity": "1.1 queries/day (Study Avg: 3.8)",
+      "breakdown": {
+        "safetyReconciliation": 15,
+        "labTransferDelay": 25,
+        "ageingQueries": 45,
+        "signOffStatus": 15
+      },
+      "reasons": [
+        "Low query count (8 total), but 3 queries directly affect primary RECIST 1.1 progression endpoint",
+        "Cycle 6 restaging scan CT contrast timing discrepancy unresolved",
+        "Central ctDNA transfer dependency linked to batch #LXB-8921"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC / BioClinica Imaging",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    },
+    {
+      "id": "405",
+      "code": "SITE-405",
+      "name": "Seoul National University Hospital",
+      "institution": "SNUH Cancer Research Center",
+      "pi": "Dr. Min-Ho Park, MD",
+      "country": "South Korea",
+      "city": "Seoul",
+      "cra": "Soo-Jin Kim",
+      "openItems": 15,
+      "riskProbability": 68,
+      "forecastImpactDays": "2–3 days",
+      "minDelayDays": 2,
+      "maxDelayDays": 3,
+      "priority": "High",
+      "readinessScore": 71,
+      "activeSubjects": 22,
+      "criticalBlockers": 1,
+      "closureVelocity": "2.2 queries/day",
+      "breakdown": {
+        "safetyReconciliation": 20,
+        "labTransferDelay": 35,
+        "ageingQueries": 30,
+        "signOffStatus": 15
+      },
+      "reasons": [
+        "Eurofins batch #LXB-8940 pending QA release affects 8 subjects",
+        "1 immune-related hepatitis SAE report awaiting toxicity grading confirmation",
+        "Timezone lag causing 36h delay in CRA query acknowledgment"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC / Eurofins LIMS",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    },
+    {
+      "id": "101",
+      "code": "SITE-101",
+      "name": "Institut Gustave Roussy",
+      "institution": "Gustave Roussy Grand Paris",
+      "pi": "Dr. Amélie Laurent, MD",
+      "country": "France",
+      "city": "Villejuif / Paris",
+      "cra": "Julien Moreau",
+      "openItems": 12,
+      "riskProbability": 25,
+      "forecastImpactDays": "< 1 day",
+      "minDelayDays": 0,
+      "maxDelayDays": 1,
+      "priority": "Low",
+      "readinessScore": 88,
+      "activeSubjects": 28,
+      "criticalBlockers": 0,
+      "closureVelocity": "4.2 queries/day",
+      "breakdown": {
+        "safetyReconciliation": 5,
+        "labTransferDelay": 10,
+        "ageingQueries": 70,
+        "signOffStatus": 15
+      },
+      "reasons": [
+        "Well maintained site; queries answered within 48h SLA",
+        "Zero open safety reconciliation events",
+        "All lab reconciliations up to date"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    },
+    {
+      "id": "512",
+      "code": "SITE-512",
+      "name": "The Royal Marsden NHS Foundation Trust",
+      "institution": "Royal Marsden Hospital & ICR",
+      "pi": "Dr. Alistair Finch, FRCP",
+      "country": "United Kingdom",
+      "city": "London",
+      "cra": "Gareth Evans",
+      "openItems": 7,
+      "riskProbability": 18,
+      "forecastImpactDays": "< 1 day",
+      "minDelayDays": 0,
+      "maxDelayDays": 1,
+      "priority": "Low",
+      "readinessScore": 92,
+      "activeSubjects": 20,
+      "criticalBlockers": 0,
+      "closureVelocity": "4.8 queries/day",
+      "breakdown": {
+        "safetyReconciliation": 0,
+        "labTransferDelay": 5,
+        "ageingQueries": 80,
+        "signOffStatus": 15
+      },
+      "reasons": [
+        "Top performing site in Europe",
+        "Query turnaround under 24 hours",
+        "PI sign-offs 100% current"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    },
+    {
+      "id": "603",
+      "code": "SITE-603",
+      "name": "The University of Tokyo Hospital",
+      "institution": "UTokyo Department of Clinical Oncology",
+      "pi": "Prof. Kenji Sato, MD, PhD",
+      "country": "Japan",
+      "city": "Tokyo",
+      "cra": "Naomi Tanaka",
+      "openItems": 14,
+      "riskProbability": 30,
+      "forecastImpactDays": "1 day",
+      "minDelayDays": 1,
+      "maxDelayDays": 1,
+      "priority": "Medium",
+      "readinessScore": 84,
+      "activeSubjects": 26,
+      "criticalBlockers": 0,
+      "closureVelocity": "3.5 queries/day",
+      "breakdown": {
+        "safetyReconciliation": 10,
+        "labTransferDelay": 20,
+        "ageingQueries": 50,
+        "signOffStatus": 20
+      },
+      "reasons": [
+        "Japanese PMDA specific con-med brand name translations in progress",
+        "Zero unresolved SAEs; high documentation compliance"
+      ],
+      "traceability": {
+        "sourceSystem": "Medidata Rave EDC / Argus Japan",
+        "extractDate": "2026-10-31 06:00:00 EST",
+        "refreshCycle": "Static example extract",
+        "ruleModelFactor": "Illustrative risk factors",
+        "dataTrustScore": "Illustrative sample"
+      }
+    }
+  ],
+  "subjects": [
+    {
+      "id": "SUBJ-104-003",
+      "siteId": "104",
+      "initials": "J.D.",
+      "age": 64,
+      "sex": "Male",
+      "cohort": "Cohort A (Pembrolizumab + Investigational)",
+      "status": "Active on Study",
+      "riskLevel": "Critical",
+      "delayContributionDays": 3.2,
+      "openQueries": 5,
+      "criticalQueries": 3,
+      "hasSaeDiscrepancy": true,
+      "saeCaseId": "SAE-REC-104-01",
+      "saeSummary": "Grade 3 Cytokine Release Syndrome (CRS) onset discordance between Rave (Oct 12) & Argus (Oct 14)",
+      "recistIssues": "Cycle 4 Target Lesion sum diameter mismatch (28mm in eCRF vs 36mm on scan worksheet)",
+      "forms": [
+        {
+          "name": "Form AE-02 (Adverse Events)",
+          "status": "Query Pending",
+          "flag": "Critical Blocker"
+        },
+        {
+          "name": "Form TU-01 (Tumor RECIST Restaging)",
+          "status": "Query Pending",
+          "flag": "Primary Endpoint"
+        },
+        {
+          "name": "Form CM-01 (Concomitant Medications)",
+          "status": "Clean",
+          "flag": "Routine"
+        },
+        {
+          "name": "Form LB-03 (Local Laboratory)",
+          "status": "Verified",
+          "flag": "Routine"
+        },
+        {
+          "name": "Investigator Visit Sign-off (C4)",
+          "status": "Blocked",
+          "flag": "Awaiting Query Close"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2026-10-12",
+          "event": "Hospitalization at Site 104 with suspected Grade 3 CRS"
+        },
+        {
+          "date": "2026-10-13",
+          "event": "Rave eCRF Form AE-02 submitted by Site Coordinator"
+        },
+        {
+          "date": "2026-10-16",
+          "event": "Pharmacovigilance logs case in Argus with alternative onset date Oct 14"
+        },
+        {
+          "date": "2026-10-20",
+          "event": "Automated DBLock AI reconciliation engine flags 48h discordance rule failure"
+        }
+      ]
+    },
+    {
+      "id": "SUBJ-104-012",
+      "siteId": "104",
+      "initials": "M.K.",
+      "age": 58,
+      "sex": "Female",
+      "cohort": "Cohort B (Standard of Care Chemotherapy)",
+      "status": "Off Study - Survival Follow-up",
+      "riskLevel": "Critical",
+      "delayContributionDays": 2.1,
+      "openQueries": 4,
+      "criticalQueries": 2,
+      "hasSaeDiscrepancy": true,
+      "saeCaseId": "SAE-REC-104-02",
+      "saeSummary": "Fatal Sepsis event reported in Argus; Rave End of Study page missing autopsy narrative",
+      "recistIssues": "Off-study progression confirmed; final scan signed off",
+      "forms": [
+        {
+          "name": "Form EOS-01 (End of Study Summary)",
+          "status": "Discrepant",
+          "flag": "Critical Blocker"
+        },
+        {
+          "name": "Form DD-01 (Death Details)",
+          "status": "Awaiting PI Narrative",
+          "flag": "Critical Blocker"
+        },
+        {
+          "name": "Form AE-04 (Serious Adverse Event)",
+          "status": "Query Open",
+          "flag": "Safety Recon"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2026-10-21",
+          "event": "Patient expired due to neutropenic sepsis at community hospice"
+        },
+        {
+          "date": "2026-10-22",
+          "event": "Argus safety intake initiated via emergency sponsor notification"
+        },
+        {
+          "date": "2026-10-25",
+          "event": "CRA flags missing hospital discharge summary on Form DD-01 in Rave"
+        }
+      ]
+    },
+    {
+      "id": "SUBJ-104-019",
+      "siteId": "104",
+      "initials": "R.B.",
+      "age": 71,
+      "sex": "Male",
+      "cohort": "Cohort A",
+      "status": "Completed Treatment",
+      "riskLevel": "High",
+      "delayContributionDays": 1.4,
+      "openQueries": 3,
+      "criticalQueries": 2,
+      "hasSaeDiscrepancy": false,
+      "saeCaseId": null,
+      "saeSummary": "No safety discrepancy",
+      "recistIssues": "Cycle 6 CT scan slice thickness mismatch (5mm acquired vs 2.5mm protocol spec)",
+      "forms": [
+        {
+          "name": "Form TU-02 (Efficacy Evaluation)",
+          "status": "Query Open",
+          "flag": "Primary Endpoint"
+        },
+        {
+          "name": "Form LB-04 (Biomarker Transfer)",
+          "status": "Pending Batch LXB-8921",
+          "flag": "External Lab"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2026-10-18",
+          "event": "Cycle 6 CT performed at external imaging affiliate"
+        },
+        {
+          "date": "2026-10-24",
+          "event": "Central imaging core lab issues query on acquisition protocol"
+        }
+      ]
+    },
+    {
+      "id": "SUBJ-104-021",
+      "siteId": "104",
+      "initials": "A.W.",
+      "age": 62,
+      "sex": "Female",
+      "cohort": "Cohort A",
+      "status": "Active on Study",
+      "riskLevel": "Low",
+      "delayContributionDays": 0.2,
+      "openQueries": 1,
+      "criticalQueries": 0,
+      "hasSaeDiscrepancy": false,
+      "saeCaseId": null,
+      "saeSummary": "No safety discrepancy",
+      "recistIssues": "All tumor measurements confirmed",
+      "forms": [
+        {
+          "name": "Form CM-02 (Concomitant Medications)",
+          "status": "Routine Query",
+          "flag": "Non-Critical"
+        },
+        {
+          "name": "Form VS-01 (Vital Signs)",
+          "status": "Clean",
+          "flag": "Routine"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2026-10-28",
+          "event": "Routine visit completed without major findings"
+        }
+      ]
+    },
+    {
+      "id": "SUBJ-317-005",
+      "siteId": "317",
+      "initials": "H.S.",
+      "age": 59,
+      "sex": "Male",
+      "cohort": "Cohort A",
+      "status": "Active on Study",
+      "riskLevel": "High",
+      "delayContributionDays": 1.9,
+      "openQueries": 2,
+      "criticalQueries": 2,
+      "hasSaeDiscrepancy": false,
+      "saeCaseId": null,
+      "saeSummary": "No safety discrepancy",
+      "recistIssues": "RECIST Target Lesion #2 non-evaluable due to motion artifact; re-read requested",
+      "forms": [
+        {
+          "name": "Form TU-01 (RECIST 1.1)",
+          "status": "Query Pending",
+          "flag": "Primary Endpoint"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2026-10-22",
+          "event": "Central radiologist flagged motion artifact on thoracic CT"
+        }
+      ]
+    },
+    {
+      "id": "SUBJ-208-014",
+      "siteId": "208",
+      "initials": "P.G.",
+      "age": 67,
+      "sex": "Male",
+      "cohort": "Cohort B",
+      "status": "Active on Study",
+      "riskLevel": "Low",
+      "delayContributionDays": 0.3,
+      "openQueries": 6,
+      "criticalQueries": 0,
+      "hasSaeDiscrepancy": false,
+      "saeCaseId": null,
+      "saeSummary": "Routine queries only",
+      "recistIssues": "All criteria met",
+      "forms": [
+        {
+          "name": "Form CM-01",
+          "status": "6 Minor Queries",
+          "flag": "Routine Spelling"
+        }
+      ],
+      "timeline": [
+        {
+          "date": "2026-10-29",
+          "event": "Automated data check generated 6 mild date format queries"
+        }
+      ]
+    }
+  ],
+  "saeDiscrepancies": [
+    {
+      "id": "SAE-REC-104-01",
+      "siteId": "104",
+      "siteName": "Site 104 (Memorial Oncology Institute)",
+      "subjectId": "SUBJ-104-003",
+      "eventTerm": "Cytokine Release Syndrome (Grade 3)",
+      "raveStatus": "Serious Adverse Event, Onset: 2026-10-12, Related to IMP (Investigational Medicinal Product)",
+      "argusStatus": "Severe Adverse Event, Onset: 2026-10-14, Unrelated to IMP (attributed to viral URI)",
+      "discrepancyType": "Discordant Onset Date & Causality Assessment",
+      "criticality": "Critical Path Blocker",
+      "delayImpact": "3.0 days",
+      "daysOpen": 12,
+      "lead": "Dr. Sarah Lin (Safety & Pharmacovigilance Lead)",
+      "auditTrail": "Rave v8.2 extract logged 2026-10-13 14:22 UTC. Argus Safety Case #PV-2026-9812 logged 2026-10-16 09:15 UTC. Auto-recon rule 21-CFR-P312.32 flagged mismatch.",
+      "suggestedAction": "Convene joint CRA/Safety teleconference with PI Dr. Vance to align on medical records onset date (Oct 12) and update Argus case causality narrative."
+    },
+    {
+      "id": "SAE-REC-104-02",
+      "siteId": "104",
+      "siteName": "Site 104 (Memorial Oncology Institute)",
+      "subjectId": "SUBJ-104-012",
+      "eventTerm": "Neutropenic Sepsis Leading to Death",
+      "raveStatus": "Form EOS-01 notes death occurred 2026-10-21. Form DD-01 incomplete without certified hospital discharge or autopsy note.",
+      "argusStatus": "Case expedited to US FDA & EMA as 7-day SUSAR. Medical narrative closed in Argus but unlinked in Rave.",
+      "discrepancyType": "Missing Source Document & eCRF Reconciliation Mismatch",
+      "criticality": "Critical Path Blocker",
+      "delayImpact": "2.2 days",
+      "daysOpen": 9,
+      "lead": "Dr. Sarah Lin (Safety & Pharmacovigilance Lead)",
+      "auditTrail": "Regulatory SUSAR filed 2026-10-23. Data reconciliation flagged unconfirmed death cause in eCRF freeze view.",
+      "suggestedAction": "Authorize Boston CRA Marcus Campbell to execute on-site source data verification of hospice death certificate and upload to Form DD-01."
+    }
+  ],
+  "labBatches": [
+    {
+      "id": "LXB-8921",
+      "vendor": "LabCorp Bioanalytical Geneva",
+      "assayType": "Circulating Tumor DNA (ctDNA) Next-Gen Sequencing Panel",
+      "sitesAffected": [
+        "104",
+        "317"
+      ],
+      "samplesCount": 48,
+      "dueDate": "2026-10-27",
+      "overdueDays": 4,
+      "status": "Overdue - Checksum Failed",
+      "delayImpact": "1.8 days",
+      "owner": "Dr. Jean-Pierre Dupuis (Vendor Operations Manager)",
+      "technicalDetails": "Transfer package LXB8921_ctDNA_C4C6_v1.tar.gz failed SHA-256 integrity verification at SFTP gateway due to truncated FASTQ trailer records.",
+      "resolutionPath": "LabCorp bio-informatics team initiated re-packaging from primary sequencer cache; ETA for revised secure transfer is Nov 02, 10:00 CET."
+    },
+    {
+      "id": "LXB-8940",
+      "vendor": "Eurofins Central Lab Louisville",
+      "assayType": "High-Sensitivity Serum Chemistry & Liver Function Panel",
+      "sitesAffected": [
+        "208",
+        "405"
+      ],
+      "samplesCount": 112,
+      "dueDate": "2026-10-30",
+      "overdueDays": 1,
+      "status": "Pending Sponsor QA Sign-off",
+      "delayImpact": "0.4 days",
+      "owner": "Mark Henderson (External Data Lead)",
+      "technicalDetails": "Batch delivered with 2 assay calibration flags on alkaline phosphatase assays; QA validation protocol in progress.",
+      "resolutionPath": "Biostatistical reconciliation confirms variation is within normal biological drift; QA approval scheduled for Nov 01, 14:00 EST."
+    }
+  ],
+  "queriesDetail": [
+    {
+      "id": "QRY-104-089",
+      "siteId": "104",
+      "subjectId": "SUBJ-104-003",
+      "form": "TU-01 (Tumor RECIST 1.1)",
+      "field": "TL01_SUM_DIAMETER",
+      "queryText": "Cycle 4 Target Lesion #1 diameter entered as 28mm, but radiologist source worksheet records 36mm. Please verify or amend discrepancy.",
+      "ageDays": 16,
+      "isCriticalPath": true,
+      "isPrimaryEndpoint": true,
+      "status": "Awaiting Site Response",
+      "actionRequired": "Site Coordinator / PI reconciliation against PACS DICOM images"
+    },
+    {
+      "id": "QRY-104-092",
+      "siteId": "104",
+      "subjectId": "SUBJ-104-003",
+      "form": "AE-02 (Adverse Events)",
+      "field": "AE_ONSET_DT",
+      "queryText": "Onset date of Grade 3 Cytokine Release Syndrome logged as 2026-10-12, conflicting with hospitalization admission record of 2026-10-14 in Argus.",
+      "ageDays": 15,
+      "isCriticalPath": true,
+      "isPrimaryEndpoint": false,
+      "status": "Safety Escalated",
+      "actionRequired": "Pharmacovigilance physician review with PI"
+    },
+    {
+      "id": "QRY-104-101",
+      "siteId": "104",
+      "subjectId": "SUBJ-104-012",
+      "form": "DD-01 (Death Details)",
+      "field": "PRIMARY_CAUSE_DEATH",
+      "queryText": "Death confirmed on 2026-10-21. Please attach certified cause of death from coroner or treating hospice physician.",
+      "ageDays": 10,
+      "isCriticalPath": true,
+      "isPrimaryEndpoint": true,
+      "status": "Awaiting Source Document",
+      "actionRequired": "CRA on-site collection of certified records"
+    },
+    {
+      "id": "QRY-317-044",
+      "siteId": "317",
+      "subjectId": "SUBJ-317-005",
+      "form": "TU-01 (RECIST 1.1)",
+      "field": "TL02_RESPONSE_CAT",
+      "queryText": "Thoracic scan slice thickness 5mm deviates from 2.5mm protocol standard; independent imaging reviewer marked as non-evaluable.",
+      "ageDays": 12,
+      "isCriticalPath": true,
+      "isPrimaryEndpoint": true,
+      "status": "Pending Imaging Re-review",
+      "actionRequired": "BioClinica central imaging adjudication"
+    },
+    {
+      "id": "QRY-208-112",
+      "siteId": "208",
+      "subjectId": "SUBJ-208-014",
+      "form": "CM-01 (Concomitant Meds)",
+      "field": "MED_NAME_TRADE",
+      "queryText": "Trade name 'Tylenol Extra' entered without specific dose units (mg vs tablets).",
+      "ageDays": 3,
+      "isCriticalPath": false,
+      "isPrimaryEndpoint": false,
+      "status": "Routine",
+      "actionRequired": "Data coordinator routine clarification"
+    }
+  ],
+  "actions": [
+    {
+      "id": "ACT-001",
+      "title": "Resolve 2 SAE Discrepancies at Site 104",
+      "owner": "Dr. Sarah Lin (Safety Lead)",
+      "ownerRole": "Pharmacovigilance",
+      "sla": "48 hours",
+      "dueDate": "2026-11-02",
+      "delayImpact": "Reduce 3.0 delay days",
+      "daysSaved": 3.0,
+      "readinessPoints": "+8 Points",
+      "priority": "Critical",
+      "status": "Recommended",
+      "rationale": "Safety reconciliation is the #1 blocker on the critical DBL path. Reconciling SUBJ-104-003 (CRS onset) and SUBJ-104-012 (Death narrative) unfreezes safety database lock.",
+      "proposedPlan": "Convene joint CRA/Safety teleconference with PI Dr. Vance to align on medical records onset date (Oct 12) and update Argus case causality narrative.",
+      "decisionOwnership": "Human Governed (Safety Lead approval required under 21 CFR Part 11)"
+    },
+    {
+      "id": "ACT-002",
+      "title": "Escalate Overdue LabCorp ctDNA Transfer (#LXB-8921)",
+      "owner": "Jean-Pierre Dupuis (Vendor Ops)",
+      "ownerRole": "Vendor Operations",
+      "sla": "24 hours",
+      "dueDate": "2026-11-01",
+      "delayImpact": "Reduce 1.8 delay days",
+      "daysSaved": 1.8,
+      "readinessPoints": "+5 Points",
+      "priority": "Critical",
+      "status": "Recommended",
+      "rationale": "Transfer is 4 days overdue due to SFTP checksum failure. Affects biomarker secondary endpoint for 48 subjects across Sites 104 and 317.",
+      "proposedPlan": "Issue formal vendor escalation protocol; authorize emergency manual SFTP pickup with real-time SHA-256 verification hash.",
+      "decisionOwnership": "Human Governed (Clinical Vendor Lead sign-off)"
+    },
+    {
+      "id": "ACT-003",
+      "title": "Prioritize 5 Ageing RECIST Primary Endpoint Queries",
+      "owner": "Marcus Campbell (Site 104 CRA / CDM)",
+      "ownerRole": "Clinical Data Management",
+      "sla": "72 hours",
+      "dueDate": "2026-11-03",
+      "delayImpact": "Reduce 1.2 delay days",
+      "daysSaved": 1.2,
+      "readinessPoints": "+6 Points",
+      "priority": "High",
+      "status": "Recommended",
+      "rationale": "Queries directly impact Progression-Free Survival (PFS) primary endpoint data at Sites 104 and 317.",
+      "proposedPlan": "Deploy CRA on-site data cleaning support for 2 consecutive days at Boston site to close RECIST worksheets directly with radiology coordinators.",
+      "decisionOwnership": "Human Governed (CDM Study Lead)"
+    },
+    {
+      "id": "ACT-004",
+      "title": "Execute Targeted CRA Strike Team at Site 104",
+      "owner": "Elena Rostova (Lead Clinical Monitor)",
+      "ownerRole": "Site Operations",
+      "sla": "5 days",
+      "dueDate": "2026-11-05",
+      "delayImpact": "Reduce 0.8 delay days",
+      "daysSaved": 0.8,
+      "readinessPoints": "+4 Points",
+      "priority": "Medium",
+      "status": "Recommended",
+      "rationale": "Site 104 closure velocity (1.4/day) is inadequate for planned LSLV freeze.",
+      "proposedPlan": "Deploy senior contract monitor to complete 100% SDV of remaining locked forms and support PI sign-off queue.",
+      "decisionOwnership": "Human Governed (Clinical Operations Director)"
+    }
+  ],
+  "interventions": [
+    {
+      "id": "INT-01",
+      "title": "Resolve all SAE reconciliation discrepancies (Site 104)",
+      "category": "Safety / Pharmacovigilance",
+      "delayReductionDays": 3.0,
+      "readinessScoreGain": 6.5,
+      "confidence": "High (94%)",
+      "description": "Align Argus Case #PV-2026-9812 with Rave eCRF and confirm hospice death certificate narrative for SUBJ-104-012.",
+      "defaultSelected": true
+    },
+    {
+      "id": "INT-02",
+      "title": "Receive and ingest delayed LabCorp ctDNA transfer (#LXB-8921)",
+      "category": "External Laboratory Data",
+      "delayReductionDays": 1.8,
+      "readinessScoreGain": 4.8,
+      "confidence": "High (91%)",
+      "description": "Receive re-packaged FASTQ ctDNA dataset via secure SFTP and complete auto-reconciliation against 48 subject samples.",
+      "defaultSelected": true
+    },
+    {
+      "id": "INT-03",
+      "title": "Deploy specialized CRA data-cleaning strike team to Site 104 for 5 days",
+      "category": "Site Operations & SDV",
+      "delayReductionDays": 0.8,
+      "readinessScoreGain": 3.8,
+      "confidence": "Medium (82%)",
+      "description": "Increase query closure velocity from 1.4 to 4.5/day, clearing all 14 ageing EDC queries.",
+      "defaultSelected": false
+    },
+    {
+      "id": "INT-04",
+      "title": "Prioritize Site 317 RECIST primary tumor scan restaging queries",
+      "category": "Efficacy Endpoints",
+      "delayReductionDays": 1.2,
+      "readinessScoreGain": 2.7,
+      "confidence": "High (89%)",
+      "description": "Resolve motion artifact query with BioClinica imaging adjudicator for SUBJ-317-005.",
+      "defaultSelected": false
+    },
+    {
+      "id": "INT-05",
+      "title": "Automate bulk PI electronic re-signatures for clean visits",
+      "category": "Regulatory & Sign-offs",
+      "delayReductionDays": 0.6,
+      "readinessScoreGain": 1.8,
+      "confidence": "Medium (75%)",
+      "description": "Trigger electronic batch signature workflow for 18 completed and fully monitored case books.",
+      "defaultSelected": false
+    }
+  ],
+  "forecastScenarios": [
+    {
+      "scenario": "Best Case",
+      "forecastDate": "2026-12-16",
+      "varianceDays": 1,
+      "probability": 25,
+      "status": "Optimistic",
+      "color": "emerald",
+      "assumptions": "Critical interventions (SAE recon + LabCorp transfer) executed within 48 hours. Zero new SAE reports emerging post-LSLV. Query closure velocity hits 4.2/day across all sites."
+    },
+    {
+      "scenario": "Most Likely",
+      "forecastDate": "2026-12-19",
+      "varianceDays": 4,
+      "probability": 60,
+      "status": "Expected",
+      "color": "blue",
+      "assumptions": "Current team velocity continues. SAE discrepancy resolved by Nov 03. LabCorp transfer ingested Nov 02. Minor routine queries burn down within 7 days."
+    },
+    {
+      "scenario": "At Risk",
+      "forecastDate": "2026-12-23",
+      "varianceDays": 8,
+      "probability": 15,
+      "status": "Severe Delay",
+      "color": "rose",
+      "assumptions": "Site 104 PI unavailable during Thanksgiving week. Vendor transfer fails second checksum verification. Secondary RECIST adjudication requires scan repeat."
+    }
+  ],
+  "closedLoopOutcomes": [
+    {
+      "id": "OUT-01",
+      "recommendation": "Deploy CRA query sweep to Site 208 for 41 routine queries",
+      "decision": "Accepted by Study Lead (Elena Rostova)",
+      "completionStatus": "Completed (Oct 28)",
+      "scoreBefore": 66,
+      "scoreAfter": 72,
+      "delayBefore": 7,
+      "delayAfter": 6,
+      "actualOutcome": "32 minor con-med queries resolved in 48 hours. Query burn-down accelerated by 2.4x.",
+      "learningCaptured": "Demonstrated that routine query volume does not stall DBL when CRA focus is applied; validated that Site 208 was a low critical-path risk despite high volume."
+    },
+    {
+      "id": "OUT-02",
+      "recommendation": "Automated MedDRA 27.0 dictionary bulk re-coding for concomitant medications",
+      "decision": "Accepted by Medical Coder",
+      "completionStatus": "Completed (Oct 25)",
+      "scoreBefore": 85,
+      "scoreAfter": 91,
+      "delayBefore": 7,
+      "delayAfter": 7,
+      "actualOutcome": "142 verbatim terms auto-coded with 100% confidence. Zero medical uncoded queries remaining on critical path.",
+      "learningCaptured": "Confirmed zero critical path delay contribution from medical coding; shifted team focus entirely to safety and lab data."
+    },
+    {
+      "id": "OUT-03",
+      "recommendation": "Escalate overdue Eurofins hematology batch #LXB-8940",
+      "decision": "Accepted by Vendor Manager",
+      "completionStatus": "In Progress (ETA Nov 01)",
+      "scoreBefore": 72,
+      "scoreAfter": 75,
+      "delayBefore": 6,
+      "delayAfter": 5.6,
+      "actualOutcome": "Eurofins committed senior lab supervisor; calibration logs provided.",
+      "learningCaptured": "Automated vendor notification reduced sponsor response time from 3.2 days to 4 hours."
+    }
+  ]
+}
