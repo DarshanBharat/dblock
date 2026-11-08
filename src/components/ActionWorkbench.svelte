@@ -23,10 +23,41 @@
     Edit3,
     Check,
     Ban,
-    ExternalLink
+    ExternalLink,
+    Globe,
+    Map,
+    MapPin
   } from '@lucide/svelte';
 
   export let onSelectTab: (tab: string) => void;
+  export let sites: any[] = [];
+  export let onSelectSite: ((id: string) => void) | undefined = undefined;
+
+  // View mode: 'split' (shows Country Map on top + Table below) | 'table' | 'map'
+  let viewMode: 'split' | 'table' | 'map' = 'split';
+  let selectedCountry: string = 'all';
+
+  const siteGeoMap: Record<string, { lat: number; lng: number; city: string; country: string; countryCode: string; flag: string }> = {
+    'Site 104': { lat: 42.3601, lng: -71.0589, city: 'Boston', country: 'United States', countryCode: 'US', flag: '🇺🇸' },
+    'Site 208': { lat: 41.8781, lng: -87.6298, city: 'Chicago', country: 'United States', countryCode: 'US', flag: '🇺🇸' },
+    'Site 317': { lat: 52.5200, lng: 13.4050, city: 'Berlin', country: 'Germany', countryCode: 'DE', flag: '🇩🇪' },
+    'Site 405': { lat: 37.5665, lng: 126.9780, city: 'Seoul', country: 'South Korea', countryCode: 'KR', flag: '🇰🇷' },
+    'Site 502': { lat: -37.8136, lng: 144.9631, city: 'Melbourne', country: 'Australia', countryCode: 'AU', flag: '🇦🇺' },
+    'Site 608': { lat: 43.6532, lng: -79.3832, city: 'Toronto', country: 'Canada', countryCode: 'CA', flag: '🇨🇦' },
+    'Site 722': { lat: 48.8566, lng: 2.3522, city: 'Paris', country: 'France', countryCode: 'FR', flag: '🇫🇷' },
+    'Site 815': { lat: 40.4168, lng: -3.7038, city: 'Madrid', country: 'Spain', countryCode: 'ES', flag: '🇪🇸' }
+  };
+
+  function getActionGeo(action: any) {
+    const key = action.site || action.scope;
+    if (key && siteGeoMap[key]) {
+      return siteGeoMap[key];
+    }
+    if (key && key.includes('Multiple')) {
+      return { lat: 45, lng: 10, city: 'Multiple Centers', country: 'US / DE / KR', countryCode: 'MULTI', flag: '🌐' };
+    }
+    return { lat: 0, lng: 0, city: 'Study-wide', country: 'Global', countryCode: 'GLOBAL', flag: '🌐' };
+  }
 
   // Filter state
   let priorityFilter = 'all'; // 'all' | 'critical' | 'high' | 'medium' | 'low'
@@ -232,6 +263,75 @@
     </div>
 
   </div>
+
+  <!-- ========================================================================= -->
+  <!-- COUNTRY & GEOGRAPHIC ACTION DISTRIBUTION                                  -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+    <div class="flex items-center space-x-2.5">
+      <div class="p-2 rounded-lg bg-blue-50 text-blue-600">
+        <Globe size={18} />
+      </div>
+      <div>
+        <div class="flex items-center space-x-2">
+          <h3 class="text-xs font-bold text-slate-900">Action Geographic Distribution (Country Map)</h3>
+          <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            Live Country View
+          </span>
+        </div>
+        <p class="text-[11px] text-slate-500">
+          Interactive global map of critical and high-priority study actions across 6 countries
+        </p>
+      </div>
+    </div>
+
+    <!-- Toggle: Country Map & Table (Split) | Map Only | Table Only -->
+    <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold shrink-0">
+      <button
+        type="button"
+        on:click={() => viewMode = 'split'}
+        class="px-2.5 py-1.5 rounded-md transition-all flex items-center space-x-1.5 cursor-pointer {viewMode === 'split' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}"
+        title="Display both Country Map and Action Table"
+      >
+        <Map size={13} />
+        <span>Country Map &amp; Table</span>
+      </button>
+
+      <button
+        type="button"
+        on:click={() => viewMode = 'map'}
+        class="px-2.5 py-1.5 rounded-md transition-all flex items-center space-x-1.5 cursor-pointer {viewMode === 'map' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}"
+        title="Expand full country map"
+      >
+        <Globe size={13} />
+        <span>Map Only</span>
+      </button>
+
+      <button
+        type="button"
+        on:click={() => viewMode = 'table'}
+        class="px-2.5 py-1.5 rounded-md transition-all flex items-center space-x-1.5 cursor-pointer {viewMode === 'table' ? 'bg-white text-blue-700 shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'}"
+        title="Display action table only"
+      >
+        <FileText size={13} />
+        <span>Table Only</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Country Map View (Active in Split or Map mode) -->
+  {#if viewMode === 'split' || viewMode === 'map'}
+    <div class="transition-all duration-300">
+      <ActionCountryMap
+        actions={$workflow.actions}
+        {sites}
+        bind:selectedCountry
+        {selectedActionId}
+        onSelectCountry={(c) => selectedCountry = c}
+        onSelectAction={(id) => openDrawer(id)}
+      />
+    </div>
+  {/if}
 
   <!-- ========================================================================= -->
   <!-- ACTION TABLE & CONTROLS                                                   -->

@@ -311,7 +311,9 @@
           {:else if activeTab === 'action_workbench'}
             <!-- Screen 6: Action Decision Workbench with 12 Actions & Detail Drawer -->
             <ActionWorkbench
+              {sites}
               onSelectTab={handleSelectTab}
+              onSelectSite={handleSelectSite}
             />
 
           {:else if activeTab === 'simulator'}

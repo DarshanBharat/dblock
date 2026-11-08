@@ -839,9 +839,47 @@
           {:else}
             <!-- Recommended Actions Tab -->
             <div class="space-y-4">
-              <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">
-                Targeted AI Interventions for Site {activeSite.id}
-              </h3>
+              <div class="flex items-center justify-between">
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Targeted AI Interventions for Site {activeSite.id}
+                </h3>
+                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                  {activeSite.countryCode || 'US'} &middot; {activeSite.city || activeSite.country}
+                </span>
+              </div>
+
+              <!-- Country Location Preview Card inside Actions drawer -->
+              <div class="p-3 bg-gradient-to-r from-slate-900 to-slate-950 text-white rounded-xl border border-slate-800 shadow-sm space-y-2">
+                <div class="flex items-center justify-between text-xs">
+                  <div class="flex items-center space-x-2">
+                    <span class="text-base">{activeSite.countryCode === 'US' ? '🇺🇸' : activeSite.countryCode === 'DE' ? '🇩🇪' : activeSite.countryCode === 'KR' ? '🇰🇷' : activeSite.countryCode === 'FR' ? '🇫🇷' : activeSite.countryCode === 'ES' ? '🇪🇸' : '🇦🇺'}</span>
+                    <div>
+                      <strong class="font-bold text-white block">{activeSite.name}</strong>
+                      <span class="text-[10px] text-slate-400">{activeSite.city}, {activeSite.country}</span>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-mono text-emerald-400 font-bold bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                    Lat {activeSite.lat.toFixed(2)}° Lng {activeSite.lng.toFixed(2)}°
+                  </span>
+                </div>
+                
+                <!-- SVG Country Location Map -->
+                <div class="w-full h-16 rounded-lg bg-slate-950/90 overflow-hidden relative border border-slate-800">
+                  <svg viewBox="0 0 320 80" class="w-full h-full">
+                    <rect width="320" height="80" fill="#0f172a" />
+                    <g fill="#1e293b" stroke="#334155" stroke-width="0.8">
+                      <path d="M 30 15 L 90 10 L 100 35 L 70 55 L 50 40 Z" />
+                      <path d="M 130 15 L 170 12 L 175 40 L 150 48 L 130 38 Z" />
+                      <path d="M 180 15 L 260 15 L 270 45 L 230 65 L 195 50 Z" />
+                      <path d="M 235 60 L 270 58 L 275 75 L 245 78 Z" />
+                    </g>
+                    <!-- Site Marker -->
+                    <circle cx="68" cy="28" r="8" fill="#e11d48" opacity="0.3" class="animate-ping" />
+                    <circle cx="68" cy="28" r="5" fill="#e11d48" stroke="#ffffff" stroke-width="1.5" />
+                    <text x="68" y="44" fill="#ffffff" font-size="8" font-weight="700" text-anchor="middle">Site {activeSite.id}</text>
+                  </svg>
+                </div>
+              </div>
 
               <div class="space-y-3">
                 <div class="p-3.5 rounded-lg border border-rose-200 bg-rose-50/40 space-y-2">
