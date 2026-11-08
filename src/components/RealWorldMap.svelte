@@ -9,10 +9,7 @@
     ZoomOut,
     Crosshair,
     RotateCcw,
-    Sparkles,
-    ShieldAlert,
-    AlertTriangle,
-    CheckCircle2
+    Globe
   } from '@lucide/svelte';
 
   export let sites: any[] = [];
@@ -22,38 +19,40 @@
   let mapContainer: HTMLElement;
   let map: any = null;
   let L: any = null;
-  let currentLayer: any = null;
-  let markersLayer: any = null;
+  let currentTileLayer: any = null;
+  let clusterGroup: any = null;
   let resizeObserver: ResizeObserver | null = null;
   let isFullscreen = false;
-  let selectedTile: 'positron' | 'osm' | 'voyager' = 'positron';
+  let selectedTile: 'osm' | 'esriLight' | 'esriStreet' = 'osm';
   let showLayerMenu = false;
 
+  // 100% Free, NO API Key required tile providers with zero watermarks
   const tileProviders = {
-    positron: {
-      name: 'Clean Light (Carto)',
-      url: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19
-    },
     osm: {
       name: 'OpenStreetMap (Standard)',
-      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      subdomains: 'abc',
+      type: 'single',
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" class="hover:underline">OpenStreetMap</a> contributors',
       maxZoom: 19
     },
-    voyager: {
-      name: 'Voyager Detailed',
-      url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 19
+    esriLight: {
+      name: 'Clean Light Gray (Esri)',
+      type: 'composite',
+      baseUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      refUrl: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+      attribution: 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" class="hover:underline">Esri</a>',
+      maxZoom: 16
+    },
+    esriStreet: {
+      name: 'World Street Map (Esri)',
+      type: 'single',
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+      attribution: 'Tiles &copy; <a href="https://www.esri.com/" target="_blank" class="hover:underline">Esri</a>',
+      maxZoom: 18
     }
   };
 
-  // Quick stats
+  // Dynamic metrics
   $: criticalCount = sites.filter(s => s.riskLevel === 'Critical').length;
   $: highCount = sites.filter(s => s.riskLevel === 'High').length;
   $: mediumCount = sites.filter(s => s.riskLevel === 'Medium').length;
@@ -65,39 +64,43 @@
       // Dynamic import ensures browser-only execution
       const leafletModule = await import('leaflet');
       L = leafletModule.default || leafletModule;
+      (window as any).L = L;
+
+      // Import markercluster plugin
+      await import('leaflet.markercluster');
 
       if (!mapContainer) return;
 
-      // Initialize real interactive world map
+      // Initialize Leaflet map
       map = L.map(mapContainer, {
-        center: [30, 10],
-        zoom: 2,
+        center: [32, 10],
+        zoom: 2.2,
         minZoom: 1.5,
         maxZoom: 18,
-        zoomControl: false, // Using styled custom zoom controls
-        attributionControl: false
+        zoomControl: false,
+        attributionControl: true
       });
 
-      // Add attribution control in bottom right
-      L.control.attribution({ position: 'bottomright', prefix: false })
-        .addAttribution('&copy; <a href="https://openstreetmap.org" class="text-blue-600 hover:underline" target="_blank">OSM</a> | <a href="https://carto.com" class="text-blue-600 hover:underline" target="_blank">CARTO</a>')
-        .addTo(map);
+      // Clean single attribution prefix
+      if (map.attributionControl) {
+        map.attributionControl.setPrefix(false);
+      }
 
-      // Set initial tile layer
+      // Apply initial tile layer (OpenStreetMap - 100% free, zero watermark)
       applyTileLayer(selectedTile);
 
-      // Initialize markers layer group
-      markersLayer = L.layerGroup().addTo(map);
+      // Create marker cluster group
+      createClusterGroup();
 
       // Render markers
       renderMarkers();
 
-      // Fit all markers in view
+      // Fit bounds to show all active sites nicely
       if (sites.length > 0) {
         fitAllSites(false);
       }
 
-      // Auto-invalidate size on container resizing (e.g. drawer toggle, layout change)
+      // Responsive resize observer
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(() => {
           if (map) {
@@ -107,13 +110,13 @@
         resizeObserver.observe(mapContainer);
       }
 
-      // Ensure crisp render after initial DOM paint
+      // Invalidate size once DOM stabilizes
       setTimeout(() => {
         if (map) map.invalidateSize();
-      }, 250);
+      }, 200);
 
     } catch (err) {
-      console.error('Failed to initialize Leaflet real map:', err);
+      console.error('Failed to initialize RealWorldMap:', err);
     }
   });
 
@@ -128,18 +131,32 @@
     }
   });
 
-  function applyTileLayer(providerKey: 'positron' | 'osm' | 'voyager') {
+  function applyTileLayer(providerKey: 'osm' | 'esriLight' | 'esriStreet') {
     if (!map || !L) return;
-    if (currentLayer) {
-      map.removeLayer(currentLayer);
+
+    if (currentTileLayer) {
+      map.removeLayer(currentTileLayer);
+      currentTileLayer = null;
     }
 
     const conf = tileProviders[providerKey];
-    currentLayer = L.tileLayer(conf.url, {
-      attribution: conf.attribution,
-      subdomains: conf.subdomains,
-      maxZoom: conf.maxZoom
-    }).addTo(map);
+
+    if (conf.type === 'composite') {
+      // Base canvas + Labels reference overlay
+      const base = L.tileLayer(conf.baseUrl, {
+        attribution: conf.attribution,
+        maxZoom: conf.maxZoom
+      });
+      const ref = L.tileLayer(conf.refUrl, {
+        maxZoom: conf.maxZoom
+      });
+      currentTileLayer = L.layerGroup([base, ref]).addTo(map);
+    } else {
+      currentTileLayer = L.tileLayer(conf.url, {
+        attribution: conf.attribution,
+        maxZoom: conf.maxZoom
+      }).addTo(map);
+    }
 
     selectedTile = providerKey;
     showLayerMenu = false;
@@ -148,14 +165,57 @@
   function getRiskColors(riskLevel: string) {
     switch (riskLevel) {
       case 'Critical':
-        return { bg: '#e11d48', ring: '#f43f5e', text: '#ffffff', badgeBg: 'bg-rose-600' };
+        return { bg: '#e11d48', ring: '#f43f5e', text: '#ffffff' };
       case 'High':
-        return { bg: '#d97706', ring: '#f59e0b', text: '#ffffff', badgeBg: 'bg-amber-600' };
+        return { bg: '#d97706', ring: '#f59e0b', text: '#ffffff' };
       case 'Medium':
-        return { bg: '#ea580c', ring: '#fb923c', text: '#ffffff', badgeBg: 'bg-orange-500' };
+        return { bg: '#ea580c', ring: '#fb923c', text: '#ffffff' };
       default:
-        return { bg: '#059669', ring: '#10b981', text: '#ffffff', badgeBg: 'bg-emerald-600' };
+        return { bg: '#059669', ring: '#10b981', text: '#ffffff' };
     }
+  }
+
+  function createClusterGroup() {
+    if (!map || !L) return;
+
+    clusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 40,
+      spiderfyOnMaxZoom: true,
+      zoomToBoundsOnClick: true,
+      showCoverageOnHover: false,
+      iconCreateFunction: (cluster: any) => {
+        const markers = cluster.getAllChildMarkers();
+        const count = markers.length;
+
+        let hasCritical = false;
+        let hasHigh = false;
+        let hasMedium = false;
+
+        for (const m of markers) {
+          const r = m.options?.siteData?.riskLevel;
+          if (r === 'Critical') hasCritical = true;
+          else if (r === 'High') hasHigh = true;
+          else if (r === 'Medium') hasMedium = true;
+        }
+
+        const color = hasCritical ? '#e11d48' : hasHigh ? '#d97706' : hasMedium ? '#ea580c' : '#059669';
+        const ring = hasCritical ? '#f43f5e' : hasHigh ? '#f59e0b' : hasMedium ? '#fb923c' : '#10b981';
+
+        return L.divIcon({
+          html: `
+            <div class="custom-cluster-marker ${hasCritical ? 'is-critical-cluster' : ''}" style="background-color: ${color};">
+              ${hasCritical ? `<div class="cluster-pulse-ring" style="border-color: ${ring};"></div>` : ''}
+              <span class="cluster-count">${count}</span>
+            </div>
+          `,
+          className: 'custom-cluster-wrapper',
+          iconSize: [36, 36],
+          iconAnchor: [18, 18]
+        });
+      }
+    });
+
+    map.addLayer(clusterGroup);
   }
 
   function createMarkerIcon(site: any) {
@@ -167,10 +227,9 @@
     const html = `
       <div class="site-marker-container ${isCritical ? 'is-critical' : ''} ${isSelected ? 'is-selected' : ''}">
         ${isCritical ? `<div class="pulse-ring" style="border-color: ${colors.ring};"></div>` : ''}
-        <div class="marker-core shadow-md transition-transform" style="background-color: ${colors.bg}; color: ${colors.text};">
+        <div class="marker-core shadow-md" style="background-color: ${colors.bg}; color: ${colors.text};">
           <span class="marker-label">${site.id}</span>
         </div>
-        ${isSelected ? '<div class="marker-active-ring"></div>' : ''}
       </div>
     `;
 
@@ -242,9 +301,9 @@
   }
 
   function renderMarkers() {
-    if (!map || !L || !markersLayer) return;
+    if (!map || !L || !clusterGroup) return;
 
-    markersLayer.clearLayers();
+    clusterGroup.clearLayers();
 
     sites.forEach(site => {
       if (typeof site.lat !== 'number' || typeof site.lng !== 'number') return;
@@ -252,27 +311,28 @@
       const icon = createMarkerIcon(site);
       if (!icon) return;
 
-      const marker = L.marker([site.lat, site.lng], { icon });
+      const marker = L.marker([site.lat, site.lng], {
+        icon,
+        zIndexOffset: site.riskLevel === 'Critical' ? 1000 : site.riskLevel === 'High' ? 500 : 0,
+        siteData: site
+      });
 
-      // Clean tooltip on hover
       marker.bindTooltip(`Site ${site.id} · ${site.city} (${site.forecastImpactDays} delay)`, {
         direction: 'top',
         offset: [0, -10],
         className: 'real-map-tooltip'
       });
 
-      // Interactive popup
       marker.bindPopup(createPopupContent(site), {
         maxWidth: 300,
         className: 'real-map-popup-window'
       });
 
-      // Click handler
       marker.on('click', () => {
         onSelectSite(site);
       });
 
-      marker.addTo(markersLayer);
+      clusterGroup.addLayer(marker);
     });
 
     // Wire popup button click delegation
@@ -295,12 +355,10 @@
     });
   }
 
-  // Reactive updates when sites prop changes (e.g. filter/search)
-  $: if (map && L && sites) {
+  $: if (map && L && clusterGroup && sites) {
     renderMarkers();
   }
 
-  // Fit all sites within bounds
   export function fitAllSites(animate = true) {
     if (!map || !L || sites.length === 0) return;
     const validCoords = sites
@@ -312,12 +370,11 @@
     const bounds = L.latLngBounds(validCoords);
     map.fitBounds(bounds, {
       padding: [45, 45],
-      maxZoom: 6,
+      maxZoom: 5,
       animate
     });
   }
 
-  // Focus on Critical and High risk sites (e.g. Boston, Berlin, Seoul, Houston)
   export function focusCriticalSites() {
     if (!map || !L) return;
     const criticalSites = sites.filter(s => s.riskLevel === 'Critical' || s.riskLevel === 'High');
@@ -335,11 +392,14 @@
     });
   }
 
-  export function panToSite(siteId: string) {
-    if (!map || !L) return;
-    const s = sites.find(x => x.id === siteId);
-    if (s && typeof s.lat === 'number' && typeof s.lng === 'number') {
-      map.flyTo([s.lat, s.lng], 7, { duration: 1.2 });
+  export function focusRegion(region: 'na' | 'eu' | 'apac') {
+    if (!map) return;
+    if (region === 'na') {
+      map.flyTo([39.8, -98.5], 4, { duration: 1 });
+    } else if (region === 'eu') {
+      map.flyTo([48.8, 10.0], 4.5, { duration: 1 });
+    } else {
+      map.flyTo([10.0, 130.0], 3.5, { duration: 1 });
     }
   }
 
@@ -362,21 +422,46 @@
 </script>
 
 <div
-  class="relative w-full rounded-xl overflow-hidden border border-slate-200/90 shadow-xs bg-slate-100 flex flex-col transition-all {isFullscreen ? 'fixed inset-4 z-50 h-[calc(100vh-2rem)] shadow-2xl' : 'h-[380px] sm:h-[420px]'}"
+  class="relative w-full rounded-xl overflow-hidden border border-slate-200/90 shadow-xs bg-slate-50 flex flex-col transition-all {isFullscreen ? 'fixed inset-4 z-50 h-[calc(100vh-2rem)] shadow-2xl' : 'h-[390px] sm:h-[430px]'}"
 >
   <!-- Floating Top Bar Overlay -->
   <div class="absolute top-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none gap-2">
     
-    <!-- Top-Left: Live Map Badge -->
+    <!-- Top-Left: Live Map Badge & Region Shortcuts -->
     <div class="pointer-events-auto flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs text-xs text-slate-700">
       <div class="flex items-center space-x-1.5 font-bold text-slate-900">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
         <span>Real Geographic Map</span>
       </div>
       <span class="text-slate-300">|</span>
-      <span class="text-[11px] text-slate-600 font-medium">
-        <strong>{sites.length}</strong> sites across <strong>{countryCount}</strong> countries
+      <span class="text-[11px] text-slate-600 font-medium hidden sm:inline">
+        <strong>{sites.length}</strong> sites &middot; <strong>{countryCount}</strong> countries
       </span>
+
+      <!-- Region quick jumps -->
+      <div class="hidden md:flex items-center space-x-1 pl-1 border-l border-slate-200 text-[10px] font-semibold text-slate-600">
+        <button
+          type="button"
+          on:click={() => focusRegion('na')}
+          class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
+        >
+          US / CA
+        </button>
+        <button
+          type="button"
+          on:click={() => focusRegion('eu')}
+          class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
+        >
+          Europe
+        </button>
+        <button
+          type="button"
+          on:click={() => focusRegion('apac')}
+          class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
+        >
+          APAC
+        </button>
+      </div>
     </div>
 
     <!-- Top-Right: Map Action Toolbar -->
@@ -386,7 +471,7 @@
       <button
         type="button"
         on:click={() => fitAllSites(true)}
-        class="px-2 py-1 text-xs font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100 rounded flex items-center space-x-1 transition-colors"
+        class="px-2 py-1 text-xs font-semibold text-slate-700 hover:text-blue-700 hover:bg-slate-100 rounded flex items-center space-x-1 transition-colors cursor-pointer"
         title="Fit all sites worldwide into view"
       >
         <RotateCcw size={13} />
@@ -397,7 +482,7 @@
       <button
         type="button"
         on:click={focusCriticalSites}
-        class="px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded flex items-center space-x-1 transition-colors"
+        class="px-2 py-1 text-xs font-semibold text-rose-700 hover:bg-rose-50 rounded flex items-center space-x-1 transition-colors cursor-pointer"
         title="Focus directly on Critical & High risk sites"
       >
         <Crosshair size={13} />
@@ -406,46 +491,46 @@
 
       <span class="text-slate-200">|</span>
 
-      <!-- Layer Switcher Dropdown -->
+      <!-- Free Layer Switcher Dropdown (No API Key Required) -->
       <div class="relative">
         <button
           type="button"
           on:click={() => showLayerMenu = !showLayerMenu}
-          class="px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded flex items-center space-x-1 transition-colors {showLayerMenu ? 'bg-slate-100 text-blue-700' : ''}"
-          title="Change map style / tile layer"
+          class="px-2 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded flex items-center space-x-1 transition-colors cursor-pointer {showLayerMenu ? 'bg-slate-100 text-blue-700' : ''}"
+          title="Change map style (all free, zero API key)"
         >
           <Layers size={13} />
           <span class="hidden md:inline">Layers</span>
         </button>
 
         {#if showLayerMenu}
-          <div class="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-50 text-xs">
+          <div class="absolute right-0 mt-1 w-52 bg-white rounded-lg shadow-xl border border-slate-200 py-1 z-50 text-xs">
             <div class="px-3 py-1 font-bold text-slate-400 text-[10px] uppercase tracking-wider">
-              Map Style
+              Basemap Style (Free &amp; Verified)
             </div>
-            <button
-              type="button"
-              on:click={() => applyTileLayer('positron')}
-              class="w-full text-left px-3 py-1.5 hover:bg-blue-50 font-medium flex items-center justify-between {selectedTile === 'positron' ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'}"
-            >
-              <span>Clean Light (Carto)</span>
-              {#if selectedTile === 'positron'}&#10003;{/if}
-            </button>
             <button
               type="button"
               on:click={() => applyTileLayer('osm')}
               class="w-full text-left px-3 py-1.5 hover:bg-blue-50 font-medium flex items-center justify-between {selectedTile === 'osm' ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'}"
             >
-              <span>OpenStreetMap</span>
+              <span>OpenStreetMap (Standard)</span>
               {#if selectedTile === 'osm'}&#10003;{/if}
             </button>
             <button
               type="button"
-              on:click={() => applyTileLayer('voyager')}
-              class="w-full text-left px-3 py-1.5 hover:bg-blue-50 font-medium flex items-center justify-between {selectedTile === 'voyager' ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'}"
+              on:click={() => applyTileLayer('esriLight')}
+              class="w-full text-left px-3 py-1.5 hover:bg-blue-50 font-medium flex items-center justify-between {selectedTile === 'esriLight' ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'}"
             >
-              <span>Voyager Detailed</span>
-              {#if selectedTile === 'voyager'}&#10003;{/if}
+              <span>Clean Light Gray (Esri)</span>
+              {#if selectedTile === 'esriLight'}&#10003;{/if}
+            </button>
+            <button
+              type="button"
+              on:click={() => applyTileLayer('esriStreet')}
+              class="w-full text-left px-3 py-1.5 hover:bg-blue-50 font-medium flex items-center justify-between {selectedTile === 'esriStreet' ? 'text-blue-600 font-bold bg-blue-50/50' : 'text-slate-700'}"
+            >
+              <span>World Street Map (Esri)</span>
+              {#if selectedTile === 'esriStreet'}&#10003;{/if}
             </button>
           </div>
         {/if}
@@ -457,7 +542,7 @@
       <button
         type="button"
         on:click={toggleFullscreen}
-        class="p-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors"
+        class="p-1 text-slate-700 hover:text-blue-700 hover:bg-slate-100 rounded transition-colors cursor-pointer"
         title={isFullscreen ? 'Exit full screen' : 'Expand map full screen'}
       >
         {#if isFullscreen}
@@ -503,7 +588,7 @@
     <button
       type="button"
       on:click={handleZoomIn}
-      class="p-2 text-slate-700 hover:text-blue-700 hover:bg-slate-100 border-b border-slate-200 transition-colors"
+      class="p-2 text-slate-700 hover:text-blue-700 hover:bg-slate-100 border-b border-slate-200 transition-colors cursor-pointer"
       title="Zoom in"
     >
       <ZoomIn size={14} />
@@ -511,7 +596,7 @@
     <button
       type="button"
       on:click={handleZoomOut}
-      class="p-2 text-slate-700 hover:text-blue-700 hover:bg-slate-100 transition-colors"
+      class="p-2 text-slate-700 hover:text-blue-700 hover:bg-slate-100 transition-colors cursor-pointer"
       title="Zoom out"
     >
       <ZoomOut size={14} />
@@ -546,12 +631,12 @@
     font-size: 10px;
     font-weight: 800;
     border: 2px solid #ffffff;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
     transition: transform 0.15s ease-out;
   }
 
   :global(.site-marker-container:hover .marker-core) {
-    transform: scale(1.22);
+    transform: scale(1.25);
   }
 
   :global(.pulse-ring) {
@@ -567,10 +652,50 @@
     pointer-events: none;
   }
 
+  /* Custom MarkerCluster styling */
+  :global(.custom-cluster-wrapper) {
+    background: transparent;
+    border: none;
+  }
+
+  :global(.custom-cluster-marker) {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    border-radius: 9999px;
+    border: 2.5px solid #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform 0.15s ease-out;
+  }
+
+  :global(.custom-cluster-marker:hover) {
+    transform: scale(1.2);
+  }
+
+  :global(.cluster-pulse-ring) {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 46px;
+    height: 46px;
+    border-radius: 9999px;
+    border-width: 2.5px;
+    border-style: solid;
+    animation: marker-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+    pointer-events: none;
+  }
+
   @keyframes marker-ping {
     0% {
       transform: scale(0.65);
-      opacity: 0.9;
+      opacity: 0.95;
     }
     80%, 100% {
       transform: scale(1.6);
