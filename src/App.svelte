@@ -7,6 +7,8 @@
   import ExecutiveCommandCentre from './components/ExecutiveCommandCentre.svelte';
   import ReadinessDigitalTwin from './components/ReadinessDigitalTwin.svelte';
   import PredictiveRiskHeatmap from './components/PredictiveRiskHeatmap.svelte';
+  import SiteDetailView from './components/SiteDetailView.svelte';
+  import SubjectDetailView from './components/SubjectDetailView.svelte';
   import ActionWorkbench from './components/ActionWorkbench.svelte';
   import WhatIfSimulator from './components/WhatIfSimulator.svelte';
   import ForecastScenarios from './components/ForecastScenarios.svelte';
@@ -57,11 +59,16 @@
   // Initialize live workflow store
   initialize(actions);
 
-  // Selected site object for deep drill-down
+  // Selected site & subject objects for deep drill-down
   let selectedSiteId: string | null = null;
+  let selectedSubjectId: string | null = null;
 
   function handleSelectTab(tab: string) {
     activeTab = tab;
+    if (tab === 'risk_matrix') {
+      selectedSiteId = null;
+      selectedSubjectId = null;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -74,8 +81,29 @@
   function handleSelectSite(siteId: string) {
     activeTab = 'risk_matrix';
     selectedSiteId = siteId;
+    selectedSubjectId = null;
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
+  function handleBackToSites() {
+    selectedSiteId = null;
+    selectedSubjectId = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleSelectSubject(subjectId: string) {
+    selectedSubjectId = subjectId;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleBackToSite() {
+    selectedSubjectId = null;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Reactive selection helpers
+  $: currentSubject = selectedSubjectId ? subjects.find((s: any) => s.id === selectedSubjectId) : null;
+  $: currentSite = selectedSiteId ? sites.find((s: any) => s.id === selectedSiteId) : null;
 
   // Study left nav links
   const studyNavLinks = [
@@ -243,14 +271,33 @@
             />
 
           {:else if activeTab === 'risk_matrix'}
-            <!-- Screen 3 & 4: Predictive Risk Heatmap, Map & Evidence Drawer -->
-            <PredictiveRiskHeatmap
-              {sites}
-              {subjects}
-              {dimensions}
-              onSelectSite={handleSelectSite}
-              onSelectTab={handleSelectTab}
-            />
+            {#if currentSubject}
+              <SubjectDetailView
+                subject={currentSubject}
+                onBackToSite={handleBackToSite}
+                onSelectTab={handleSelectTab}
+              />
+            {:else if currentSite}
+              <SiteDetailView
+                site={currentSite}
+                {subjects}
+                {saeDiscrepancies}
+                {queriesDetail}
+                {labBatches}
+                onBackToSites={handleBackToSites}
+                onSelectSubject={handleSelectSubject}
+                onSelectTab={handleSelectTab}
+              />
+            {:else}
+              <!-- Screen 3 & 4: Predictive Risk Heatmap, Real Map & Evidence Drawer -->
+              <PredictiveRiskHeatmap
+                {sites}
+                {subjects}
+                {dimensions}
+                onSelectSite={handleSelectSite}
+                onSelectTab={handleSelectTab}
+              />
+            {/if}
 
           {:else if activeTab === 'digital_twin'}
             <!-- Screen 5: Dynamic Readiness Digital Twin with Time Scrubber -->

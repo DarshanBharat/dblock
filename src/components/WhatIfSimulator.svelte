@@ -16,7 +16,8 @@
     Check,
     Compass,
     Sliders,
-    Zap
+    Zap,
+    Activity
   } from '@lucide/svelte';
 
   export let interventions: any[];

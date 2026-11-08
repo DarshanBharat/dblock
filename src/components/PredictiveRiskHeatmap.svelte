@@ -1,4 +1,6 @@
 <script lang="ts">
+  import RealWorldMap from './RealWorldMap.svelte';
+  import RiskQuadrantChart from './RiskQuadrantChart.svelte';
   import {
     ArrowRight,
     Search,
@@ -36,8 +38,6 @@
   let activeSite: any = null;
   let drawerTab = 'why'; // 'why' | 'evidence' | 'actions'
 
-  // Map zoom
-  let mapZoom = 1;
 
   // Auto-select site 104 initially if none is selected
   function openSiteDrawer(site: any) {
@@ -98,12 +98,6 @@
     }).join(' ');
   }
 
-  // World map coordinates normalized to SVG viewBox 0 0 800 400
-  function mapCoords(lat: number, lng: number) {
-    const x = ((lng + 180) / 360) * 800;
-    const y = ((90 - lat) / 180) * 400;
-    return { x, y };
-  }
 </script>
 
 <div class="space-y-6">
@@ -184,9 +178,9 @@
         <Building2 size={20} />
       </div>
       <div>
-        <div class="text-2xl font-extrabold text-slate-900 num-tabular">18</div>
+        <div class="text-2xl font-extrabold text-slate-900 num-tabular">{sites.length}</div>
         <div class="text-xs font-semibold text-slate-600">Total sites</div>
-        <div class="text-[10px] text-slate-400">3 countries</div>
+        <div class="text-[10px] text-slate-400">{new Set(sites.map(s => s.countryCode || s.country)).size} countries</div>
       </div>
     </div>
 
@@ -195,7 +189,7 @@
         <FileText size={20} />
       </div>
       <div>
-        <div class="text-2xl font-extrabold text-slate-900 num-tabular">342</div>
+        <div class="text-2xl font-extrabold text-slate-900 num-tabular">{sites.reduce((acc, s) => acc + (s.openItems || 0), 0)}</div>
         <div class="text-xs font-semibold text-slate-600">Open items</div>
         <div class="text-[10px] text-slate-400">Across all sites</div>
       </div>
@@ -214,141 +208,67 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MAIN VISUAL: WORLD MAP & RISK BY DATA DOMAIN                              -->
+  <!-- MAIN VISUAL: WORLD MAP & RISK BY DATA DOMAIN / CHART                      -->
   <!-- ========================================================================= -->
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-    
-    <!-- World Map Container (2 Cols) -->
-    <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between overflow-hidden">
-      <div>
-        <div class="flex items-center justify-between mb-2">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Site risk by location</h3>
-            <p class="text-[11px] text-slate-500">Color coded by forecast DBL delay impact</p>
-          </div>
-
-          <!-- Legend -->
-          <div class="flex items-center space-x-2 text-[10px] font-semibold">
-            <span class="flex items-center space-x-1">
-              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-              <span class="text-slate-600">Critical (&gt;5d)</span>
-            </span>
-            <span class="flex items-center space-x-1">
-              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-              <span class="text-slate-600">High (3–5d)</span>
-            </span>
-            <span class="flex items-center space-x-1">
-              <span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span>
-              <span class="text-slate-600">Medium (1–3d)</span>
-            </span>
-            <span class="flex items-center space-x-1">
-              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-              <span class="text-slate-600">Low (&lt;1d)</span>
-            </span>
-          </div>
-        </div>
-
-        <!-- Stylized Map Canvas -->
-        <div class="relative w-full h-64 bg-slate-50 rounded-xl border border-slate-200/80 overflow-hidden flex items-center justify-center">
-          
-          <!-- SVG Continents Outlines & Grid -->
-          <svg class="w-full h-full text-slate-200 stroke-slate-300 stroke-[0.8] fill-slate-200/50" viewBox="0 0 800 400">
-            <!-- Background graticule lines -->
-            <line x1="0" y1="100" x2="800" y2="100" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="2" />
-            <line x1="0" y1="200" x2="800" y2="200" stroke="#cbd5e1" stroke-width="0.7" />
-            <line x1="0" y1="300" x2="800" y2="300" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="2" />
-            <line x1="200" y1="0" x2="200" y2="400" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="2" />
-            <line x1="400" y1="0" x2="400" y2="400" stroke="#cbd5e1" stroke-width="0.7" />
-            <line x1="600" y1="0" x2="600" y2="400" stroke="#e2e8f0" stroke-width="0.5" stroke-dasharray="2" />
-
-            <!-- North America -->
-            <path d="M120 70 L240 60 L280 110 L250 170 L220 180 L190 220 L160 180 L120 120 Z" />
-            <!-- South America -->
-            <path d="M220 220 L270 230 L290 290 L260 360 L230 310 L210 240 Z" />
-            <!-- Europe -->
-            <path d="M380 70 L460 70 L480 130 L430 160 L380 140 L370 100 Z" />
-            <!-- Africa -->
-            <path d="M380 160 L460 160 L490 240 L440 330 L390 270 L370 200 Z" />
-            <!-- Asia -->
-            <path d="M480 70 L680 70 L720 160 L660 220 L550 200 L490 140 Z" />
-            <!-- Australia -->
-            <path d="M640 270 L720 270 L730 330 L650 340 Z" />
-
-            <!-- Site Location Pins -->
-            {#each sites as s}
-              {@const coords = mapCoords(s.lat, s.lng)}
-              <g
-                class="cursor-pointer group"
-                on:click={() => openSiteDrawer(s)}
-              >
-                <!-- Pulse ring for critical sites -->
-                {#if s.riskLevel === 'Critical'}
-                  <circle
-                    cx={coords.x}
-                    cy={coords.y}
-                    r="9"
-                    fill="none"
-                    stroke="#f43f5e"
-                    stroke-width="1.5"
-                    class="animate-ping opacity-75"
-                  />
-                {/if}
-
-                <!-- Main circle pin -->
-                <circle
-                  cx={coords.x}
-                  cy={coords.y}
-                  r={s.id === '104' ? '6.5' : s.riskLevel === 'Critical' ? '5.5' : '4.5'}
-                  fill={s.riskLevel === 'Critical' ? '#e11d48' : s.riskLevel === 'High' ? '#f59e0b' : s.riskLevel === 'Medium' ? '#fb923c' : '#10b981'}
-                  stroke="#ffffff"
-                  stroke-width="1.5"
-                  class="transition-transform group-hover:scale-125"
-                />
-              </g>
-            {/each}
-          </svg>
-
-          <!-- Interactive Popover for Site 104 (Matching Screenshot 3) -->
-          <div
-            class="absolute top-12 left-44 bg-white/95 backdrop-blur-md rounded-lg p-2.5 shadow-lg border border-slate-300 text-xs cursor-pointer hover:border-blue-500 transition-all z-20"
-            on:click={() => openSiteDrawer(sites.find(s => s.id === '104') || sites[0])}
-          >
-            <div class="flex items-center space-x-1.5 font-bold text-slate-900">
-              <span class="w-2 h-2 rounded-full bg-rose-600"></span>
-              <span>Site 104</span>
+  {#if viewMode === 'map'}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- World Map Container (2 Cols) -->
+      <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+            <div>
+              <div class="flex items-center space-x-2">
+                <h3 class="text-sm font-bold text-slate-900">Site risk by location</h3>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                  Real Global Map
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500">Live geographic navigation &middot; Color coded by forecast DBL delay impact</p>
             </div>
-            <div class="text-[11px] text-slate-500">Boston, US</div>
-            <div class="text-xs font-bold text-rose-600 mt-0.5">5–7 days impact</div>
-            <div class="text-[10px] text-blue-600 font-semibold mt-1">Click to inspect &rarr;</div>
+
+            <!-- Legend -->
+            <div class="flex items-center space-x-2 text-[10px] font-semibold flex-wrap">
+              <span class="flex items-center space-x-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse"></span>
+                <span class="text-slate-600">Critical (&gt;5d)</span>
+              </span>
+              <span class="flex items-center space-x-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span class="text-slate-600">High (3–5d)</span>
+              </span>
+              <span class="flex items-center space-x-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span>
+                <span class="text-slate-600">Medium (1–3d)</span>
+              </span>
+              <span class="flex items-center space-x-1">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span class="text-slate-600">Low (&lt;1d)</span>
+              </span>
+            </div>
           </div>
 
-          <!-- Map Zoom Controls -->
-          <div class="absolute bottom-3 left-3 flex flex-col bg-white rounded-md border border-slate-200 shadow-xs overflow-hidden">
-            <button
-              on:click={() => mapZoom = Math.min(2, mapZoom + 0.2)}
-              class="px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100 border-b border-slate-200"
-            >+</button>
-            <button
-              on:click={() => mapZoom = Math.max(0.8, mapZoom - 0.2)}
-              class="px-2 py-1 text-xs font-bold text-slate-700 hover:bg-slate-100"
-            >-</button>
-          </div>
+          <!-- Real World Map Component -->
+          <RealWorldMap
+            sites={filteredSites}
+            activeSiteId={activeSite?.id}
+            onSelectSite={openSiteDrawer}
+          />
+        </div>
 
+        <div class="mt-3 text-xs text-slate-500 flex items-center justify-between">
+          <span>Click on any marker or row to open explainable risk details</span>
+          <button
+            type="button"
+            on:click={() => openSiteDrawer(sites.find(s => s.id === '104') || sites[0])}
+            class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+          >
+            Inspect Site 104 &rarr;
+          </button>
         </div>
       </div>
 
-      <div class="mt-3 text-xs text-slate-500 flex items-center justify-between">
-        <span>Click on any pin or table row to open the explainable risk drawer</span>
-        <button
-          on:click={() => openSiteDrawer(sites.find(s => s.id === '104') || sites[0])}
-          class="text-blue-600 hover:text-blue-800 font-bold"
-        >
-          Inspect Site 104 &rarr;
-        </button>
-      </div>
-    </div>
-
-    <!-- Risk by Data Domain Progress Bars -->
+      <!-- Risk by Data Domain Progress Bars -->
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
       <div>
         <h3 class="text-sm font-bold text-slate-900 mb-1">Risk by data domain</h3>
@@ -423,6 +343,94 @@
     </div>
 
   </div>
+
+  {:else if viewMode === 'chart'}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <RiskQuadrantChart
+          sites={filteredSites}
+          onSelectSite={(id) => {
+            const s = sites.find(x => x.id === id);
+            if (s) openSiteDrawer(s);
+          }}
+        />
+      </div>
+
+      <!-- Risk by Data Domain Progress Bars -->
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Risk by data domain</h3>
+          <p class="text-[11px] text-slate-500 mb-4">Relative contribution to overall lock delay</p>
+
+          <div class="space-y-4">
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-800">
+                <span>Safety reconciliation</span>
+                <span class="font-bold text-rose-600">28%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+                <div class="bg-rose-500 h-full rounded-full" style="width: 28%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-800">
+                <span>External laboratory</span>
+                <span class="font-bold text-amber-600">24%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+                <div class="bg-amber-500 h-full rounded-full" style="width: 24%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-800">
+                <span>EDC / Queries</span>
+                <span class="font-bold text-amber-500">22%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+                <div class="bg-amber-400 h-full rounded-full" style="width: 22%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-800">
+                <span>Medical coding</span>
+                <span class="font-bold text-blue-600">12%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+                <div class="bg-blue-600 h-full rounded-full" style="width: 12%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-800">
+                <span>Site sign-offs</span>
+                <span class="font-bold text-indigo-600">10%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+                <div class="bg-indigo-600 h-full rounded-full" style="width: 10%"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs font-semibold text-slate-800">
+                <span>eCOA / Imaging</span>
+                <span class="font-bold text-sky-500">4%</span>
+              </div>
+              <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+                <div class="bg-sky-400 h-full rounded-full" style="width: 4%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-slate-100 text-[11px] text-slate-500">
+          Safety reconciliation and external lab data account for <strong>52%</strong> of delay risk.
+        </div>
+      </div>
+    </div>
+  {/if}
 
   <!-- ========================================================================= -->
   <!-- TABLE VIEW WITH DBL IMPACT VS VOLUME DIFFERENTIATOR                       -->
@@ -597,6 +605,17 @@
             <p class="text-xs text-slate-500">
               {activeSite.name} &middot; {activeSite.country}
             </p>
+            <button
+              type="button"
+              on:click={() => {
+                const siteId = activeSite.id;
+                closeDrawer();
+                onSelectSite(siteId);
+              }}
+              class="mt-1.5 inline-flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+            >
+              <span>Open full site investigation view &rarr;</span>
+            </button>
           </div>
 
           <button
