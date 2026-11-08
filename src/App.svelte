@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import dblockData from './data/dblock_data.json';
   import Header from './components/Header.svelte';
   import TrustCentreModal from './components/TrustCentreModal.svelte';
@@ -63,8 +64,21 @@
   let selectedSiteId: string | null = null;
   let selectedSubjectId: string | null = null;
 
+  onMount(() => {
+    function applyHash() {
+      const h = window.location.hash.replace('#', '');
+      if (['portfolio', 'command_centre', 'risk_matrix', 'digital_twin', 'action_workbench', 'simulator', 'forecast_scenarios'].includes(h)) {
+        activeTab = h;
+      }
+    }
+    applyHash();
+    window.addEventListener('hashchange', applyHash);
+    return () => window.removeEventListener('hashchange', applyHash);
+  });
+
   function handleSelectTab(tab: string) {
     activeTab = tab;
+    try { window.location.hash = tab; } catch (e) {}
     if (tab === 'risk_matrix') {
       selectedSiteId = null;
       selectedSubjectId = null;
