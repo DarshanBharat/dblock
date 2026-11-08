@@ -1,4 +1,5 @@
 <script lang="ts">
+  import ActionCountryMap from './ActionCountryMap.svelte';
   import {
     workflow,
     updateAction,
