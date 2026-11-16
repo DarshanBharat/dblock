@@ -29,7 +29,12 @@
   } from '@lucide/svelte';
 
   // Active top-level tab: 'portfolio' | 'command_centre' | 'risk_matrix' | 'digital_twin' | 'action_workbench' | 'simulator' | 'forecast_scenarios'
-  let activeTab = 'command_centre';
+  // Screen 1 (Study Portfolio and Selection) is the entry point before opening Study CA-209-301
+  let activeTab = 'portfolio';
+
+  // Deep readiness category & weightage config state
+  let selectedReadinessCategory: string | null = null;
+  let openWeightConfigOnLoad = false;
 
   // Modals state
   let showTrustCentre = false;
@@ -76,8 +81,14 @@
     return () => window.removeEventListener('hashchange', applyHash);
   });
 
-  function handleSelectTab(tab: string) {
+  function handleSelectTab(tab: string, readinessCategory?: string, showWeightConfig?: boolean) {
     activeTab = tab;
+    if (readinessCategory !== undefined) {
+      selectedReadinessCategory = readinessCategory;
+    }
+    if (showWeightConfig !== undefined) {
+      openWeightConfigOnLoad = showWeightConfig;
+    }
     try { window.location.hash = tab; } catch (e) {}
     if (tab === 'risk_matrix') {
       selectedSiteId = null;
@@ -89,6 +100,7 @@
   function handleSelectStudy(studyId: string) {
     currentStudyId = studyId;
     activeTab = 'command_centre';
+    try { window.location.hash = 'command_centre'; } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -96,6 +108,7 @@
     activeTab = 'risk_matrix';
     selectedSiteId = siteId;
     selectedSubjectId = null;
+    try { window.location.hash = 'risk_matrix'; } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -133,31 +146,31 @@
     switch (tab) {
       case 'command_centre':
         return {
-          text: 'Your study is 72% ready for DBL. Focusing on 3 critical actions could avoid ~6 days of delay.',
+          text: 'Your study is 72% ready for DBL (158/220 clean subjects). Focusing on 3 critical actions could bring Potential DBL 4–6 days closer to the 15 Dec target.',
           actionLabel: 'View recommended actions',
           targetTab: 'action_workbench'
         };
       case 'risk_matrix':
         return {
-          text: 'Site 104 has fewer open items than Site 208, but a greater estimated DBL impact due to SAE reconciliation and lab transfer delays.',
+          text: 'Site 104 has fewer open items (19) than Site 208 (41), but a greater potential DBL impact (5–7d) due to SAE reconciliation (35%) and lab transfer delays (30%).',
           actionLabel: 'See details',
           targetTab: 'risk_matrix'
         };
       case 'digital_twin':
         return {
-          text: 'While overall readiness has improved by 9 points since Week -8, recent delays in laboratory transfer and new SAE discrepancies have increased the forecast delay by 3 days.',
+          text: 'Readiness is calculated across 5 weighted components (EDC 30%, External 25%, Site 20%, CDM 15%, Cross-functional 10%). Click any category to inspect subject & record derivation.',
           actionLabel: 'Prioritise key actions',
           targetTab: 'action_workbench'
         };
       case 'action_workbench':
         return {
-          text: 'Addressing the top 3 recommended actions could reduce the forecast delay by 4–6 days.',
+          text: 'Addressing the top 3 recommended actions could reduce the potential DBL delay by 4–6 days.',
           actionLabel: 'Run scenario in Simulator',
           targetTab: 'simulator'
         };
       case 'simulator':
         return {
-          text: 'Resolving SAE discrepancies and expediting lab data transfer could bring the forecast lock date 4–6 days earlier, with moderate confidence.',
+          text: 'Resolving SAE discrepancies and expediting lab data transfer could bring the potential DBL date 4–6 days earlier, with moderate confidence.',
           actionLabel: 'Confirm in Action Workbench',
           targetTab: 'action_workbench'
         };
@@ -195,17 +208,23 @@
   <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
     
     {#if activeTab === 'portfolio'}
-      <!-- Screen 1: Full Portfolio View -->
+      <!-- Screen 1: Full Portfolio View (Entry Point before opening Study CA-209-301) -->
       <PortfolioView
         {portfolioStudies}
+        {sites}
+        {subjects}
+        {saeDiscrepancies}
+        {labBatches}
+        {queriesDetail}
         onSelectStudy={handleSelectStudy}
+        onSelectSite={handleSelectSite}
       />
     {:else}
       <!-- Study Workspace Layout: Left Sidebar + Study Main View -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
         <!-- =================================================================== -->
-        <!-- LEFT STUDY CONTEXT SIDEBAR (Matching Screenshots 2, 3, 5, 6, 8)     -->
+        <!-- LEFT STUDY CONTEXT SIDEBAR                                          -->
         <!-- =================================================================== -->
         <aside class="lg:col-span-2 hidden lg:flex flex-col space-y-5 sticky top-20">
           
@@ -217,7 +236,7 @@
                 on:click={() => handleSelectTab('portfolio')}
                 class="text-blue-600 hover:text-blue-800 font-bold capitalize cursor-pointer text-xs"
               >
-                Change
+                Portfolio
               </button>
             </div>
 
@@ -280,6 +299,11 @@
               {study}
               {actions}
               {timelineSnapshots}
+              {sites}
+              {subjects}
+              {saeDiscrepancies}
+              {labBatches}
+              {queriesDetail}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
@@ -308,16 +332,32 @@
                 {sites}
                 {subjects}
                 {dimensions}
+                {saeDiscrepancies}
+                {labBatches}
+                {queriesDetail}
                 onSelectSite={handleSelectSite}
+                onSelectSubject={(subjId, siteId) => {
+                  selectedSiteId = siteId;
+                  selectedSubjectId = subjId;
+                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                }}
                 onSelectTab={handleSelectTab}
               />
             {/if}
 
           {:else if activeTab === 'digital_twin'}
-            <!-- Screen 5: Dynamic Readiness Digital Twin with Time Scrubber -->
+            <!-- Screen 5: Readiness Tab with Traceability, 5-Component Weightage & 4-Level Drill-Down -->
             <ReadinessDigitalTwin
+              {study}
               {dimensions}
               {timelineSnapshots}
+              {sites}
+              {subjects}
+              {saeDiscrepancies}
+              {labBatches}
+              {queriesDetail}
+              {selectedReadinessCategory}
+              {openWeightConfigOnLoad}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
@@ -371,7 +411,7 @@
           on:click={() => showTrustCentre = true}
           class="hover:underline font-medium text-slate-600"
         >
-          AI Trust Centre &amp; Governance
+          Trust Centre: How DBLock AI reached this recommendation
         </button>
         <span>&middot;</span>
         <button

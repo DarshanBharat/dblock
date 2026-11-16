@@ -92,10 +92,10 @@
       <button
         on:click={onOpenTrustCentre}
         class="hidden lg:flex items-center space-x-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-blue-700 hover:bg-blue-50 transition-colors border border-transparent hover:border-blue-200 cursor-pointer"
-        title="Open Trust Centre & Explainable Model Governance"
+        title="Trust Centre: How DBLock AI reached this recommendation"
       >
         <ShieldCheck size={15} class="text-blue-600" />
-        <span>Trust Centre</span>
+        <span>Trust Centre: How DBLock AI reached this recommendation</span>
       </button>
 
       <!-- Data Feed Health Status Pill -->

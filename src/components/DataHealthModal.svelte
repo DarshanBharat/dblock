@@ -1,22 +1,168 @@
 <script lang="ts">
-  import { Database, AlertTriangle, CheckCircle2, Clock, X, RefreshCw } from '@lucide/svelte';
+  import { Database, AlertTriangle, CheckCircle2, Clock, X, RefreshCw, Server, Layers } from '@lucide/svelte';
 
   export let show: boolean;
   export let onClose: () => void;
-  export let dataHealth: any[];
+  export let dataHealth: any[] = [];
 
   let refreshing = false;
+  let selectedFeedId = 'FEED-LAB';
+
   function triggerRefresh() {
     refreshing = true;
     setTimeout(() => {
       refreshing = false;
-    }, 1200);
+    }, 800);
   }
+
+  // Level 1 -> Level 2 -> Level 3 -> Level 4 + Impact on Forecast Confidence (Image 7 Blue)
+  const automatedFeedsAndVendors = [
+    {
+      id: 'FEED-LAB',
+      level1Domain: 'Central Lab',
+      vendorName: 'LabCorp Bioanalytical Geneva (Vendor 1 of 2)',
+      automatedStatus: 'Late Transfer / Checksum Failed',
+      statusCode: 'degraded',
+      outstandingIssues: 3,
+      lateTransfers: 1,
+      datasetOrTransfer: 'Dataset LB_CTDNA / Transfer Package #LXB-8921',
+      missingOrStaleVars: 'LBORRES (ctDNA VAF %), LBDTC (Cycle 4–6 specimen timestamps stale >90h); SHA-256 FASTQ trailer truncated',
+      qualityWarning: 'Automated MD5/SHA-256 integrity gate rejected package LXB8921_ctDNA_C4C6_v1.tar.gz.',
+      confidenceImpact: 'Reduces study forecast confidence from High to Moderate (widens potential DBL range to 18–22 Dec).',
+      records: [
+        {
+          loadId: 'LOAD-LXB-8921-01',
+          type: 'Failed SFTP Load / Late Transfer',
+          expectedDate: '2026-10-27 08:00 UTC',
+          receivedDate: 'Pending re-export (ETA 2026-11-01)',
+          recordCount: '48 ctDNA sample records (Sites 104 & 317)',
+          lastSuccessfulRefresh: '2026-10-27 14:00 UTC'
+        }
+      ]
+    },
+    {
+      id: 'FEED-LAB-EUROFINS',
+      level1Domain: 'Central Lab',
+      vendorName: 'Eurofins Central Lab Louisville (Vendor 2 of 2)',
+      automatedStatus: 'Automated QA Review (1d Late)',
+      statusCode: 'warning',
+      outstandingIssues: 1,
+      lateTransfers: 1,
+      datasetOrTransfer: 'Dataset LB_CHEM / Batch #LXB-8940',
+      missingOrStaleVars: 'LBSTAT calibration drift flag on 2 alkaline phosphatase records',
+      qualityWarning: 'Automated reference-range check flagged minor assay drift; awaiting automated QA release.',
+      confidenceImpact: 'Minor impact (+0.4d variance); does not downgrade overall forecast confidence tier.',
+      records: [
+        {
+          loadId: 'LOAD-LXB-8940-01',
+          type: 'Late Transfer in QA Hold',
+          expectedDate: '2026-10-30 12:00 UTC',
+          receivedDate: '2026-10-31 06:00 UTC (18h late)',
+          recordCount: '112 chemistry sample records (Sites 208 & 405)',
+          lastSuccessfulRefresh: '2026-10-31 06:00 UTC'
+        }
+      ]
+    },
+    {
+      id: 'FEED-SAFETY',
+      level1Domain: 'Safety',
+      vendorName: 'Oracle Argus Safety Gateway',
+      automatedStatus: 'Healthy Feed (2 Recon Discrepancies)',
+      statusCode: 'healthy',
+      outstandingIssues: 2,
+      lateTransfers: 0,
+      datasetOrTransfer: 'Dataset AE_SAE_RECON / E2B(R3) Sync #ARG-9812',
+      missingOrStaleVars: 'AESTDTC onset mismatch (Subj 104-003); DTHCAUS autopsy narrative unlinked in Rave Form DD-01 (Subj 104-012)',
+      qualityWarning: 'Feed pipeline is healthy (30m latency), but automated cross-system rule flagged 2 critical SAE freeze discrepancies.',
+      confidenceImpact: 'High impact on critical path (+2.1d potential DBL shift if unresolved before safety freeze).',
+      records: [
+        {
+          loadId: 'SYNC-ARG-20261031',
+          type: 'Automated E2B(R3) Reconciliation Extract',
+          expectedDate: '2026-10-31 07:45 UTC',
+          receivedDate: '2026-10-31 07:45 UTC (On time)',
+          recordCount: '84 SAE cases (2 discrepant at Site 104)',
+          lastSuccessfulRefresh: '2026-10-31 07:45 UTC'
+        }
+      ]
+    },
+    {
+      id: 'FEED-IMAGING',
+      level1Domain: 'Imaging',
+      vendorName: 'BioClinica Central Imaging (BICR)',
+      automatedStatus: 'Warning (1 Tie-Breaker Pending)',
+      statusCode: 'warning',
+      outstandingIssues: 2,
+      lateTransfers: 1,
+      datasetOrTransfer: 'Dataset TU_BICR / Batch #IMG-44',
+      missingOrStaleVars: 'TUORRES slice thickness deviation (5mm vs 2.5mm spec for Subj 317-005); adjudication variable pending',
+      qualityWarning: '1 independent radiologist tie-breaker read overdue by 2 days at Site 317.',
+      confidenceImpact: 'Moderate impact on primary PFS endpoint query closure velocity.',
+      records: [
+        {
+          loadId: 'LOAD-IMG-44',
+          type: 'DICOM RECIST 1.1 Transfer',
+          expectedDate: '2026-10-29 18:00 UTC',
+          receivedDate: '2026-10-30 22:00 UTC',
+          recordCount: '320 tumor scan records (5 pending adjudication)',
+          lastSuccessfulRefresh: '2026-10-30 22:00 UTC'
+        }
+      ]
+    },
+    {
+      id: 'FEED-ECOA',
+      level1Domain: 'eCOA',
+      vendorName: 'Signant Health Patient Cloud',
+      automatedStatus: 'Healthy (Automated Sync)',
+      statusCode: 'healthy',
+      outstandingIssues: 1,
+      lateTransfers: 0,
+      datasetOrTransfer: 'Dataset QS_EPRO / Daily Sync #SIG-1031',
+      missingOrStaleVars: '4 patient diary syncs pending handheld cellular upload at Site 233',
+      qualityWarning: 'No pipeline errors; 95% automated device compliance.',
+      confidenceImpact: 'Negligible impact on DBL forecast confidence.',
+      records: [
+        {
+          loadId: 'LOAD-SIG-1031',
+          type: 'Automated Cloud API Sync',
+          expectedDate: '2026-10-31 06:30 UTC',
+          receivedDate: '2026-10-31 06:30 UTC (On time)',
+          recordCount: '4,120 e-diary records',
+          lastSuccessfulRefresh: '2026-10-31 06:30 UTC'
+        }
+      ]
+    },
+    {
+      id: 'FEED-EDC',
+      level1Domain: 'EDC',
+      vendorName: 'Medidata Rave EDC & Coder',
+      automatedStatus: 'Healthy (Real-Time API)',
+      statusCode: 'healthy',
+      outstandingIssues: 0,
+      lateTransfers: 0,
+      datasetOrTransfer: 'Dataset Clinical_ODM_v8.2 & MedDRA_27.0',
+      missingOrStaleVars: 'None (All ODM clinical views current within 15 mins)',
+      qualityWarning: 'Zero ingestion failures.',
+      confidenceImpact: 'Provides high-reliability baseline for subject-level cleanliness.',
+      records: [
+        {
+          loadId: 'ODM-RAVE-20261031-0800',
+          type: 'Automated ODM Clinical Extract',
+          expectedDate: '2026-10-31 08:00 UTC',
+          receivedDate: '2026-10-31 08:00 UTC (On time)',
+          recordCount: '142,850 eCRF records & 1,890 coded terms',
+          lastSuccessfulRefresh: '2026-10-31 08:00 UTC'
+        }
+      ]
+    }
+  ];
+
+  $: activeFeed = automatedFeedsAndVendors.find(f => f.id === selectedFeedId) || automatedFeedsAndVendors[0];
 </script>
 
 {#if show}
   <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-    <div class="relative w-full max-w-3xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+    <div class="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
       
       <!-- Modal Header -->
       <div class="px-6 py-4 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 text-white flex items-center justify-between">
@@ -27,11 +173,13 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
-                Feed Health &amp; Ingestion
+                Levels 1–4 Automated Multi-Vendor Feed Drill-Down
               </span>
-              <span class="text-xs text-slate-300">6 Connected Feeds</span>
+              <span class="text-xs text-slate-300">Zero Manual Cleanliness Inputs</span>
             </div>
-            <h2 class="text-lg font-bold text-white mt-0.5">Clinical Data Source Health</h2>
+            <h2 class="text-lg font-bold text-white mt-0.5">
+              Automated Vendor Feed Status, Outstanding Issues &amp; Late Transfers
+            </h2>
           </div>
         </div>
         <button
@@ -44,64 +192,93 @@
       </div>
 
       <!-- Modal Body -->
-      <div class="p-6 overflow-y-auto space-y-5 text-sm text-slate-700">
+      <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700">
         
-        <!-- Stale Feed Warning Banner if LabCorp is degraded -->
-        <div class="p-4 rounded-lg bg-amber-50 border border-amber-200 flex items-start space-x-3">
-          <AlertTriangle size={20} class="text-amber-600 shrink-0 mt-0.5" />
-          <div>
-            <div class="font-bold text-amber-900 text-xs uppercase tracking-wide">
-              Central Laboratory Feed Latency Warning
+        <!-- LEVEL 1 & LEVEL 2: Feed Status (EDC, Safety, Central Lab, eCOA, Imaging) -> Each Vendor Shown Separately -->
+        <div class="space-y-2">
+          <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
+            Level 1 &amp; Level 2: Feed Status (EDC, Safety, Central Lab, eCOA, Imaging) &rarr; Vendor (Shown Separately) &rarr; Dataset or Transfer
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {#each automatedFeedsAndVendors as item}
+              <button
+                type="button"
+                on:click={() => selectedFeedId = item.id}
+                class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedFeedId === item.id ? 'border-blue-600 bg-blue-50/50 ring-2 ring-blue-100' : 'border-slate-200 bg-white hover:border-blue-300'}"
+              >
+                <div class="flex items-center justify-between">
+                  <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase {item.statusCode === 'healthy' ? 'bg-emerald-100 text-emerald-800' : item.statusCode === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
+                    {item.level1Domain}
+                  </span>
+                  <span class="text-[10px] font-bold {item.lateTransfers > 0 ? 'text-rose-600' : 'text-emerald-700'}">
+                    {item.lateTransfers} late &middot; {item.outstandingIssues} issues
+                  </span>
+                </div>
+                <div class="font-bold text-slate-900 mt-1.5">{item.vendorName}</div>
+                <div class="text-[10px] text-slate-500 mt-0.5 truncate">{item.datasetOrTransfer}</div>
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <!-- LEVEL 3 & IMPACT: Dataset -> Missing or Stale Variables, Data-Quality Warnings & Effect on Forecast Confidence -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
+              Level 3: Dataset &rarr; Missing/Stale Variables &amp; Data-Quality Warnings
             </div>
-            <p class="text-xs text-amber-800 mt-1 leading-relaxed">
-              LabCorp vendor transfer is <strong>90 hours stale</strong> (overdue by 4 days due to batch #LXB-8921 checksum failure). DBLock AI has automatically reduced model forecast confidence from <strong>High</strong> to <strong>Moderate</strong>.
+            <div class="font-bold text-slate-900">{activeFeed.vendorName} &middot; {activeFeed.datasetOrTransfer}</div>
+            <div class="text-[11px] text-slate-700">
+              <strong>Missing / Stale Variables:</strong> {activeFeed.missingOrStaleVars}
+            </div>
+            <div class="text-[11px] text-rose-700 font-medium">
+              <strong>Quality Warning:</strong> {activeFeed.qualityWarning}
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-200 space-y-2">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-900">
+              Impact: Effect of Gap on Forecast Confidence
+            </div>
+            <div class="font-bold text-amber-950">Automated Forecast Confidence Adjustment</div>
+            <p class="text-[11px] text-amber-900 leading-relaxed">
+              {activeFeed.confidenceImpact}
             </p>
           </div>
         </div>
 
-        <!-- Feed List -->
-        <div class="space-y-3">
-          {#each dataHealth as item}
-            <div class="p-4 rounded-lg border transition-all {item.statusCode === 'degraded' ? 'bg-amber-50/40 border-amber-300 ring-1 ring-amber-300/50' : item.statusCode === 'warning' ? 'bg-slate-50 border-slate-300' : 'bg-white border-slate-200 hover:border-slate-300'}">
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div class="flex items-center space-x-3">
-                  {#if item.statusCode === 'healthy'}
-                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 ring-4 ring-emerald-100"></span>
-                  {:else if item.statusCode === 'warning'}
-                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500 ring-4 ring-amber-100"></span>
-                  {:else}
-                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500 ring-4 ring-rose-100 animate-pulse"></span>
-                  {/if}
-                  <div>
-                    <div class="font-bold text-slate-900 text-sm flex items-center space-x-2">
-                      <span>{item.source}</span>
-                      <span class="text-xs font-normal text-slate-500">({item.type})</span>
-                    </div>
-                    <div class="text-xs text-slate-500 mt-0.5">
-                      Last refresh: <span class="font-medium text-slate-700">{item.lastRefresh}</span> &middot; Latency: <span class="font-medium {item.statusCode === 'degraded' ? 'text-rose-600 font-bold' : 'text-slate-700'}">{item.latency}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div class="flex items-center space-x-3 self-end sm:self-center">
-                  <div class="text-right">
-                    <div class="text-xs font-semibold text-slate-700">{item.recordsProcessed}</div>
-                    <div class="text-[11px] text-slate-500">Pipeline Quality: <strong class="{item.healthScore < 70 ? 'text-rose-600' : item.healthScore < 90 ? 'text-amber-600' : 'text-emerald-600'}">{item.healthScore}%</strong></div>
-                  </div>
-                  <span class="px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider {item.statusCode === 'healthy' ? 'bg-emerald-100 text-emerald-800' : item.statusCode === 'warning' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
-                    {item.status}
-                  </span>
-                </div>
-              </div>
-
-              {#if item.warning}
-                <div class="mt-2.5 pt-2.5 border-t border-slate-200/80 text-xs text-rose-700 flex items-center space-x-1.5 font-medium">
-                  <AlertTriangle size={14} class="shrink-0" />
-                  <span>{item.warning}</span>
-                </div>
-              {/if}
-            </div>
-          {/each}
+        <!-- LEVEL 4 (RECORD): Individual Late Transfer or Failed Load with Expected vs. Received Date, Record Count & Last Successful Refresh -->
+        <div class="space-y-2">
+          <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
+            Level 4 (Record): Individual Late Transfer or Failed Load (Expected vs. Received Date, Record Count &amp; Last Successful Refresh)
+          </div>
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="min-w-full divide-y divide-slate-200 text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px]">
+                <tr>
+                  <th class="px-3 py-2.5 text-left">Load / Transfer ID</th>
+                  <th class="px-3 py-2.5 text-left">Load Type</th>
+                  <th class="px-3 py-2.5 text-left">Expected Date</th>
+                  <th class="px-3 py-2.5 text-left">Received Date</th>
+                  <th class="px-3 py-2.5 text-left">Record Count</th>
+                  <th class="px-3 py-2.5 text-right">Last Successful Refresh</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium">
+                {#each activeFeed.records as rec}
+                  <tr>
+                    <td class="px-3 py-2.5 font-mono font-bold text-slate-900">{rec.loadId}</td>
+                    <td class="px-3 py-2.5 text-slate-700">{rec.type}</td>
+                    <td class="px-3 py-2.5 font-mono text-slate-600">{rec.expectedDate}</td>
+                    <td class="px-3 py-2.5 font-mono font-bold {rec.receivedDate.includes('Pending') || rec.receivedDate.includes('late') ? 'text-rose-600' : 'text-emerald-700'}">{rec.receivedDate}</td>
+                    <td class="px-3 py-2.5 font-semibold text-slate-800">{rec.recordCount}</td>
+                    <td class="px-3 py-2.5 text-right font-mono text-slate-500">{rec.lastSuccessfulRefresh}</td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>
@@ -113,11 +290,11 @@
           class="inline-flex items-center space-x-1.5 text-xs text-blue-700 hover:text-blue-900 font-semibold cursor-pointer"
         >
           <RefreshCw size={14} class={refreshing ? 'animate-spin text-blue-600' : ''} />
-          <span>{refreshing ? 'Testing connections...' : 'Refresh Integration Health Check'}</span>
+          <span>{refreshing ? 'Syncing automated vendor feeds...' : 'Trigger Automated Vendor Feed Sync'}</span>
         </button>
         <button
           on:click={onClose}
-          class="px-4 py-2 rounded-lg bg-slate-200 text-slate-800 font-semibold text-xs hover:bg-slate-300 transition-colors"
+          class="px-4 py-2 rounded-lg bg-slate-200 text-slate-800 font-semibold text-xs hover:bg-slate-300 transition-colors cursor-pointer"
         >
           Close
         </button>

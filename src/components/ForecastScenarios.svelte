@@ -1,122 +1,179 @@
 <script lang="ts">
   import {
-    workflow,
-    dateAfter
-  } from '../lib/workflow';
-  import {
     Calendar,
     AlertTriangle,
     CheckCircle2,
     Clock,
     Sparkles,
-    Check,
     Compass,
     Sliders,
-    Activity
+    Activity,
+    Layers,
+    Info
   } from '@lucide/svelte';
 
   export let study: any;
-  export let forecastScenarios: any[];
+  export let forecastScenarios: any[] = [];
   export let closedLoopOutcomes: any[];
   export let onSelectTab: (tab: string) => void;
 
-  // Selected scenario view
-  let selectedScenarioId = 'most_likely';
+  // Active scenario selected for Level 1 -> Level 2 -> Level 3 drill-down
+  let selectedScenarioKey: 'best_case' | 'most_likely' | 'at_risk' = 'most_likely';
 
-  // Calibration metrics
-  const calibrationMetrics = {
-    accuracy: '91.4%',
-    maeDays: '1.2 days',
-    brierScore: '0.082',
-    studiesTrained: '48 Phase II/III oncology trials'
+  const scenariosCatalog = {
+    best_case: {
+      key: 'best_case',
+      name: 'Best Case Scenario (Earlier Completion)',
+      targetDate: '15 December 2026 (Unchanged)',
+      potentialDblDate: '14 December 2026',
+      varianceLabel: '1 day earlier than target (-1d)',
+      targetMeetingLikelihood: '78% likelihood of meeting 15 Dec target',
+      color: 'emerald',
+      assumptions: 'Critical interventions (SAE recon + LabCorp transfer) executed within 48 hours; zero new SAEs post-LSLV; query closure hits 12/day.',
+      drivers: [
+        {
+          driver: 'Safety Reconciliation Accelerated',
+          sitesOrVendors: 'Site 104 (Boston Medical Center) & Oracle Argus',
+          items: 'SAE-REC-104-01 & SAE-REC-104-02 reconciled within 24h (-3.0d shift)'
+        },
+        {
+          driver: 'Expedited LabCorp ctDNA Re-Export',
+          sitesOrVendors: 'Vendor: LabCorp Bioanalytical Geneva (Sites 104 & 317)',
+          items: 'Batch #LXB-8921 (48 samples) passes SHA-256 checksum on Nov 01 (-1.8d shift)'
+        }
+      ]
+    },
+    most_likely: {
+      key: 'most_likely',
+      name: 'Most Likely Scenario (With Planned Actions)',
+      targetDate: '15 December 2026 (Unchanged)',
+      potentialDblDate: '19 December 2026',
+      varianceLabel: '4 days after target (+4d)',
+      targetMeetingLikelihood: '55% scenario probability · 64% likelihood within 4 days of target',
+      color: 'blue',
+      assumptions: 'Safety unfreezing completed after joint medical review call; LabCorp transfer ingested in 72h; routine query velocity maintains baseline.',
+      drivers: [
+        {
+          driver: 'Safety Reconciliation (35% weight)',
+          sitesOrVendors: 'Site 104 (Boston) & Oracle Argus Safety',
+          items: 'SAE-REC-104-01 (Subj 104-003 CRS) & SAE-REC-104-02 (Subj 104-012 Death Form DD-01)'
+        },
+        {
+          driver: 'Central Laboratory Transfer (30% weight)',
+          sitesOrVendors: 'Vendor: LabCorp Bioanalytical (Sites 104 & 317)',
+          items: 'Batch #LXB-8921 (48 ctDNA NGS samples overdue 4d)'
+        },
+        {
+          driver: 'Ageing Queries >14d (22% weight)',
+          sitesOrVendors: 'Sites 104 & 317 & BioClinica Imaging',
+          items: 'QRY-104-089 & QRY-317-044 (5 endpoint-critical RECIST queries + 9 routine)'
+        }
+      ]
+    },
+    at_risk: {
+      key: 'at_risk',
+      name: 'At-Risk Scenario (Unmitigated Drift)',
+      targetDate: '15 December 2026 (Unchanged)',
+      potentialDblDate: '23 December 2026',
+      varianceLabel: '8 days after target (+8d)',
+      targetMeetingLikelihood: '18% likelihood of meeting 15 Dec target without intervention',
+      color: 'rose',
+      assumptions: 'LabCorp transfer requires secondary wet-lab re-assay; PI sign-offs at Site 405 & Site 104 slip past LSLV window.',
+      drivers: [
+        {
+          driver: 'Secondary Biomarker Re-Assay Delay',
+          sitesOrVendors: 'Vendor: LabCorp Geneva & Eurofins Louisville',
+          items: 'Batch #LXB-8921 & #LXB-8940 (160 total sample records)'
+        },
+        {
+          driver: 'PI Electronic Signature Bottleneck',
+          sitesOrVendors: 'Site 405 (Seoul) & Site 104 (Boston)',
+          items: 'SIG-405-C4C6 (18 completed casebooks unsigned >14 days)'
+        }
+      ]
+    }
   };
+
+  $: activeScenario = scenariosCatalog[selectedScenarioKey];
 </script>
 
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- HERO BANNER: FORECAST & CLOSED-LOOP OUTCOME LEARNING                      -->
+  <!-- HERO BANNER: 8. FORECAST & SCENARIO INTELLIGENCE                          -->
   <!-- ========================================================================= -->
   <div class="rounded-2xl bg-gradient-to-r from-[#0d1b3e] via-[#10224d] to-[#122b68] text-white p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-    <div class="max-w-xl z-10">
+    <div class="max-w-2xl z-10">
       <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-        EVIDENCE-BASED FORECASTING &amp; CLOSED-LOOP LEARNING
+        8. FORECAST SCENARIOS &amp; CLOSED-LOOP LEARNING (LEVELS 1–4)
       </span>
       <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
-        DBL Forecast &amp; Scenario Intelligence
+        Target DBL vs. Potential DBL Date &amp; Target-Meeting Likelihood
       </h1>
       <p class="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-        Avoid single-date guesswork. Evidence-based DBL date forecasting with confidence intervals, scenario modeling, and closed-loop learning.
+        Keeps the agreed <strong>Target DBL date (15 December 2026)</strong> separate from the <strong>Potential DBL date based on current progress</strong>, showing both possible delays and earlier completions alongside the <strong>likelihood of meeting the agreed target</strong>.
       </p>
     </div>
 
-    <!-- Right: Curved Trajectory Graphic with Glowing Indicator -->
-    <div class="relative z-10 flex flex-col items-end text-right">
-      <div class="text-xs text-blue-200">Continuous self-calibration.</div>
-      <div class="text-xs font-bold text-white mt-0.5">Empowering human-governed trial milestones.</div>
-      <svg class="w-64 h-12 mt-2 overflow-visible" viewBox="0 0 240 40">
-        <path
-          d="M 10 35 C 70 35, 120 15, 210 10"
-          fill="none"
-          stroke="rgba(96, 165, 250, 0.6)"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        />
-        <circle cx="210" cy="10" r="5" fill="#38bdf8" />
-        <circle cx="210" cy="10" r="10" fill="#38bdf8" opacity="0.3" class="animate-ping" />
-      </svg>
+    <div class="relative z-10 shrink-0 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 max-w-xs text-xs text-blue-100 space-y-1">
+      <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
+        Discussion Point (Bijal) &middot; Dual View
+      </div>
+      <div class="font-bold text-white">Agreed Target: 15 Dec 2026 (Unchanged)</div>
+      <div>Baseline Target Likelihood: <strong class="text-amber-300">28%</strong></div>
+      <div>With Top Actions Executed: <strong class="text-emerald-300">74% likelihood</strong></div>
     </div>
-
-    <!-- Decorative glow -->
-    <div class="absolute -right-10 -bottom-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- TOP 3 KPI CARDS (Icons on LEFT matching Design System)                    -->
+  <!-- TOP 3 KPI CARDS: TARGET DATE (UNCHANGED) | POTENTIAL DBL | LIKELIHOOD     -->
+  <!-- (Image 4 Blue: Separate Target vs Forecast + Bijal Target Likelihood)     -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     
-    <!-- Current forecast DBL date -->
+    <!-- 1. Agreed Target DBL Date (Unchanged) -->
     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
       <div class="w-11 h-11 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-        <Calendar size={22} />
-      </div>
-      <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current forecast DBL date</div>
-        <div class="text-2xl font-extrabold text-slate-900 mt-0.5 num-tabular">
-          {study.forecastDbl}
-          <span class="text-xs font-bold text-rose-600 ml-1.5">(+6 days vs. plan)</span>
-        </div>
-        <div class="text-[11px] text-slate-400 mt-0.5">Confidence: Moderate (18&ndash;22 Dec)</div>
-      </div>
-    </div>
-
-    <!-- Planned Target DBL -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
         <Clock size={22} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Planned Target DBL</div>
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Agreed Target DBL (Unchanged)</div>
         <div class="text-2xl font-extrabold text-slate-900 mt-0.5 num-tabular">
-          {study.plannedDbl}
+          15 December 2026
         </div>
-        <div class="text-[11px] text-slate-500 mt-0.5">Baseline protocol target &middot; LSLV: 2026-11-30</div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Protocol baseline &middot; Planned LSLV: 30 Nov 2026</div>
       </div>
     </div>
 
-    <!-- Potential Delay Avoided -->
+    <!-- 2. Potential DBL Date (Based on Current Progress) -->
     <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
+      <div class="w-11 h-11 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+        <Calendar size={22} />
+      </div>
+      <div>
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Potential DBL (Current Progress)</div>
+        <div class="text-xl font-extrabold text-slate-900 mt-0.5 num-tabular">
+          21 December 2026
+          <span class="text-xs font-bold text-rose-600 ml-1">(6d after target)</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-0.5">Range: 18–22 Dec &middot; Moderate confidence</div>
+      </div>
+    </div>
+
+    <!-- 3. Likelihood of Meeting Agreed Target Date (Bijal Discussion Point) -->
+    <div class="bg-white rounded-xl border-2 border-blue-200 p-4 shadow-xs flex items-center space-x-3.5">
       <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
         <CheckCircle2 size={22} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Potential Delay Avoided</div>
-        <div class="text-2xl font-extrabold text-emerald-600 mt-0.5 num-tabular">
-          4 &ndash; 5 days
+        <div class="flex items-center space-x-1.5">
+          <span class="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider">Likelihood of Meeting Target</span>
         </div>
-        <div class="text-xs font-bold text-emerald-700 mt-0.5">
-          With top 2 interventions executed
+        <div class="text-xl font-extrabold text-emerald-600 mt-0.5 num-tabular">
+          28% &rarr; 74% <span class="text-xs font-semibold text-slate-600">(with actions)</span>
+        </div>
+        <div class="text-[10px] text-slate-500 mt-0.5">
+          Indicates probability of locking on/before 15 Dec 2026
         </div>
       </div>
     </div>
@@ -124,18 +181,23 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SCENARIO TIMELINE COMPARISON GANTT & SELECTION                            -->
+  <!-- LEVEL 1, 2 & 3 SCENARIO DRILL-DOWN:                                       -->
+  <!-- Level 1: Target date vs potential DBL date (Best case, Most likely, Risk) -->
+  <!-- Level 2: Scenario -> assumptions -> delay drivers                         -->
+  <!-- Level 3: Driver -> sites or vendors -> individual items                   -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- Left: Timeline Comparison Chart (7 Cols) -->
-    <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+    <!-- Left 6 Cols: Level 1 Visual Timeline & Scenario Selector -->
+    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div class="flex items-center justify-between">
         <div>
-          <h2 class="text-sm font-bold text-slate-900">Multi-Scenario Timeline Comparison</h2>
-          <p class="text-[11px] text-slate-500 mt-0.5">
-            Range of lock trajectories based on operational execution speed and vendor adherence.
-          </p>
+          <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
+            Level 1: Target Date vs. Potential DBL Date Scenarios
+          </span>
+          <h2 class="text-sm font-bold text-slate-900">
+            Select a Scenario (Flags Earlier Completion or Possible Delay)
+          </h2>
         </div>
         <button
           type="button"
@@ -143,136 +205,147 @@
           class="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center space-x-1 cursor-pointer"
         >
           <Sliders size={13} />
-          <span>Open Simulator &rarr;</span>
+          <span>Simulator &rarr;</span>
         </button>
       </div>
 
-      <!-- SVG Scenario Comparison Timeline Chart -->
+      <!-- SVG Scenario Comparison Timeline Chart (Includes Best Case 14 Dec = 1d earlier than 15 Dec target!) -->
       <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 relative">
         <svg viewBox="0 0 420 160" class="w-full h-auto overflow-visible text-[10px]">
-          <!-- Planned DBL Vertical Dashed Line (2026-12-15) -->
-          <line x1="110" y1="10" x2="110" y2="125" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="3,3" />
+          <!-- Unchanged Target DBL Vertical Line (2026-12-15) -->
+          <line x1="150" y1="10" x2="150" y2="125" stroke="#1e293b" stroke-width="2" stroke-dasharray="3,3" />
 
-          <!-- Scenario 1: Best Case (Dec 16) -->
-          <text x="10" y="24" fill="#065f46" font-weight="700" font-size="9">Best case scenario</text>
-          <line x1="110" y1="21" x2="150" y2="21" stroke="#059669" stroke-width="3" stroke-linecap="round" />
-          <circle cx="150" cy="21" r="5" fill="#059669" />
-          <text x="165" y="24" fill="#065f46" font-family="monospace" font-weight="700" font-size="9">2026-12-16 (+1d)</text>
+          <!-- Scenario 1: Best Case (14 Dec -> 1 day EARLIER than target!) -->
+          <text x="8" y="24" fill="#065f46" font-weight="700" font-size="9">Best case (Earlier)</text>
+          <line x1="125" y1="21" x2="150" y2="21" stroke="#059669" stroke-width="3" stroke-linecap="round" />
+          <circle cx="125" cy="21" r="5" fill="#059669" />
+          <text x="160" y="24" fill="#065f46" font-family="monospace" font-weight="700" font-size="9">14 Dec (1d earlier than target)</text>
 
-          <!-- Scenario 2: Most Likely (Dec 19) -->
-          <text x="10" y="54" fill="#1e40af" font-weight="700" font-size="9">Most likely scenario</text>
-          <line x1="110" y1="51" x2="230" y2="51" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" />
-          <circle cx="230" cy="51" r="5.5" fill="#2563eb" />
-          <text x="245" y="54" fill="#1e40af" font-family="monospace" font-weight="700" font-size="9">2026-12-19 (+4d)</text>
+          <!-- Scenario 2: Most Likely (19 Dec -> +4d) -->
+          <text x="8" y="54" fill="#1e40af" font-weight="700" font-size="9">Most likely</text>
+          <line x1="150" y1="51" x2="235" y2="51" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round" />
+          <circle cx="235" cy="51" r="5.5" fill="#2563eb" />
+          <text x="248" y="54" fill="#1e40af" font-family="monospace" font-weight="700" font-size="9">19 Dec (+4d after target)</text>
 
-          <!-- Scenario 3: Current Baseline (Dec 21) -->
-          <text x="10" y="84" fill="#64748b" font-weight="600" font-size="9">Current trajectory</text>
-          <line x1="110" y1="81" x2="290" y2="81" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
-          <circle cx="290" cy="81" r="4.5" fill="#64748b" />
-          <text x="305" y="84" fill="#475569" font-family="monospace" font-weight="700" font-size="9">2026-12-21 (+6d)</text>
+          <!-- Scenario 3: Current Progress (21 Dec -> +6d) -->
+          <text x="8" y="84" fill="#64748b" font-weight="600" font-size="9">Current progress</text>
+          <line x1="150" y1="81" x2="285" y2="81" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" />
+          <circle cx="285" cy="81" r="4.5" fill="#64748b" />
+          <text x="298" y="84" fill="#475569" font-family="monospace" font-weight="700" font-size="9">21 Dec (+6d after target)</text>
 
-          <!-- Scenario 4: At-Risk Path (Dec 23) -->
-          <text x="10" y="114" fill="#9f1239" font-weight="700" font-size="9">At-risk scenario</text>
-          <line x1="110" y1="111" x2="350" y2="111" stroke="#f43f5e" stroke-width="3" stroke-linecap="round" />
-          <circle cx="350" cy="111" r="5" fill="#f43f5e" />
-          <text x="360" y="114" fill="#9f1239" font-family="monospace" font-weight="700" font-size="9">2026-12-23 (+8d)</text>
+          <!-- Scenario 4: At-Risk Path (23 Dec -> +8d) -->
+          <text x="8" y="114" fill="#9f1239" font-weight="700" font-size="9">At-risk scenario</text>
+          <line x1="150" y1="111" x2="335" y2="111" stroke="#f43f5e" stroke-width="3" stroke-linecap="round" />
+          <circle cx="335" cy="111" r="5" fill="#f43f5e" />
+          <text x="345" y="114" fill="#9f1239" font-family="monospace" font-weight="700" font-size="9">23 Dec (+8d)</text>
 
-          <!-- Planned DBL Text Label -->
-          <text x="110" y="140" fill="#1e293b" font-weight="800" font-size="9" text-anchor="middle">Planned Target DBL</text>
-          <text x="110" y="152" fill="#64748b" font-family="monospace" font-weight="700" font-size="8.5" text-anchor="middle">2026-12-15</text>
+          <!-- Target DBL Text Label -->
+          <text x="150" y="140" fill="#1e293b" font-weight="800" font-size="9" text-anchor="middle">Agreed Target DBL (Unchanged)</text>
+          <text x="150" y="152" fill="#475569" font-family="monospace" font-weight="700" font-size="8.5" text-anchor="middle">15 December 2026</text>
         </svg>
       </div>
 
-      <div class="text-[11px] text-slate-500 flex items-center justify-between pt-1">
-        <span>Variance spread: <strong>+1 day</strong> (Best case) to <strong>+8 days</strong> (At risk)</span>
-        <span class="text-blue-600 font-semibold">Continuous Bayesian Calibration</span>
+      <!-- Scenario Selector Buttons -->
+      <div class="grid grid-cols-3 gap-2.5 text-xs">
+        <button
+          type="button"
+          on:click={() => selectedScenarioKey = 'best_case'}
+          class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedScenarioKey === 'best_case' ? 'border-emerald-500 bg-emerald-50/60 ring-2 ring-emerald-100' : 'border-slate-200 hover:border-emerald-300'}"
+        >
+          <div class="font-extrabold text-emerald-900">Best Case</div>
+          <div class="font-mono font-bold text-emerald-700 mt-0.5">14 Dec (-1d early)</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">78% target likelihood</div>
+        </button>
+
+        <button
+          type="button"
+          on:click={() => selectedScenarioKey = 'most_likely'}
+          class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedScenarioKey === 'most_likely' ? 'border-blue-600 bg-blue-50/60 ring-2 ring-blue-100' : 'border-slate-200 hover:border-blue-300'}"
+        >
+          <div class="font-extrabold text-blue-900">Most Likely</div>
+          <div class="font-mono font-bold text-blue-700 mt-0.5">19 Dec (+4d)</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">55% scenario prob</div>
+        </button>
+
+        <button
+          type="button"
+          on:click={() => selectedScenarioKey = 'at_risk'}
+          class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedScenarioKey === 'at_risk' ? 'border-rose-500 bg-rose-50/60 ring-2 ring-rose-100' : 'border-slate-200 hover:border-rose-300'}"
+        >
+          <div class="font-extrabold text-rose-900">At Risk</div>
+          <div class="font-mono font-bold text-rose-700 mt-0.5">23 Dec (+8d)</div>
+          <div class="text-[10px] text-slate-500 mt-0.5">18% target likelihood</div>
+        </button>
       </div>
     </div>
 
-    <!-- Right: Core Assumptions Cards (5 Cols) -->
-    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3.5">
+    <!-- Right 6 Cols: Level 2 (Scenario -> Assumptions -> Delay Drivers) & Level 3 (Driver -> Sites/Vendors -> Individual Items) -->
+    <div class="lg:col-span-6 bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-4">
       <div>
-        <h2 class="text-sm font-bold text-slate-900">Scenario Assumptions Matrix</h2>
-        <p class="text-[11px] text-slate-500 mt-0.5">
-          Operational prerequisites defining each predictive trajectory.
-        </p>
+        <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
+          Levels 2 &amp; 3: Scenario &rarr; Assumptions &rarr; Delay Drivers &rarr; Sites/Vendors &rarr; Items
+        </span>
+        <div class="flex items-center justify-between mt-1">
+          <h2 class="text-base font-extrabold text-slate-900">{activeScenario.name}</h2>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold {activeScenario.color === 'emerald' ? 'bg-emerald-100 text-emerald-800' : activeScenario.color === 'blue' ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'}">
+            {activeScenario.potentialDblDate} ({activeScenario.varianceLabel})
+          </span>
+        </div>
       </div>
 
-      <div class="space-y-2.5 text-xs">
-        <!-- Best Case Card -->
-        <div class="p-3 rounded-lg border border-emerald-200 bg-emerald-50/40 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-emerald-900">Best Case (16 December)</span>
-            <span class="px-2 py-0.2 rounded font-bold text-[10px] bg-emerald-100 text-emerald-800">20% Prob</span>
-          </div>
-          <p class="text-[11px] text-emerald-950/80 leading-relaxed">
-            Critical safety discrepancies resolved within 48h; LabCorp delivers checksum-verified binary batch by 2026-11-01; query closure exceeds 12/day.
-          </p>
+      <!-- Level 2: Scenario Assumptions & Target Likelihood -->
+      <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
+        <div class="flex items-center justify-between">
+          <strong class="text-slate-900 uppercase text-[10px] tracking-wider">Level 2: Scenario Assumptions</strong>
+          <span class="text-[11px] font-bold text-blue-700">{activeScenario.targetMeetingLikelihood}</span>
         </div>
+        <p class="text-slate-700 leading-relaxed">{activeScenario.assumptions}</p>
+      </div>
 
-        <!-- Most Likely Card -->
-        <div class="p-3 rounded-lg border border-blue-200 bg-blue-50/40 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-blue-900">Most Likely (19 December)</span>
-            <span class="px-2 py-0.2 rounded font-bold text-[10px] bg-blue-100 text-blue-800">55% Prob</span>
-          </div>
-          <p class="text-[11px] text-blue-950/80 leading-relaxed">
-            Safety unfreezing completed after medical review call; central lab transfer resolved in 72h; routine query velocity maintains historical average.
-          </p>
+      <!-- Level 3: Driver -> Sites or Vendors -> Individual Items -->
+      <div class="space-y-2.5">
+        <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+          Level 3: Delay Driver &rarr; Affected Sites or Vendors &rarr; Individual Open Items
         </div>
-
-        <!-- At Risk Card -->
-        <div class="p-3 rounded-lg border border-rose-200 bg-rose-50/40 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="font-bold text-rose-900">At Risk (23 December)</span>
-            <span class="px-2 py-0.2 rounded font-bold text-[10px] bg-rose-100 text-rose-800">25% Prob</span>
+        {#each activeScenario.drivers as drv}
+          <div class="p-3 rounded-xl border border-slate-200 bg-white space-y-1 text-xs">
+            <div class="font-bold text-slate-900">{drv.driver}</div>
+            <div class="text-[11px] text-blue-700 font-semibold">Sites / Vendors: {drv.sitesOrVendors}</div>
+            <div class="text-[11px] text-slate-600 font-mono bg-slate-50 p-2 rounded border border-slate-100 mt-1">
+              Individual Items: {drv.items}
+            </div>
           </div>
-          <p class="text-[11px] text-rose-950/80 leading-relaxed">
-            Vendor transfer requires secondary sample assay re-run; investigator signature delay at Seoul and Boston extends beyond LSLV cut-off.
-          </p>
-        </div>
+        {/each}
       </div>
     </div>
 
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SIGNATURE DIFFERENTIATOR: ACTION-TO-OUTCOME CLOSED LOOP LEARNING TABLE   -->
+  <!-- LEVEL 4 (RECORD): INTERVENTION -> AFFECTED RECORDS -> ACTUAL OUTCOME VS   -->
+  <!-- EXPECTED IMPACT -> LEARNING CAPTURED (Image 5 Blue Requirement)           -->
   <!-- ========================================================================= -->
   <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden space-y-4 p-5">
-    
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
       <div>
         <div class="flex items-center space-x-2">
           <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wider">
-            Signature Differentiator
+            Level 4 (Record): Closed-Loop Learning
           </span>
-          <span class="text-xs text-slate-500">Closed-Loop AI Decision Engine</span>
+          <span class="text-xs text-slate-500">Intervention &rarr; Affected Records &rarr; Actual Outcome vs. Expected Impact &rarr; Learning Captured</span>
         </div>
         <h2 class="text-base font-bold text-slate-900 mt-1">
-          Did the intervention make the expected difference?
+          Action-to-Outcome Verification &amp; Model Calibration
         </h2>
-        <p class="text-xs text-slate-500 mt-0.5">
-          DBLock AI closes the decision loop by tracking whether implemented actions actually changed predicted outcomes.
-        </p>
-      </div>
-
-      <div class="flex items-center space-x-2 self-start sm:self-center">
-        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center space-x-1">
-          <CheckCircle2 size={13} />
-          <span>Continuous Model Learning Active</span>
-        </span>
       </div>
     </div>
 
-    <!-- Closed-Loop Outcome Table -->
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse text-xs">
         <thead>
           <tr class="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider">
-            <th class="py-3 px-3">Recommendation Issued</th>
-            <th class="py-3 px-3">Human Decision</th>
-            <th class="py-3 px-2 text-center">Status</th>
+            <th class="py-3 px-3">Intervention &amp; Human Decision</th>
+            <th class="py-3 px-3">Affected Source Records</th>
             <th class="py-3 px-2 text-center">Readiness &Delta;</th>
             <th class="py-3 px-2 text-center">Expected Impact</th>
             <th class="py-3 px-2 text-center">Actual Outcome</th>
@@ -280,19 +353,22 @@
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-          {#each closedLoopOutcomes as out}
+          {#each closedLoopOutcomes as out, idx}
             <tr class="hover:bg-slate-50/70 transition-colors">
               <td class="py-3.5 px-3 font-semibold text-slate-900">
                 <div>{out.intervention}</div>
-                <div class="text-[10px] text-slate-400 font-normal">{out.category} &middot; {out.recommendedDate}</div>
+                <div class="text-[10px] text-slate-500 font-normal">{out.humanDecision} &middot; {out.actionStatus}</div>
               </td>
-              <td class="py-3.5 px-3 text-slate-700">
-                {out.humanDecision}
-              </td>
-              <td class="py-3.5 px-2 text-center">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold {out.actionStatus === 'Completed' ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-100 text-blue-800'}">
-                  {out.actionStatus}
-                </span>
+              <td class="py-3.5 px-3 font-mono text-[11px] text-blue-700">
+                {#if idx === 0}
+                  SAE-REC-104-01, SAE-REC-104-02 (Site 104)
+                {:else if idx === 1}
+                  Batch #LXB-8921 (LabCorp 48 ctDNA samples)
+                {:else if idx === 2}
+                  QRY-317-044, QRY-104-089 (5 RECIST queries)
+                {:else}
+                  QRY-208-112 (+37 routine queries at Site 208)
+                {/if}
               </td>
               <td class="py-3.5 px-2 text-center font-mono">
                 {out.readinessBefore}% &rarr; <strong class="text-emerald-600">{out.readinessAfter}%</strong>
@@ -313,85 +389,6 @@
           {/each}
         </tbody>
       </table>
-    </div>
-
-    <!-- Complete Decision Loop Schematic: Detect -> Explain -> Recommend -> Simulate -> Act -> Learn -->
-    <div class="pt-4 border-t border-slate-100">
-      <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2.5">
-        Complete Clinical Decision Loop
-      </div>
-      <div class="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
-        <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-          <div class="text-[10px] font-bold text-blue-600 uppercase">Step 1</div>
-          <div class="font-bold text-blue-950 mt-0.5">Detect Risk</div>
-          <div class="text-[10px] text-blue-800 mt-0.5">Continuous signals</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-          <div class="text-[10px] font-bold text-blue-600 uppercase">Step 2</div>
-          <div class="font-bold text-blue-950 mt-0.5">Explain Cause</div>
-          <div class="text-[10px] text-blue-800 mt-0.5">Critical-path factors</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-          <div class="text-[10px] font-bold text-blue-600 uppercase">Step 3</div>
-          <div class="font-bold text-blue-950 mt-0.5">Recommend</div>
-          <div class="text-[10px] text-blue-800 mt-0.5">Owner &amp; due date</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-          <div class="text-[10px] font-bold text-blue-600 uppercase">Step 4</div>
-          <div class="font-bold text-blue-950 mt-0.5">Simulate</div>
-          <div class="text-[10px] text-blue-800 mt-0.5">What-if impact</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-          <div class="text-[10px] font-bold text-blue-600 uppercase">Step 5</div>
-          <div class="font-bold text-blue-950 mt-0.5">Act &amp; Approve</div>
-          <div class="text-[10px] text-blue-800 mt-0.5">Human governance</div>
-        </div>
-        <div class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-          <div class="text-[10px] font-bold text-emerald-600 uppercase">Step 6</div>
-          <div class="font-bold text-emerald-950 mt-0.5">Measure &amp; Learn</div>
-          <div class="text-[10px] text-emerald-800 mt-0.5">Closed loop updates</div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- MODEL CALIBRATION & ENGINE ACCURACY METRICS                               -->
-  <!-- ========================================================================= -->
-  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-      <span class="text-[10px] uppercase font-bold text-slate-400 block">Historical Model Accuracy</span>
-      <div class="text-2xl font-extrabold text-blue-700 mt-1 num-tabular">{calibrationMetrics.accuracy}</div>
-      <div class="text-[11px] text-slate-500 mt-0.5">DBL lock date accuracy &plusmn;2d</div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-      <span class="text-[10px] uppercase font-bold text-slate-400 block">Mean Absolute Error (MAE)</span>
-      <div class="text-2xl font-extrabold text-emerald-700 mt-1 num-tabular">{calibrationMetrics.maeDays}</div>
-      <div class="text-[11px] text-slate-500 mt-0.5">Average prediction error margin</div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-      <span class="text-[10px] uppercase font-bold text-slate-400 block">Brier Calibration Score</span>
-      <div class="text-2xl font-extrabold text-slate-900 mt-1 num-tabular">{calibrationMetrics.brierScore}</div>
-      <div class="text-[11px] text-emerald-600 font-semibold mt-0.5">High probabilistic calibration</div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-      <span class="text-[10px] uppercase font-bold text-slate-400 block">Training Benchmark</span>
-      <div class="text-sm font-bold text-slate-800 mt-1">{calibrationMetrics.studiesTrained}</div>
-      <div class="text-[10px] text-slate-400 mt-0.5">Supervised learning prior weights</div>
-    </div>
-  </div>
-
-  <!-- Footnote -->
-  <div class="text-[11px] text-slate-400 flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-2 border-t border-slate-200">
-    <div>
-      Data refreshed: 2026-10-31 08:00 UTC &middot; Sources: EDC, Safety, Central Lab, eCOA, Coding, IRT
-    </div>
-    <div class="font-medium text-slate-500">
-      DBLock AI &middot; Clinical Data Science Workbench
     </div>
   </div>
 
