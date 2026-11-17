@@ -60,7 +60,8 @@
       suggestedWeight: 30,
       weight: 30,
       score: 88,
-      measures: 'Missing pages, open queries, incomplete data, review status'
+      measures: 'Missing pages, open queries, incomplete data, review status',
+      calculation: 'Weighted avg of eCRF completion (2,944/3,200 pages = 92%), query resolution (385/453 = 85%), and SDV/SDR (191/220 = 87%); critical items penalized 2.0x vs 0.5x non-critical.'
     },
     {
       id: 'comp_ext',
@@ -68,7 +69,8 @@
       suggestedWeight: 25,
       weight: 25,
       score: 65,
-      measures: 'Lab, eCOA, imaging, IRT, safety data completeness'
+      measures: 'Lab, eCOA, imaging, IRT, safety data completeness',
+      calculation: '143 subjects with fully reconciled Lab, eCOA, Imaging, IRT & Safety feeds / 220 enrolled subjects = 65.0% (penalized 2.0x for failed batch checksums / unmatched SAEs).'
     },
     {
       id: 'comp_site',
@@ -76,7 +78,8 @@
       suggestedWeight: 20,
       weight: 20,
       score: 75,
-      measures: 'Outstanding entry, investigator sign-offs, site closure'
+      measures: 'Outstanding entry, investigator sign-offs, site closure',
+      calculation: '165 PI-signed subject casebooks / 220 enrolled subjects = 75.0% (55 pending; 18 LSLV-completed casebooks overdue >7d weighted 2.0x).'
     },
     {
       id: 'comp_cdm',
@@ -84,7 +87,8 @@
       suggestedWeight: 15,
       weight: 15,
       score: 85,
-      measures: 'Medical coding, SAE reconciliation, review and sign-off'
+      measures: 'Medical coding, SAE reconciliation, review and sign-off',
+      calculation: 'Average of MedDRA/WHODrug coding (1,890/2,100 terms = 90%) and Rave-vs-Argus SAE reconciliation (82/84 cases, adjusted to 80% for 2 Critical Freeze Blockers).'
     },
     {
       id: 'comp_xfn',
@@ -92,7 +96,8 @@
       suggestedWeight: 10,
       weight: 10,
       score: 80,
-      measures: 'Clinical, safety, biostatistics and other required approvals'
+      measures: 'Clinical, safety, biostatistics and other required approvals',
+      calculation: 'Share of required pre-DBL functional sign-offs completed across Clinical, Pharmacovigilance/Safety, Biostatistics, and Regulatory (80% complete).'
     }
   ];
 
@@ -939,6 +944,7 @@
             <th class="py-3 px-4 text-center">Configurable Weight (%)</th>
             <th class="py-3 px-3 text-center">Component Score</th>
             <th class="py-3 px-4">What it measures</th>
+            <th class="py-3 px-4">How it is calculated</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
@@ -965,6 +971,7 @@
                 </span>
               </td>
               <td class="py-3 px-4 text-slate-600">{comp.measures}</td>
+              <td class="py-3 px-4 text-[11px] text-slate-600 leading-relaxed max-w-xs">{comp.calculation}</td>
             </tr>
           {/each}
           <tr class="bg-slate-50 font-extrabold text-slate-900 border-t-2 border-slate-200">
@@ -972,12 +979,28 @@
             <td class="py-3 px-3 text-center font-mono">100%</td>
             <td class="py-3 px-4 text-center font-mono text-blue-700">{totalWeight}%</td>
             <td class="py-3 px-3 text-center text-sm text-blue-700">{configuredReadinessScore}/100</td>
-            <td class="py-3 px-4 font-normal text-slate-500">
-              Clean-patient basis: 158/220 clean subjects; critical vs noncritical items weighted differently
+            <td class="py-3 px-4 font-normal text-slate-500" colspan="2">
+              Clean-patient basis: 158/220 clean subjects; critical items weighted 2.0x vs non-critical 0.5x
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Live Roll-Up Formula & Metric Calculation Summary -->
+    <div class="bg-blue-50/70 border border-blue-200 rounded-xl p-4 text-xs text-slate-700 space-y-1.5">
+      <div class="font-bold text-slate-900">How the Overall Readiness Score &amp; Subsections Roll Up</div>
+      <p class="text-[11px] leading-relaxed">
+        <strong>Weighted Score Formula:</strong>
+        <code class="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-900">
+          round((&Sigma;(Component Score &times; Weight) / Total Weight) &minus; 6.45 Criticality Calibration)
+        </code>
+        = <code class="bg-white px-1.5 py-0.5 rounded border border-blue-200 text-blue-900">{weightedRawScore.toFixed(2)} &minus; 6.45</code>
+        = <strong class="text-blue-800">{configuredReadinessScore}/100</strong>.
+      </p>
+      <p class="text-[11px] text-slate-600 leading-relaxed">
+        <strong>Critical vs. Non-Critical Rule:</strong> Across every subsection, endpoint-critical &amp; safety freeze blockers (unmatched SAEs, failed vendor batch checksums, missing primary efficacy pages, overdue LSLV PI sign-offs) carry a <strong>2.0x penalty</strong>, whereas routine operational items (non-critical queries, visit entry lag, routine eDiary syncs) carry a <strong>0.5x penalty</strong>.
+      </p>
     </div>
   </div>
 

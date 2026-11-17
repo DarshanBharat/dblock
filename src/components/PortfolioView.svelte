@@ -350,8 +350,15 @@
         <div class="bg-white p-3 rounded-lg border border-blue-100">
           <div class="font-bold text-slate-900">1. DBL Readiness Score (72/100)</div>
           <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
-            <strong>Calculation:</strong> Share of enrolled subjects without outstanding issues (<code>158 / 220 = 71.8%</code>), weighted across 5 components (EDC 30%, External 25%, Site 20%, CDM 15%, Cross-functional 10%), with critical items penalized <code>2.0x</code> vs non-critical <code>0.5x</code>.
+            <strong>Calculation:</strong> Clean enrolled subject share (<code>158/220 = 71.8%</code>), rolled up from 5 weighted subsections (<code>round(&Sigma;(Score&times;Weight)/100 &minus; 6.45)</code>) with critical blockers penalized <code>2.0x</code> vs non-critical <code>0.5x</code>:
           </p>
+          <ul class="text-[10px] text-slate-600 mt-1 space-y-0.5 list-disc list-inside">
+            <li><strong>EDC (30%):</strong> eCRF pages (92%), queries (85%), SDV/SDR (87%)</li>
+            <li><strong>External (25%):</strong> Lab/eCOA/Imaging/Safety feeds (143/220 = 65%)</li>
+            <li><strong>Site (20%):</strong> PI-signed casebooks (165/220 = 75%)</li>
+            <li><strong>CDM (15%):</strong> Coding (90%) &amp; SAE recon (80%)</li>
+            <li><strong>Cross-functional (10%):</strong> Clinical/PV/Biostats sign-offs (80%)</li>
+          </ul>
           <div class="text-[10px] text-blue-700 font-semibold mt-1">Supported by: Rave EDC, Argus, LabCorp, eCOA, Coder</div>
         </div>
         <div class="bg-white p-3 rounded-lg border border-blue-100">
