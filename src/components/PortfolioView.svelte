@@ -387,6 +387,47 @@
           <div class="text-[10px] text-blue-700 font-semibold mt-1">Supported by: Weekly W-8 to W0 audit snapshots</div>
         </div>
       </div>
+
+      <!-- Full 5-Subsection Readiness Score Formula & Worked Example (Below the 4 Cards) -->
+      <div class="mt-3 bg-white p-3.5 rounded-lg border border-blue-200 text-xs space-y-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="font-bold text-slate-900">
+            Readiness Score Formula (5-Subsection Roll-Up &amp; Criticality Weighting)
+          </div>
+          <code class="text-[11px] bg-blue-50 text-blue-900 px-2 py-0.5 rounded border border-blue-200 font-mono">
+            Readiness = round((&Sigma;(Score &times; Weight) / &Sigma;Weight) &minus; 6.45)
+          </code>
+        </div>
+        <div class="text-[11px] text-slate-700 leading-relaxed">
+          <strong>CA-209-301 Example:</strong>
+          <code class="bg-slate-50 px-1.5 py-0.5 rounded border border-slate-200 text-slate-800">
+            round(((88&times;30 + 65&times;25 + 75&times;20 + 85&times;15 + 80&times;10) / 100) &minus; 6.45) = round(78.40 &minus; 6.45) = 72/100
+          </code>
+          <span class="text-slate-500 ml-1">(Matches 158/220 = 71.8% clean enrolled subjects; Critical blockers penalized <strong>2.0x</strong> vs Non-critical <strong>0.5x</strong>)</span>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-2 pt-1 text-[10px] text-slate-600">
+          <div class="bg-slate-50 p-2 rounded border border-slate-100">
+            <div class="font-bold text-slate-800">1. EDC Cleanliness (30%)</div>
+            <div>eCRF 2,944/3,200 (92%), Queries 385/453 (85%), SDV 191/220 (87%) &rarr; <strong>88%</strong></div>
+          </div>
+          <div class="bg-slate-50 p-2 rounded border border-slate-100">
+            <div class="font-bold text-slate-800">2. External Recon (25%)</div>
+            <div>143/220 subjects with reconciled Lab, eCOA, Imaging &amp; Safety &rarr; <strong>65%</strong></div>
+          </div>
+          <div class="bg-slate-50 p-2 rounded border border-slate-100">
+            <div class="font-bold text-slate-800">3. Site Readiness (20%)</div>
+            <div>165/220 PI-signed casebooks (18 overdue &gt;7d at 2.0x) &rarr; <strong>75%</strong></div>
+          </div>
+          <div class="bg-slate-50 p-2 rounded border border-slate-100">
+            <div class="font-bold text-slate-800">4. CDM Completion (15%)</div>
+            <div>Avg of Coding 1,890/2,100 (90%) &amp; SAE Recon 82/84 (adj. 80%) &rarr; <strong>85%</strong></div>
+          </div>
+          <div class="bg-slate-50 p-2 rounded border border-slate-100">
+            <div class="font-bold text-slate-800">5. Cross-Functional (10%)</div>
+            <div>Clinical, PV/Safety, Biostats &amp; Regulatory sign-offs (4/5) &rarr; <strong>80%</strong></div>
+          </div>
+        </div>
+      </div>
     {/if}
   </div>
 
