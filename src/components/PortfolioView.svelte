@@ -56,8 +56,18 @@
 
   let selectedSponsor = 'all';
   let selectedPhase = 'all';
-  let selectedRegion = 'all';
+  let selectedCountry = 'all';
   let selectedRiskDirection = 'all'; // 'all' | 'Improving' | 'Worsening'
+
+  $: availableCountries = Array.from(
+    new Set(portfolioStudies.flatMap((s: any) => s.countries || []))
+  ).sort();
+
+  function formatStudyCountries(countries?: string[]): string {
+    if (!countries || countries.length === 0) return 'Global';
+    if (countries.length <= 2) return countries.join(', ');
+    return `${countries.slice(0, 2).join(', ')} +${countries.length - 2}`;
+  }
   let showOnTrack = true;
   let showAtRisk = true;
   let showHighRisk = true;
@@ -207,7 +217,7 @@
     selectedMilestones = ['dbl', 'lslv', 'protocol_amendments', 'submissions', 'safety_milestones'];
     selectedSponsor = 'all';
     selectedPhase = 'all';
-    selectedRegion = 'all';
+    selectedCountry = 'all';
     selectedRiskDirection = 'all';
     showOnTrack = true;
     showAtRisk = true;
@@ -251,9 +261,9 @@
     if (s.status === 'High risk' && !showHighRisk) return false;
     if (selectedRiskDirection !== 'all' && s.riskDirection !== selectedRiskDirection) return false;
 
-    // 6. Phase & Region filter
+    // 6. Phase & Country filter
     if (selectedPhase !== 'all' && !s.phase.toLowerCase().includes(selectedPhase.toLowerCase())) return false;
-    if (selectedRegion !== 'all' && !s.region.toLowerCase().includes(selectedRegion.toLowerCase())) return false;
+    if (selectedCountry !== 'all' && !(s.countries || []).some((c: string) => c.toLowerCase() === selectedCountry.toLowerCase())) return false;
 
     return true;
   });
@@ -545,7 +555,7 @@
         </div>
       </div>
 
-      <!-- Sponsor, Phase & Region Filters -->
+      <!-- Sponsor, Phase & Country Filters -->
       <div class="grid grid-cols-1 gap-2.5 pt-2 border-t border-slate-100">
         <div>
           <label for="sponsor-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Sponsor</label>
@@ -575,17 +585,16 @@
             </select>
           </div>
           <div>
-            <label for="region-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Region</label>
+            <label for="country-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Country</label>
             <select
-              id="region-filter"
-              bind:value={selectedRegion}
+              id="country-filter"
+              bind:value={selectedCountry}
               class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
             >
-              <option value="all">All</option>
-              <option value="global">Global</option>
-              <option value="us">US</option>
-              <option value="eu">EU</option>
-              <option value="apac">APAC</option>
+              <option value="all">All countries</option>
+              {#each availableCountries as country}
+                <option value={country}>{country}</option>
+              {/each}
             </select>
           </div>
         </div>
@@ -769,7 +778,7 @@
                         <span class="w-1 h-9 rounded-full {study.status === 'High risk' ? 'bg-rose-500' : study.status === 'At risk' ? 'bg-amber-500' : 'bg-emerald-500'}"></span>
                         <div>
                           <span class="group-hover:text-blue-600 transition-colors">{study.id}</span>
-                          <div class="text-[11px] font-normal text-slate-400">{study.therapeuticArea} &middot; {study.region}</div>
+                          <div class="text-[11px] font-normal text-slate-400" title={(study.countries || []).join(', ')}>{study.therapeuticArea} &middot; {formatStudyCountries(study.countries)}</div>
                         </div>
                       </div>
                     </td>
@@ -887,7 +896,7 @@
                     </div>
                   </div>
                   <div class="text-xs font-semibold text-slate-800">{study.name} &middot; {study.indication}</div>
-                  <div class="text-[11px] text-slate-500 mt-0.5">{study.therapeuticArea} &middot; {study.phase} &middot; {study.region}</div>
+                  <div class="text-[11px] text-slate-500 mt-0.5" title={(study.countries || []).join(', ')}>{study.therapeuticArea} &middot; {study.phase} &middot; {formatStudyCountries(study.countries)}</div>
 
                   <ul class="mt-3 space-y-1.5 text-xs bg-slate-50 p-3 rounded-lg border border-slate-100">
                     <li class="flex justify-between">

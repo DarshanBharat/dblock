@@ -392,14 +392,23 @@
     });
   }
 
-  export function focusRegion(region: 'na' | 'eu' | 'apac') {
-    if (!map) return;
-    if (region === 'na') {
-      map.flyTo([39.8, -98.5], 4, { duration: 1 });
-    } else if (region === 'eu') {
-      map.flyTo([48.8, 10.0], 4.5, { duration: 1 });
+  $: countryShortcuts = Array.from(
+    new Map(
+      sites
+        .filter((s: any) => s.country && s.countryCode)
+        .map((s: any) => [s.countryCode, { code: s.countryCode, name: s.country }])
+    ).values()
+  );
+
+  export function focusCountry(countryCode: string) {
+    if (!map || !L) return;
+    const countrySites = sites.filter((s: any) => s.countryCode === countryCode && s.lat != null && s.lng != null);
+    if (countrySites.length === 0) return;
+    if (countrySites.length === 1) {
+      map.flyTo([countrySites[0].lat, countrySites[0].lng], 6, { duration: 1 });
     } else {
-      map.flyTo([10.0, 130.0], 3.5, { duration: 1 });
+      const bounds = L.latLngBounds(countrySites.map((s: any) => [s.lat, s.lng]));
+      map.flyToBounds(bounds, { padding: [50, 50], maxZoom: 6, duration: 1 });
     }
   }
 
@@ -427,7 +436,7 @@
   <!-- Floating Top Bar Overlay -->
   <div class="absolute top-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none gap-2">
     
-    <!-- Top-Left: Live Map Badge & Region Shortcuts -->
+    <!-- Top-Left: Live Map Badge & Country Shortcuts -->
     <div class="pointer-events-auto flex items-center space-x-2 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-slate-200 shadow-xs text-xs text-slate-700">
       <div class="flex items-center space-x-1.5 font-bold text-slate-900">
         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -438,30 +447,21 @@
         <strong>{sites.length}</strong> sites &middot; <strong>{countryCount}</strong> countries
       </span>
 
-      <!-- Region quick jumps -->
-      <div class="hidden md:flex items-center space-x-1 pl-1 border-l border-slate-200 text-[10px] font-semibold text-slate-600">
-        <button
-          type="button"
-          on:click={() => focusRegion('na')}
-          class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
-        >
-          US / CA
-        </button>
-        <button
-          type="button"
-          on:click={() => focusRegion('eu')}
-          class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
-        >
-          Europe
-        </button>
-        <button
-          type="button"
-          on:click={() => focusRegion('apac')}
-          class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
-        >
-          APAC
-        </button>
-      </div>
+      <!-- Country quick jumps -->
+      {#if countryShortcuts.length > 0}
+        <div class="hidden md:flex items-center space-x-1 pl-1 border-l border-slate-200 text-[10px] font-semibold text-slate-600">
+          {#each countryShortcuts as c}
+            <button
+              type="button"
+              title={c.name}
+              on:click={() => focusCountry(c.code)}
+              class="px-1.5 py-0.5 rounded hover:bg-slate-100 hover:text-blue-700 cursor-pointer transition-colors"
+            >
+              {c.code}
+            </button>
+          {/each}
+        </div>
+      {/if}
     </div>
 
     <!-- Top-Right: Map Action Toolbar -->

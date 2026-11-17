@@ -2049,7 +2049,15 @@
       "indication": "NSCLC",
       "phase": "Phase III",
       "phaseShort": "III",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Germany",
+        "South Korea",
+        "Australia",
+        "Canada",
+        "France",
+        "Spain"
+      ],
       "therapeuticArea": "Oncology",
       "plannedLslv": "2026-11-30",
       "plannedDbl": "2026-12-15",
@@ -2069,7 +2077,12 @@
       "status": "At risk",
       "riskDirection": "Improving",
       "weeklyTrendText": "Improved by 1 day this week",
-      "milestones": ["dbl", "lslv", "safety_milestones", "submissions"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "safety_milestones",
+        "submissions"
+      ],
       "trend": [
         63,
         66,
@@ -2086,7 +2099,12 @@
       "indication": "Heart Failure",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "US / EU",
+      "countries": [
+        "United States",
+        "Germany",
+        "France",
+        "Spain"
+      ],
       "therapeuticArea": "Cardiovascular",
       "plannedLslv": "2026-10-15",
       "plannedDbl": "2026-11-05",
@@ -2106,7 +2124,12 @@
       "status": "High risk",
       "riskDirection": "Worsening",
       "weeklyTrendText": "Worsened by 2 days this week",
-      "milestones": ["dbl", "lslv", "protocol_amendments", "safety_milestones"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "protocol_amendments",
+        "safety_milestones"
+      ],
       "trend": [
         60,
         62,
@@ -2123,7 +2146,13 @@
       "indication": "Psoriasis",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Canada",
+        "Germany",
+        "France",
+        "Australia"
+      ],
       "therapeuticArea": "Immunology",
       "plannedLslv": "2026-10-28",
       "plannedDbl": "2026-11-20",
@@ -2143,7 +2172,11 @@
       "status": "At risk",
       "riskDirection": "Improving",
       "weeklyTrendText": "Improved by 1 day this week",
-      "milestones": ["dbl", "lslv", "protocol_amendments"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "protocol_amendments"
+      ],
       "trend": [
         70,
         72,
@@ -2160,7 +2193,12 @@
       "indication": "Alzheimer's",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Germany",
+        "Spain",
+        "South Korea"
+      ],
       "therapeuticArea": "Neurology",
       "plannedLslv": "2026-11-10",
       "plannedDbl": "2026-12-05",
@@ -2180,7 +2218,11 @@
       "status": "At risk",
       "riskDirection": "Improving",
       "weeklyTrendText": "Improved by 2 days this week",
-      "milestones": ["dbl", "safety_milestones", "submissions"],
+      "milestones": [
+        "dbl",
+        "safety_milestones",
+        "submissions"
+      ],
       "trend": [
         82,
         84,
@@ -2197,7 +2239,11 @@
       "indication": "DMD",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "US / EU",
+      "countries": [
+        "United States",
+        "Germany",
+        "France"
+      ],
       "therapeuticArea": "Rare Disease",
       "plannedLslv": "2026-09-25",
       "plannedDbl": "2026-10-20",
@@ -2217,7 +2263,10 @@
       "status": "On track",
       "riskDirection": "Improving",
       "weeklyTrendText": "On target schedule",
-      "milestones": ["dbl", "submissions"],
+      "milestones": [
+        "dbl",
+        "submissions"
+      ],
       "trend": [
         86,
         88,
@@ -2234,7 +2283,12 @@
       "indication": "Ulcerative Colitis",
       "phase": "Phase III",
       "phaseShort": "III",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Canada",
+        "France",
+        "Australia"
+      ],
       "therapeuticArea": "Gastroenterology",
       "plannedLslv": "2026-12-01",
       "plannedDbl": "2026-12-28",
@@ -2254,7 +2308,11 @@
       "status": "High risk",
       "riskDirection": "Worsening",
       "weeklyTrendText": "Worsened by 1 day this week",
-      "milestones": ["dbl", "lslv", "protocol_amendments"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "protocol_amendments"
+      ],
       "trend": [
         58,
         60,
@@ -2271,7 +2329,13 @@
       "indication": "RSV",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Germany",
+        "South Korea",
+        "Australia",
+        "Spain"
+      ],
       "therapeuticArea": "Vaccines",
       "plannedLslv": "2026-11-18",
       "plannedDbl": "2026-12-12",
@@ -2291,7 +2355,11 @@
       "status": "At risk",
       "riskDirection": "Improving",
       "weeklyTrendText": "Improved by 1 day this week",
-      "milestones": ["dbl", "lslv", "safety_milestones"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "safety_milestones"
+      ],
       "trend": [
         79,
         81,
@@ -2308,7 +2376,12 @@
       "indication": "Breast Cancer",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "EU / APAC",
+      "countries": [
+        "Germany",
+        "France",
+        "South Korea",
+        "Australia"
+      ],
       "therapeuticArea": "Oncology",
       "plannedLslv": "2026-10-05",
       "plannedDbl": "2026-10-30",
@@ -2328,7 +2401,10 @@
       "status": "On track",
       "riskDirection": "Improving",
       "weeklyTrendText": "3 days ahead of target",
-      "milestones": ["dbl", "submissions"],
+      "milestones": [
+        "dbl",
+        "submissions"
+      ],
       "trend": [
         89,
         90,
@@ -2345,7 +2421,12 @@
       "indication": "Type 2 Diabetes",
       "phase": "Phase III",
       "phaseShort": "III",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Canada",
+        "Germany",
+        "France"
+      ],
       "therapeuticArea": "Metabolic",
       "plannedLslv": "2026-11-25",
       "plannedDbl": "2026-12-18",
@@ -2365,7 +2446,11 @@
       "status": "On track",
       "riskDirection": "Improving",
       "weeklyTrendText": "2 days ahead of target",
-      "milestones": ["dbl", "lslv", "submissions"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "submissions"
+      ],
       "trend": [
         88,
         89,
@@ -2382,7 +2467,11 @@
       "indication": "Asthma Biologic",
       "phase": "Phase II",
       "phaseShort": "II",
-      "region": "US / EU",
+      "countries": [
+        "United States",
+        "Germany",
+        "Spain"
+      ],
       "therapeuticArea": "Respiratory",
       "plannedLslv": "2026-10-31",
       "plannedDbl": "2026-11-25",
@@ -2402,7 +2491,11 @@
       "status": "At risk",
       "riskDirection": "Improving",
       "weeklyTrendText": "Improved by 1 day this week",
-      "milestones": ["dbl", "lslv", "protocol_amendments"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "protocol_amendments"
+      ],
       "trend": [
         78,
         80,
@@ -2419,7 +2512,9 @@
       "indication": "Sickle Cell",
       "phase": "Phase I/II",
       "phaseShort": "I/II",
-      "region": "US",
+      "countries": [
+        "United States"
+      ],
       "therapeuticArea": "Hematology",
       "plannedLslv": "2026-11-15",
       "plannedDbl": "2026-12-08",
@@ -2439,7 +2534,10 @@
       "status": "High risk",
       "riskDirection": "Worsening",
       "weeklyTrendText": "Worsened by 2 days this week",
-      "milestones": ["dbl", "safety_milestones"],
+      "milestones": [
+        "dbl",
+        "safety_milestones"
+      ],
       "trend": [
         55,
         58,
@@ -2456,7 +2554,13 @@
       "indication": "Melanoma",
       "phase": "Phase III",
       "phaseShort": "III",
-      "region": "Global",
+      "countries": [
+        "United States",
+        "Germany",
+        "France",
+        "South Korea",
+        "Australia"
+      ],
       "therapeuticArea": "Oncology",
       "plannedLslv": "2026-12-10",
       "plannedDbl": "2027-01-10",
@@ -2476,7 +2580,11 @@
       "status": "On track",
       "riskDirection": "Improving",
       "weeklyTrendText": "1 day ahead of target",
-      "milestones": ["dbl", "lslv", "submissions"],
+      "milestones": [
+        "dbl",
+        "lslv",
+        "submissions"
+      ],
       "trend": [
         84,
         86,
