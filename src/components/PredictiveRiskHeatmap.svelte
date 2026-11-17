@@ -42,7 +42,11 @@
   let viewByMetric = 'impact';
   // Global filter drill-down Level 1: Study -> Country -> Site (Image 10 & 12)
   let selectedCountry = 'all';
+  let selectedSiteId = 'all';
   let riskTierFilter = 'all';
+  let impactFilter = 'all';
+  let driverFilter = 'all';
+  let criticalityFilter = 'all';
   let searchQuery = '';
   let showRiskBasisInfo = false;
 
@@ -348,13 +352,61 @@
   // Distinct countries for Level 1 Study -> Country filter
   $: countriesList = Array.from(new Set(sites.map(s => s.country))).sort();
 
-  // Filtered sites (Level 1 Country filter + Risk Tier + Search)
+  // Sites available in Site filter dropdown (scoped by selectedCountry)
+  $: siteOptionsForFilter = sites
+    .filter(s => selectedCountry === 'all' || s.country === selectedCountry)
+    .sort((a, b) => Number(a.id) - Number(b.id));
+
+  // Reset selectedSiteId if it's no longer in the selected country
+  $: if (selectedSiteId !== 'all' && !siteOptionsForFilter.some(s => s.id === selectedSiteId)) {
+    selectedSiteId = 'all';
+  }
+
+  $: hasActiveTableFilters =
+    selectedCountry !== 'all' ||
+    selectedSiteId !== 'all' ||
+    riskTierFilter !== 'all' ||
+    impactFilter !== 'all' ||
+    driverFilter !== 'all' ||
+    criticalityFilter !== 'all' ||
+    searchQuery.trim() !== '';
+
+  function resetTableFilters() {
+    selectedCountry = 'all';
+    selectedSiteId = 'all';
+    riskTierFilter = 'all';
+    impactFilter = 'all';
+    driverFilter = 'all';
+    criticalityFilter = 'all';
+    searchQuery = '';
+  }
+
+  // Filtered sites (Country + Site + Risk Tier + Impact + Driver + Criticality + Search)
   $: filteredSites = sites.filter(s => {
     if (selectedCountry !== 'all' && s.country !== selectedCountry) return false;
+    if (selectedSiteId !== 'all' && s.id !== selectedSiteId) return false;
     if (riskTierFilter === 'critical' && s.riskLevel !== 'Critical') return false;
     if (riskTierFilter === 'high' && s.riskLevel !== 'High') return false;
     if (riskTierFilter === 'medium' && s.riskLevel !== 'Medium') return false;
     if (riskTierFilter === 'low' && s.riskLevel !== 'Low') return false;
+
+    if (impactFilter === 'high' && (s.maxDelayDays || 0) < 3) return false;
+    if (impactFilter === 'moderate' && ((s.maxDelayDays || 0) < 1 || (s.maxDelayDays || 0) >= 3)) return false;
+    if (impactFilter === 'low' && (s.maxDelayDays || 0) >= 1) return false;
+
+    if (driverFilter !== 'all') {
+      const driversText = [
+        ...(s.keyRiskDrivers || []),
+        ...(s.reasons || [])
+      ].join(' ').toLowerCase();
+      if (driverFilter === 'safety' && !driversText.includes('sae') && !driversText.includes('safety')) return false;
+      if (driverFilter === 'lab' && !driversText.includes('lab') && !driversText.includes('transfer')) return false;
+      if (driverFilter === 'queries' && !driversText.includes('quer') && !driversText.includes('edc')) return false;
+      if (driverFilter === 'signoff' && !driversText.includes('sign')) return false;
+    }
+
+    if (criticalityFilter === 'critical_items' && (s.criticalOpenItems || 0) <= 0) return false;
+    if (criticalityFilter === 'endpoint_queries' && getSiteQueryMetrics(s).endpointCritical <= 0) return false;
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -763,49 +815,148 @@
   <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
     
     <!-- Filter Chips & Search Bar -->
-    <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="flex items-center space-x-1.5 overflow-x-auto text-xs">
-        <button
-          on:click={() => riskTierFilter = 'all'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
-        >
-          All sites ({filteredSites.length})
-        </button>
-        <button
-          on:click={() => riskTierFilter = 'critical'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'critical' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}"
-        >
-          Critical ({sites.filter(s => s.riskLevel === 'Critical').length})
-        </button>
-        <button
-          on:click={() => riskTierFilter = 'high'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'high' ? 'bg-amber-600 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}"
-        >
-          High ({sites.filter(s => s.riskLevel === 'High').length})
-        </button>
-        <button
-          on:click={() => riskTierFilter = 'medium'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'medium' ? 'bg-orange-500 text-white shadow-xs' : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200'}"
-        >
-          Medium ({sites.filter(s => s.riskLevel === 'Medium').length})
-        </button>
-        <button
-          on:click={() => riskTierFilter = 'low'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'low' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}"
-        >
-          Low ({sites.filter(s => s.riskLevel === 'Low').length})
-        </button>
+    <div class="p-4 sm:p-5 border-b border-slate-100 space-y-3">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center space-x-1.5 overflow-x-auto text-xs">
+          <button
+            on:click={() => riskTierFilter = 'all'}
+            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
+          >
+            All sites ({filteredSites.length})
+          </button>
+          <button
+            on:click={() => riskTierFilter = 'critical'}
+            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'critical' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}"
+          >
+            Critical ({sites.filter(s => s.riskLevel === 'Critical').length})
+          </button>
+          <button
+            on:click={() => riskTierFilter = 'high'}
+            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'high' ? 'bg-amber-600 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}"
+          >
+            High ({sites.filter(s => s.riskLevel === 'High').length})
+          </button>
+          <button
+            on:click={() => riskTierFilter = 'medium'}
+            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'medium' ? 'bg-orange-500 text-white shadow-xs' : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200'}"
+          >
+            Medium ({sites.filter(s => s.riskLevel === 'Medium').length})
+          </button>
+          <button
+            on:click={() => riskTierFilter = 'low'}
+            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'low' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}"
+          >
+            Low ({sites.filter(s => s.riskLevel === 'Low').length})
+          </button>
+        </div>
+
+        <div class="flex items-center space-x-2.5 self-end sm:self-center">
+          {#if hasActiveTableFilters}
+            <button
+              type="button"
+              on:click={resetTableFilters}
+              class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50 transition-colors cursor-pointer"
+            >
+              Clear filters
+            </button>
+          {/if}
+          <div class="relative">
+            <Search size={14} class="absolute left-2.5 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              bind:value={searchQuery}
+              placeholder="Search site, country or site ID"
+              class="text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 w-52"
+            />
+          </div>
+        </div>
       </div>
 
-      <div class="flex items-center space-x-2.5 self-end sm:self-center">
-        <div class="relative">
-          <Search size={14} class="absolute left-2.5 top-2.5 text-slate-400" />
-          <input
-            type="text"
-            bind:value={searchQuery}
-            placeholder="Search site, country or site ID"
-            class="text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 w-52"
-          />
+      <!-- Structured Table Column Filters: Country, Site, Risk Level, DBL Impact, Risk Driver, Criticality -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-3 border-t border-slate-100">
+        <div>
+          <label for="table-country-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Country</label>
+          <select
+            id="table-country-filter"
+            bind:value={selectedCountry}
+            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+          >
+            <option value="all">All countries ({countriesList.length})</option>
+            {#each countriesList as ctry}
+              <option value={ctry}>{ctry}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div>
+          <label for="table-site-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Site</label>
+          <select
+            id="table-site-filter"
+            bind:value={selectedSiteId}
+            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+          >
+            <option value="all">All sites ({siteOptionsForFilter.length})</option>
+            {#each siteOptionsForFilter as st}
+              <option value={st.id}>Site {st.id} – {st.name}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div>
+          <label for="table-risk-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Risk Level</label>
+          <select
+            id="table-risk-filter"
+            bind:value={riskTierFilter}
+            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+          >
+            <option value="all">All risk levels</option>
+            <option value="critical">Critical</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="table-impact-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">DBL Impact</label>
+          <select
+            id="table-impact-filter"
+            bind:value={impactFilter}
+            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+          >
+            <option value="all">All impacts</option>
+            <option value="high">High (3+ days)</option>
+            <option value="moderate">Moderate (1–3 days)</option>
+            <option value="low">Low (&lt;1 day)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="table-driver-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Risk Driver</label>
+          <select
+            id="table-driver-filter"
+            bind:value={driverFilter}
+            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+          >
+            <option value="all">All drivers</option>
+            <option value="safety">Safety / SAE</option>
+            <option value="lab">Lab Transfer</option>
+            <option value="queries">Open Queries / EDC</option>
+            <option value="signoff">Investigator Sign-offs</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="table-criticality-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Criticality</label>
+          <select
+            id="table-criticality-filter"
+            bind:value={criticalityFilter}
+            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+          >
+            <option value="all">All items</option>
+            <option value="critical_items">Has critical open items</option>
+            <option value="endpoint_queries">Endpoint-critical queries &gt; 0</option>
+          </select>
         </div>
       </div>
     </div>
