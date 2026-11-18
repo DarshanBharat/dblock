@@ -7,10 +7,13 @@
     CheckSquare,
     CheckCircle2,
     Sliders,
-    FolderKanban
+    FolderKanban,
+    Briefcase,
+    ChevronDown
   } from '@lucide/svelte';
 
   export let activeTab: string;
+  export let workspaceLabel = 'Workspace';
   export let onSelectTab: (tab: string) => void;
 
   let showSearchInput = false;
@@ -59,12 +62,12 @@
         class="flex items-center gap-2.5 cursor-pointer text-left group"
         on:click={() => onSelectTab('portfolio')}
       >
-        <img src={tcsLogo} alt="Tata Consultancy Services" width="104" height="35" class="w-[88px] sm:w-[104px] h-auto rounded-md bg-slate-950" />
+        <img src={tcsLogo} alt="Tata Consultancy Services" width="104" height="35" class="w-[88px] max-[380px]:w-[64px] sm:w-[104px] h-auto rounded-md bg-slate-950" />
         <div>
           <strong class="text-[15px] font-bold tracking-tight text-slate-900 leading-none block font-display">
             DBLock <span class="text-blue-600">AI</span>
           </strong>
-          <small class="text-[10px] text-slate-500 font-medium block leading-none mt-0.5">
+          <small class="text-[10px] text-slate-500 font-medium block leading-none mt-0.5 max-[380px]:hidden">
             Database Lock Engine
           </small>
         </div>
@@ -107,6 +110,23 @@
 
     <!-- Right: Global Utilities & Profile -->
     <div class="flex items-center gap-2 shrink-0">
+      {#if activeTab !== 'portfolio'}
+        <button
+          type="button"
+          popovertarget="study-workspace"
+          on:click={() => showSearchInput = false}
+          class="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors {workspaceLabel === 'Workspace' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-blue-50 text-blue-800 hover:bg-blue-100'}"
+          aria-label={workspaceLabel === 'Workspace' ? 'Workspace' : `Workspace · ${workspaceLabel}`}
+          title={workspaceLabel}
+        >
+          <Briefcase size={15} aria-hidden="true" />
+          <span class="hidden xl:inline">{workspaceLabel}</span>
+          <ChevronDown size={12} class="hidden xl:block" aria-hidden="true" />
+        </button>
+        <div id="study-workspace" popover="auto" role="region" aria-labelledby="study-workspace-heading" class="workspace-popover rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
+          <slot name="workspace" />
+        </div>
+      {/if}
 
       <!-- Quick Jump Search -->
       <div class="relative">
@@ -171,3 +191,16 @@
     {/each}
   </div>
 </header>
+
+
+<style>
+  .workspace-popover {
+    position: fixed;
+    inset: 4rem max(1rem, calc((100vw - 1440px) / 2 + 1.5rem)) auto auto;
+    width: min(28rem, calc(100vw - 2rem));
+    max-height: calc(100vh - 5rem);
+    max-height: calc(100dvh - 5rem);
+    margin: 0;
+    overflow-y: auto;
+  }
+</style>

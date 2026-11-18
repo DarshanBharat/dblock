@@ -22,7 +22,6 @@
     CheckCircle2,
     Sliders,
     TrendingUp,
-    ChevronDown,
     Sparkles,
     ArrowRight,
     RotateCcw
@@ -154,7 +153,6 @@
   // 5-Step Pre-DBL Hard Gate Sequence (Item C)
   const hardGates = [
     {
-      step: 1,
       id: 'lslv',
       name: 'LSLV Cut-Off',
       date: '30 Nov',
@@ -163,7 +161,6 @@
       roleFilter: 'all' as const
     },
     {
-      step: 2,
       id: 'vendor_lock',
       name: 'Vendor Transfer Lock',
       date: '05 Dec',
@@ -172,7 +169,6 @@
       roleFilter: 'vendor' as const
     },
     {
-      step: 3,
       id: 'safety_freeze',
       name: 'Safety / SAE Freeze',
       date: '08 Dec',
@@ -181,7 +177,6 @@
       roleFilter: 'safety' as const
     },
     {
-      step: 4,
       id: 'coding_query_lock',
       name: 'Coding & Query Lock',
       date: '11 Dec',
@@ -190,7 +185,6 @@
       roleFilter: 'cdm' as const
     },
     {
-      step: 5,
       id: 'pi_sign_dbl',
       name: 'PI e-Sign & Hard DBL',
       date: '15 Dec',
@@ -220,8 +214,79 @@
   <!-- Unified Top Header Bar -->
   <Header
     {activeTab}
+    workspaceLabel={activeRole === 'all' ? 'Workspace' : activeRoleObj.label}
     onSelectTab={handleSelectTab}
-  />
+  >
+    <div slot="workspace" class="p-4 sm:p-5">
+      <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <h2 id="study-workspace-heading" class="text-sm font-semibold text-slate-900">Study workspace</h2>
+          <p class="mt-1 text-xs text-slate-600">
+            {study.protocol} · {study.id} · {study.therapeuticArea} · Phase III
+          </p>
+        </div>
+        <button
+          type="button"
+          popovertarget="study-workspace"
+          popovertargetaction="hide"
+          on:click={() => handleSelectTab('portfolio')}
+          class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-200 cursor-pointer"
+        >
+          Switch study
+        </button>
+      </div>
+
+      <div class="pt-4">
+        <h3 id="workstreams-heading" class="text-xs font-semibold text-slate-900">Workstreams</h3>
+        <div class="mt-2 grid grid-cols-2 gap-2" role="group" aria-labelledby="workstreams-heading">
+          {#each roleQueues as queue (queue.id)}
+            <button
+              type="button"
+              popovertarget="study-workspace"
+              popovertargetaction="hide"
+              aria-pressed={activeRole === queue.id}
+              on:click={() => activeRole = queue.id}
+              class="flex min-h-10 items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition-colors cursor-pointer {activeRole === queue.id ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}"
+            >
+              <span>{queue.label}</span>
+              <span class="num-tabular">{queue.count}</span>
+            </button>
+          {/each}
+        </div>
+        <p class="mt-2 text-xs text-slate-600">{activeRoleObj.desc}</p>
+      </div>
+
+      <div class="mt-4 border-t border-slate-100 pt-4">
+        <h3 class="text-xs font-semibold text-slate-900">Database lock milestones</h3>
+        <ul class="mt-2 divide-y divide-slate-100">
+          {#each hardGates as gate (gate.id)}
+            <li>
+              <button
+                type="button"
+                popovertarget="study-workspace"
+                popovertargetaction="hide"
+                aria-pressed={activeRole === gate.roleFilter && gate.roleFilter !== 'all'}
+                aria-label={`${gate.name}, ${gate.date}. ${gate.metric}`}
+                on:click={() => activeRole = activeRole === gate.roleFilter ? 'all' : gate.roleFilter}
+                class="grid w-full grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 rounded-lg px-2 py-2 text-left text-xs hover:bg-slate-50 cursor-pointer"
+              >
+                <span class="font-medium text-slate-900">{gate.name}</span>
+                <span class="num-tabular text-slate-500">{gate.date}</span>
+                <span class="col-span-2 {gate.status === 'on_track' ? 'text-emerald-700' : gate.status === 'at_risk' ? 'text-amber-700' : 'text-rose-700'}">
+                  {gate.metric}
+                </span>
+              </button>
+            </li>
+          {/each}
+        </ul>
+      </div>
+      <dl class="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs">
+        <div><dt class="text-slate-500">Clean patients</dt><dd class="font-semibold text-slate-900 num-tabular">158 / 220 (71.8%)</dd></div>
+        <div><dt class="text-slate-500">Target DBL</dt><dd class="font-semibold text-slate-900 num-tabular">15 Dec 2026</dd></div>
+        <div><dt class="text-slate-500">Forecast DBL</dt><dd class="font-semibold text-rose-700 num-tabular">21 Dec (+6d)</dd></div>
+      </dl>
+    </div>
+  </Header>
 
   <!-- Main View Container -->
   <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
@@ -241,102 +306,6 @@
     {:else}
       <!-- Full-Width Operational Study Workspace -->
       <div class="space-y-5">
-
-        <!-- ================================================================= -->
-        <!-- STUDY CONTEXT + 5-STEP HARD GATE SEQUENCE + WORKSTREAM FILTER     -->
-        <!-- ================================================================= -->
-        <div class="db-card p-4 sm:px-5 sm:py-4 flex flex-col gap-3.5">
-          
-          <!-- Row 1: Study Switcher + 5-Step Sequential Hard Gate Pipeline -->
-          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
-            <div class="flex items-center gap-3 shrink-0">
-              <button
-                type="button"
-                on:click={() => handleSelectTab('portfolio')}
-                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/70 text-xs font-semibold text-slate-900 transition-colors cursor-pointer"
-                title="Switch study in Portfolio"
-              >
-                <span class="font-mono font-bold text-slate-900">{study.protocol}</span>
-                <span class="text-slate-400">&middot;</span>
-                <span class="text-slate-600">{study.id}</span>
-                <ChevronDown size={13} class="text-slate-400" />
-              </button>
-              <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-                <span>{study.therapeuticArea} &middot; Phase III</span>
-                <span class="text-slate-300">|</span>
-                <span class="num-tabular">30 Nov Cut-Off</span>
-              </div>
-            </div>
-
-            <!-- 5-Step Hard Gate Sequence Strip (Item C) -->
-            <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 flex-1 max-w-4xl">
-              {#each hardGates as gate}
-                <button
-                  type="button"
-                  on:click={() => activeRole = activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'all' : gate.roleFilter}
-                  class="group text-left px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-slate-50/70 hover:bg-slate-100/80 border-slate-200/70 text-slate-800'}"
-                  title="Filter workspace to {gate.name}"
-                >
-                  <div class="flex items-center justify-between gap-1 w-full">
-                    <span class="text-[10px] font-semibold tracking-tight flex items-center gap-1.5 {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'text-slate-300' : 'text-slate-500'}">
-                      <span class="w-1.5 h-1.5 rounded-full shrink-0 {gate.status === 'on_track' ? 'bg-emerald-500' : gate.status === 'at_risk' ? 'bg-amber-500' : 'bg-rose-500'}"></span>
-                      <span class="truncate">{gate.step}. {gate.name}</span>
-                    </span>
-                    <span class="text-[10px] font-mono font-semibold num-tabular shrink-0 {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'text-white' : 'text-slate-700'}">{gate.date}</span>
-                  </div>
-                  <div class="text-[11px] font-medium truncate mt-0.5 num-tabular {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'text-slate-200' : gate.status === 'on_track' ? 'text-emerald-700' : gate.status === 'at_risk' ? 'text-amber-700' : 'text-rose-600'}">
-                    {gate.metric}
-                  </div>
-                </button>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Row 2: Role / Workstream Segmented Filter Pills (#2) -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-              <span class="text-[11px] font-medium text-slate-400 mr-1 shrink-0">
-                Queue:
-              </span>
-              <div class="db-segmented">
-                {#each roleQueues as rq}
-                  <button
-                    type="button"
-                    on:click={() => activeRole = rq.id}
-                    class="db-segmented-btn flex items-center gap-1.5 {activeRole === rq.id ? 'active' : ''}"
-                  >
-                    <span>{rq.label}</span>
-                    <span class="text-[10px] num-tabular {activeRole === rq.id ? 'text-blue-600 font-bold' : 'text-slate-400'}">
-                      {rq.count}
-                    </span>
-                  </button>
-                {/each}
-              </div>
-            </div>
-
-            {#if activeRole !== 'all'}
-              <div class="flex items-center justify-between sm:justify-end gap-2 text-xs text-slate-700 bg-slate-100/80 px-3 py-1 rounded-lg shrink-0">
-                <span>{activeRoleObj.desc}</span>
-                <button
-                  type="button"
-                  on:click={() => activeRole = 'all'}
-                  class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer ml-1.5"
-                >
-                  Clear
-                </button>
-              </div>
-            {:else}
-              <div class="hidden lg:flex items-center gap-2 text-xs text-slate-500 shrink-0">
-                <span>Clean Patient Tracker: <strong class="text-slate-800 num-tabular">158 / 220 (71.8%)</strong></span>
-                <span class="text-slate-300">&middot;</span>
-                <span>Target DBL: <strong class="text-slate-800 num-tabular">15 Dec 2026</strong></span>
-                <span class="text-slate-300">&middot;</span>
-                <span class="text-rose-600 font-semibold num-tabular">Forecast: 21 Dec (+6d)</span>
-              </div>
-            {/if}
-          </div>
-
-        </div>
 
         <!-- ================================================================= -->
         <!-- UNIFIED FORECAST & SIMULATION MODE SWITCHER (#5)                  -->
