@@ -69,7 +69,7 @@
       endpointQueries: Math.min(openQueries, Math.max(subject.criticalQueries ?? 0, evidence.filter(query => query.isPrimaryEndpoint).length)),
       pendingForms: openForms.filter((form: { name: string }) => !isSignoff(form)),
       signoff: openForms.find(isSignoff) ?? forms.find(isSignoff),
-      pendingSignoff: openForms.some(isSignoff),
+      pendingSignoff: openForms.some(isSignoff) || cleaning?.piSigned === false,
       verifiedForms: forms.filter((form: { status: string }) => form.status === 'Verified').length,
       formCount: forms.filter((form: { name: string }) => !isSignoff(form)).length,
       vendorItems: openForms.filter((form: { flag: string }) => form.flag === 'External Lab'),
@@ -323,7 +323,7 @@
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div>
         <h2 class="text-base font-extrabold text-slate-900">Clean Patient Tracker</h2>
-        <p class="mt-1 text-xs text-slate-500">EDC data cleaning · {siteSubjects.length} demo subjects at {site.code}. Synthetic records are labeled. Earlier snapshot records may have incomplete evidence.</p>
+        <p class="mt-1 text-xs text-slate-500">EDC data cleaning · {siteSubjects.length} demo subjects at {site.code}. Supplemented rows show demo progress for the listed forms.</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -372,7 +372,10 @@
                 <tr class="hover:bg-slate-50">
                   <th scope="row" class="p-3 font-semibold text-slate-900">
                     {row.subject.id}
-                    <span class="block max-w-48 font-normal text-slate-500">{row.subject.cleaning ? 'Synthetic demo' : row.subject.cohort}</span>
+                    <span class="block max-w-48 font-normal text-slate-500">{row.subject.syntheticSubject ? 'Synthetic demo' : row.subject.cohort}</span>
+                    {#if !row.subject.syntheticSubject && row.cleaning}
+                      <span class="block font-normal text-slate-500">Demo progress added</span>
+                    {/if}
                   </th>
                   <td class="p-3">
                     <span class="inline-block rounded px-2 py-1 font-semibold {row.hasOpenWork ? 'bg-amber-50 text-amber-800' : row.isClean ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
@@ -423,7 +426,7 @@
                     {/if}
                   </td>
                   <td class="p-3 whitespace-nowrap">{row.cleaning ? `${row.cleaning.codingOpen} pending` : 'Status unavailable'}</td>
-                  <td class="p-3">{row.signoff?.status ?? 'Status unavailable'}</td>
+                  <td class="p-3">{row.signoff?.status ?? (row.cleaning ? (row.cleaning.piSigned ? 'Signed' : 'Pending PI signature') : 'Status unavailable')}</td>
                   <td class="p-3 whitespace-nowrap">{row.cleaning ? (row.cleaning.frozen ? 'Frozen' : 'Not frozen') : 'Status unavailable'}</td>
                   <td class="p-3">
                     <button

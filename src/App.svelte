@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import dblockData from './data/dblock_data.json';
-  import { demoSubjects, demoQueries, additionalSnapshotQueries } from './data/cleanPatientDemo';
+  import { demoSubjects, demoQueries, additionalSnapshotQueries, supplementSnapshotSubject } from './data/cleanPatientDemo';
   import Header from './components/Header.svelte';
   import TrustCentreModal from './components/TrustCentreModal.svelte';
   import DataHealthModal from './components/DataHealthModal.svelte';
@@ -63,7 +63,7 @@
     governance
   } = dblockData as any;
 
-  const trackerSubjects = [...subjects, ...demoSubjects];
+  const trackerSubjects = [...subjects.map(supplementSnapshotSubject), ...demoSubjects];
   const trackerQueries = [...queriesDetail, ...additionalSnapshotQueries, ...demoQueries];
 
   // Initialize live workflow store

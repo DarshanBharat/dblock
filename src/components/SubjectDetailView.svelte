@@ -65,7 +65,7 @@
           <span class="text-xs text-slate-500">{subject.status}</span>
         </div>
         <h2 class="text-lg font-bold text-slate-900 mt-1">
-          {subject.cleaning ? 'Synthetic demo record' : subject.initials + ' · ' + subject.sex + ', ' + subject.age + ' yrs'} &middot; Site {subject.siteId}
+          {subject.syntheticSubject ? 'Synthetic demo record' : subject.initials + ' · ' + subject.sex + ', ' + subject.age + ' yrs'} &middot; Site {subject.siteId}
         </h2>
         <p class="text-xs text-slate-600">
           Enrolled in {subject.cohort}
@@ -117,6 +117,9 @@
     {@const cleaning = subject.cleaning}
     <section class="rounded-lg border border-slate-200 bg-white p-5">
       <h3 class="text-sm font-bold text-slate-900">EDC cleaning and freeze</h3>
+      {#if !subject.syntheticSubject}
+        <p class="mt-1 text-xs text-slate-500">Supplemental demo progress for the listed forms.</p>
+      {/if}
       <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
         <div><dt>Entry</dt><dd class="font-bold">{cleaning.entered}/{cleaning.total} forms</dd></div>
         <div><dt>SDV</dt><dd class="font-bold">{cleaning.sdv}/{cleaning.total} forms</dd></div>
@@ -193,7 +196,7 @@
                 {/if}
               </td>
               <td class="py-3 px-3 text-right">
-                {#if !subject.cleaning && form.status !== 'Clean' && form.status !== 'Illustrative' && resolvedForm !== form.name}
+                {#if !subject.syntheticSubject && form.status !== 'Clean' && form.status !== 'Illustrative' && resolvedForm !== form.name}
                   <button
                     type="button"
                     on:click={() => resolvedForm = form.name}
@@ -202,7 +205,7 @@
                     Quick Align Note
                   </button>
                 {:else}
-                  <span class="text-slate-400 text-xs">{subject.cleaning ? 'Read only' : 'Ready'}</span>
+                  <span class="text-slate-400 text-xs">{subject.syntheticSubject ? 'Read only' : 'Ready'}</span>
                 {/if}
               </td>
             </tr>

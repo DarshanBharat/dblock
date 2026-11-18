@@ -11,6 +11,35 @@ const formTemplates = [
   { name: 'End of Visit', flag: 'Routine' }
 ];
 
+type CleaningProgress = {
+  total: number;
+  entered: number;
+  sdv: number;
+  sdr: number;
+  safetyOpen: number;
+  vendorOpen: number;
+  codingOpen: number;
+  piSigned: boolean;
+  frozen: boolean;
+};
+
+type SnapshotSubject = (typeof snapshot.subjects)[number];
+
+// Supplement the original demo rows with progress for their listed eCRFs.
+// The original form statuses, query counts, and audit evidence remain the source of record for the demo.
+const snapshotProgress: Record<string, CleaningProgress> = {
+  'SUBJ-104-003': { total: 4, entered: 4, sdv: 2, sdr: 2, safetyOpen: 1, vendorOpen: 0, codingOpen: 0, piSigned: false, frozen: false },
+  'SUBJ-104-012': { total: 3, entered: 2, sdv: 1, sdr: 1, safetyOpen: 1, vendorOpen: 0, codingOpen: 1, piSigned: false, frozen: false },
+  'SUBJ-104-019': { total: 2, entered: 2, sdv: 1, sdr: 1, safetyOpen: 0, vendorOpen: 1, codingOpen: 0, piSigned: false, frozen: false },
+  'SUBJ-104-021': { total: 2, entered: 2, sdv: 2, sdr: 1, safetyOpen: 0, vendorOpen: 0, codingOpen: 1, piSigned: false, frozen: false },
+  'SUBJ-317-005': { total: 1, entered: 1, sdv: 0, sdr: 0, safetyOpen: 0, vendorOpen: 0, codingOpen: 0, piSigned: false, frozen: false },
+  'SUBJ-208-014': { total: 1, entered: 1, sdv: 1, sdr: 1, safetyOpen: 0, vendorOpen: 0, codingOpen: 1, piSigned: false, frozen: false }
+};
+
+export function supplementSnapshotSubject(subject: SnapshotSubject) {
+  return { ...subject, cleaning: snapshotProgress[subject.id], syntheticSubject: false };
+}
+
 export const demoSubjects = snapshot.sites.flatMap((site, siteIndex) => {
   const existingIds = new Set(snapshot.subjects.filter(subject => subject.siteId === site.id).map(subject => subject.id));
   return Array.from({ length: site.enrolledSubjects }, (_, index) => {
@@ -58,7 +87,7 @@ export const demoSubjects = snapshot.sites.flatMap((site, siteIndex) => {
     }));
 
     return {
-      id, siteId: site.id, cohort: 'Demo cohort', status: 'Synthetic subject', initials: '',
+      id, siteId: site.id, syntheticSubject: true, cohort: 'Demo cohort', status: 'Synthetic subject', initials: '',
       riskLevel: endpointQueries || safetyOpen ? 'Critical' : openQueries ? 'High' : 'Low',
       openQueries, criticalQueries: endpointQueries, hasSaeDiscrepancy: safetyOpen > 0,
       forms, queries,
