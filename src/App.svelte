@@ -71,8 +71,16 @@
   let selectedSubjectId: string | null = null;
 
   onMount(() => {
-    function applyHash() {
+    async function applyHash() {
       const h = window.location.hash.replace('#', '');
+      if (h === 'sae-reconciliation') {
+        activeTab = 'digital_twin';
+        selectedReadinessCategory = 'safety_recon';
+        openWeightConfigOnLoad = false;
+        await tick();
+        if (window.location.hash === '#sae-reconciliation') focusReadinessDetails('safety_recon');
+        return;
+      }
       if (['portfolio', 'command_centre', 'risk_matrix', 'digital_twin', 'action_workbench', 'simulator', 'forecast_scenarios'].includes(h)) {
         activeTab = h;
       }
@@ -81,6 +89,12 @@
     window.addEventListener('hashchange', applyHash);
     return () => window.removeEventListener('hashchange', applyHash);
   });
+
+  function focusReadinessDetails(category: string) {
+    const details = document.getElementById(category === 'safety_recon' ? 'sae-reconciliation-queue' : 'readiness-score-details');
+    details?.focus({ preventScroll: true });
+    details?.scrollIntoView({ block: 'start' });
+  }
 
   async function handleSelectTab(tab: string, readinessCategory?: string, showWeightConfig?: boolean) {
     activeTab = tab;
@@ -96,9 +110,7 @@
     if (tab === 'digital_twin' && readinessCategory && !showWeightConfig) {
       await tick();
       if (activeTab !== 'digital_twin' || selectedReadinessCategory !== readinessCategory) return;
-      const details = document.getElementById(readinessCategory === 'safety_recon' ? 'sae-reconciliation-queue' : 'readiness-score-details');
-      details?.focus({ preventScroll: true });
-      details?.scrollIntoView({ block: 'start' });
+      focusReadinessDetails(readinessCategory);
       return;
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
