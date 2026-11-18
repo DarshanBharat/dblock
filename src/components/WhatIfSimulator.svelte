@@ -208,29 +208,6 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- HERO BANNER: WHAT-IF INTERVENTION SIMULATOR (Potential DBL Date Wording)  -->
-  <!-- ========================================================================= -->
-  <div class="rounded-2xl bg-gradient-to-r from-[#0d1b3e] via-[#10224d] to-[#122b68] text-white p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-    <div class="max-w-2xl z-10">
-      <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-        7. WHAT-IF INTERVENTION SIMULATOR &middot; NON-ADDITIVE OVERLAP MODEL
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
-        Simulate How Interventions Shift the Potential DBL Date
-      </h1>
-      <p class="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-        Uses <strong>Potential DBL date</strong> wording rather than ungrounded "delay avoided" figures, and accounts for critical-path overlaps between laboratory transfers and reconciliation actions.
-      </p>
-    </div>
-
-    <div class="relative z-10 shrink-0 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 max-w-xs text-xs text-blue-100">
-      <div class="font-bold text-white">Target DBL (Unchanged): 15 Dec 2026</div>
-      <div class="mt-1">Baseline Potential DBL: <strong class="text-rose-300">21 Dec 2026</strong></div>
-      <div class="mt-0.5">Simulated Potential DBL: <strong class="text-emerald-300">{potentialDblSimulated}</strong></div>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
   <!-- TOP 3 KPI CARDS (Renamed to Potential DBL Date Wording per Image 3 Blue)  -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">

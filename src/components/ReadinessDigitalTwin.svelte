@@ -513,47 +513,6 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- HERO BANNER: READINESS TAB — CLEAN-PATIENT BASIS & 6 SEEMA PARAMETERS     -->
-  <!-- ========================================================================= -->
-  <div class="rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
-    <div class="max-w-2xl">
-      <div class="flex items-center space-x-2 flex-wrap gap-y-1">
-        <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-          5. READINESS SCORE TRACEABILITY &amp; CLEAN-PATIENT TRACKER BASIS
-        </span>
-        <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 text-[10px] font-bold">
-          Automated Vendor Metrics (No Manual Inputs)
-        </span>
-      </div>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
-        Readiness Basis: {configuredReadinessScore}/100 (158 of 220 Clean Enrolled Subjects)
-      </h1>
-      <p class="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-        Defined as the <strong>share of enrolled subjects with no outstanding issues</strong> across <strong>Data entry, SDV/SDR, PI signatures, Coding, Queries, and Vendor data</strong>, accounting for <strong>critical (18 subjects, 2.0x penalty)</strong> versus <strong>noncritical (44 subjects, 0.5x penalty)</strong> unresolved items.
-      </p>
-    </div>
-
-    <!-- Level 1 Summary Card in Banner -->
-    <div class="shrink-0 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 min-w-[270px] text-xs text-blue-100 space-y-1.5">
-      <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-300">
-        Level 1: Study Readiness &amp; Potential DBL
-      </div>
-      <div class="flex items-baseline justify-between">
-        <span class="text-slate-300">Clean Subjects Share:</span>
-        <strong class="text-lg font-extrabold text-white">158/220 <span class="text-[11px] font-normal text-blue-200">({configuredReadinessScore}/100)</span></strong>
-      </div>
-      <div class="flex items-baseline justify-between">
-        <span class="text-slate-300">Target DBL (Unchanged):</span>
-        <strong class="font-mono text-white">15 Dec 2026</strong>
-      </div>
-      <div class="flex items-baseline justify-between">
-        <span class="text-slate-300">Potential DBL Date:</span>
-        <strong class="font-mono text-rose-300">21 Dec 2026 (+6d)</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
   <!-- LEVEL 1 & FORECAST MOVEMENT: WEEKLY SCRUBBER (Week -4 to Current Week)    -->
   <!-- Selected week -> parameter change -> forecast movement -> records         -->
   <!-- ========================================================================= -->

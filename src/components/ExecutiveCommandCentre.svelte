@@ -1,7 +1,6 @@
 <script lang="ts">
   import {
     ArrowRight,
-    Calendar,
     AlertTriangle,
     CheckCircle2,
     Clock,
@@ -181,55 +180,6 @@
 </script>
 
 <div class="space-y-6">
-
-  <!-- ========================================================================= -->
-  <!-- HERO BANNER: STUDY OVERVIEW OR COMMAND CENTRE (With Refreshed Provenance) -->
-  <!-- ========================================================================= -->
-  <div class="relative rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white p-6 sm:p-7 overflow-hidden shadow-md border border-slate-800">
-    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-      <div class="max-w-2xl">
-        <div class="flex items-center space-x-2.5 flex-wrap gap-y-1">
-          <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-            2. STUDY OVERVIEW OR COMMAND CENTRE
-          </span>
-          <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-bold">
-            Active &middot; Illustrative Prototype Values
-          </span>
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1.5 tracking-tight flex items-baseline space-x-3 flex-wrap">
-          <span>Study {study.protocol}</span>
-          <span class="text-sm font-normal text-slate-300">Oncology (NSCLC) &middot; Phase III &middot; Global</span>
-        </h1>
-        <p class="text-xs sm:text-sm text-white font-semibold mt-2 leading-relaxed bg-white/10 px-3 py-1.5 rounded-lg border border-white/15 inline-block">
-          Study CA-209-301 has a readiness score of 72/100 (illustrative) and a potential DBL date six days after the 15 December target.
-        </p>
-        <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">
-          Know what will delay database lock, why it matters and what to do next.
-        </p>
-      </div>
-
-      <!-- Data Last Refreshed & Confidence Box (Image 5 Explicit Requirement) -->
-      <div class="shrink-0 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 max-w-sm text-xs text-blue-100 space-y-2">
-        <div class="flex items-center justify-between border-b border-white/15 pb-2">
-          <span class="font-bold text-white flex items-center space-x-1.5">
-            <Calendar size={14} class="text-blue-300" />
-            <span>Forecast Confidence Indicator</span>
-          </span>
-          <span class="px-2 py-0.5 rounded bg-amber-400/20 text-amber-200 border border-amber-300/30 text-[10px] font-bold">
-            Moderate confidence
-          </span>
-        </div>
-        <div class="text-[11px] space-y-0.5">
-          <div class="font-bold text-white">Most likely potential DBL date: 21 December 2026</div>
-          <div class="text-blue-200">Range: <strong>18–22 December</strong> | <strong>Moderate confidence</strong></div>
-        </div>
-        <div class="pt-1.5 border-t border-white/15 text-[10px] text-slate-300 leading-snug">
-          <div class="font-semibold text-white">Data refreshed: 31 October 2026, 08:00 UTC</div>
-          <div>Sources: EDC, Safety, Central Lab, eCOA and Coding</div>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- ========================================================================= -->
   <!-- 4 TOP KPI CARDS (With Distinct Target vs Potential DBL & Calc Link)       -->

@@ -5,7 +5,6 @@
     Table,
     LayoutGrid,
     ArrowRight,
-    TrendingUp,
     TrendingDown,
     FolderKanban,
     CheckCircle2,
@@ -654,94 +653,6 @@
     <!-- RIGHT COLUMN: MAIN PORTFOLIO CONTENT                                      -->
     <!-- ========================================================================= -->
     <div class="lg:col-span-3 space-y-5">
-      
-      <!-- Hero Banner + Featured Example Study Card (CA-209-301) (Image 3 Spec) -->
-      <div class="relative rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white p-6 overflow-hidden shadow-md border border-slate-800">
-        <div class="absolute -right-10 -bottom-10 w-72 h-72 rounded-full bg-blue-500/10 blur-2xl pointer-events-none"></div>
-
-        <div class="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          <div class="lg:col-span-7">
-            <div class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300 flex items-center space-x-2">
-              <span>1. STUDY PORTFOLIO AND SELECTION &middot; ENTRY POINT</span>
-            </div>
-            <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1.5 tracking-tight">
-              Study portfolio, greater confidence.
-            </h1>
-            <p class="text-xs sm:text-sm text-slate-300 mt-2 leading-relaxed">
-              Monitor studies approaching LSLV or DBL. Target DBL dates are shown unchanged alongside the <strong>Potential DBL date (based on current progress)</strong> to flag either a possible delay or an earlier completion.
-            </p>
-            <div class="mt-4 flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                on:click={() => onSelectStudy('CA-209-301')}
-                class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center space-x-1.5 shadow-sm transition-colors cursor-pointer"
-              >
-                <span>Open Study CA-209-301 Overview</span>
-                <ArrowRight size={14} />
-              </button>
-              <button
-                type="button"
-                on:click={() => showDrillDownExplorer = !showDrillDownExplorer}
-                class="px-3.5 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-blue-100 border border-white/20 font-semibold text-xs transition-colors cursor-pointer"
-              >
-                {showDrillDownExplorer ? 'Hide 4-Level Portfolio Drill-Down' : 'Explore 4-Level Portfolio Drill-Down'}
-              </button>
-            </div>
-          </div>
-
-          <!-- Featured Example Study Card: Study CA-209-301 (Exact Manager Spec from Image 3) -->
-          <div
-            class="lg:col-span-5 p-4 rounded-xl bg-white text-slate-900 border-2 border-blue-400 shadow-lg cursor-pointer hover:border-blue-300 transition-all"
-            on:click={() => onSelectStudy('CA-209-301')}
-            on:keydown={(e) => e.key === 'Enter' && onSelectStudy('CA-209-301')}
-            role="button"
-            tabindex="0"
-          >
-            <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
-              <div>
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">Featured Study Card</span>
-                <h3 class="text-base font-extrabold text-slate-900">Study CA-209-301</h3>
-              </div>
-              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                Oncology &middot; Phase III
-              </span>
-            </div>
-
-            <ul class="space-y-1.5 text-xs text-slate-700">
-              <li class="flex items-center justify-between">
-                <span class="text-slate-500">Planned DBL (Target unchanged):</span>
-                <strong class="font-bold text-slate-900">15 December 2026</strong>
-              </li>
-              <li class="flex items-center justify-between bg-blue-50/80 px-2 py-1 rounded border border-blue-100">
-                <span class="text-blue-900 font-semibold">Potential DBL date (current progress):</span>
-                <strong class="font-extrabold text-rose-600">21 December 2026 (+6d)</strong>
-              </li>
-              <li class="flex items-center justify-between pt-0.5">
-                <span class="text-slate-500">Readiness (Clean-subject share):</span>
-                <div class="text-right">
-                  <strong class="font-extrabold text-slate-900">72/100</strong>
-                  <span class="text-[10px] text-slate-500 block">158/220 clean &middot; 18 crit / 44 non-crit</span>
-                </div>
-              </li>
-              <li class="flex items-center justify-between">
-                <span class="text-slate-500">Critical blockers:</span>
-                <strong class="font-bold text-rose-600">8</strong>
-              </li>
-              <li class="flex items-center justify-between">
-                <span class="text-slate-500">High-risk sites:</span>
-                <strong class="font-bold text-slate-900">3 of 18</strong>
-              </li>
-              <li class="flex items-center justify-between">
-                <span class="text-slate-500">Trend:</span>
-                <strong class="font-bold text-emerald-600 flex items-center space-x-1">
-                  <TrendingUp size={12} />
-                  <span>Improved by 1 day this week</span>
-                </strong>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
 
       <!-- ===================================================================== -->
       <!-- MAIN STUDY PORTFOLIO TABLE / CARDS PANEL                              -->

@@ -197,34 +197,6 @@
 <div class="space-y-5">
 
   <!-- ========================================================================= -->
-  <!-- HERO BANNER: ACTION DECISION WORKBENCH + RESPONSIBLE AI GOVERNANCE        -->
-  <!-- ========================================================================= -->
-  <div class="rounded-2xl bg-gradient-to-r from-blue-950 via-slate-900 to-indigo-950 text-white p-6 shadow-md border border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-    <div class="max-w-2xl">
-      <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-        6. ACTION DECISION WORKBENCH &middot; HUMAN-IN-THE-LOOP GOVERNANCE
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
-        Turn insights into human-approved actions.
-      </h1>
-      <p class="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-        Aligned directly with the study's leading potential delay drivers without repeating risk screens. Select any recommendation to <strong>Accept, Modify, Assign to another owner, Defer, or Reject with reason</strong>.
-      </p>
-    </div>
-
-    <!-- Governance Requirement Callout (Exact Manager Wording from Image 2) -->
-    <div class="shrink-0 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 max-w-md text-xs text-blue-100 space-y-1.5">
-      <div class="flex items-center space-x-2 font-extrabold text-white">
-        <Lock size={15} class="text-emerald-400 shrink-0" />
-        <span>Governance Requirement &middot; Study Team Final Decision</span>
-      </div>
-      <p class="text-[11px] text-white font-semibold leading-relaxed">
-        The study team makes the final decision. DBLock AI does not modify clinical data or send external communications without authorised human approval.
-      </p>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
   <!-- TOP DELAY DRIVERS <-> ACTION ALIGNMENT STRIP (Image 2 Blue Requirement)   -->
   <!-- Keeps screen focused on driver-to-action alignment without repeating risk -->
   <!-- ========================================================================= -->

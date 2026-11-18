@@ -100,32 +100,6 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- HERO BANNER: 8. FORECAST & SCENARIO INTELLIGENCE                          -->
-  <!-- ========================================================================= -->
-  <div class="rounded-2xl bg-gradient-to-r from-[#0d1b3e] via-[#10224d] to-[#122b68] text-white p-6 shadow-md border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-    <div class="max-w-2xl z-10">
-      <span class="text-[10px] font-extrabold uppercase tracking-widest text-blue-300">
-        8. FORECAST SCENARIOS &amp; CLOSED-LOOP LEARNING (LEVELS 1–4)
-      </span>
-      <h1 class="text-2xl sm:text-3xl font-extrabold text-white mt-1 tracking-tight">
-        Target DBL vs. Potential DBL Date &amp; Target-Meeting Likelihood
-      </h1>
-      <p class="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-        Keeps the agreed <strong>Target DBL date (15 December 2026)</strong> separate from the <strong>Potential DBL date based on current progress</strong>, showing both possible delays and earlier completions alongside the <strong>likelihood of meeting the agreed target</strong>.
-      </p>
-    </div>
-
-    <div class="relative z-10 shrink-0 p-4 rounded-xl bg-white/10 backdrop-blur-md border border-white/15 max-w-xs text-xs text-blue-100 space-y-1">
-      <div class="text-[10px] font-extrabold uppercase tracking-wider text-amber-300">
-        Discussion Point (Bijal) &middot; Dual View
-      </div>
-      <div class="font-bold text-white">Agreed Target: 15 Dec 2026 (Unchanged)</div>
-      <div>Baseline Target Likelihood: <strong class="text-amber-300">28%</strong></div>
-      <div>With Top Actions Executed: <strong class="text-emerald-300">74% likelihood</strong></div>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
   <!-- TOP 3 KPI CARDS: TARGET DATE (UNCHANGED) | POTENTIAL DBL | LIKELIHOOD     -->
   <!-- (Image 4 Blue: Separate Target vs Forecast + Bijal Target Likelihood)     -->
   <!-- ========================================================================= -->
