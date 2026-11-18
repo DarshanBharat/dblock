@@ -52,101 +52,108 @@
   <!-- ========================================================================= -->
   <!-- SUBJECT PROFILE HERO CARD                                                 -->
   <!-- ========================================================================= -->
-  <div class="bg-white rounded-lg border border-slate-200/90 p-5 shadow-xs">
-    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-200/80">
-      <div class="space-y-1">
-        <div class="flex items-center space-x-2">
-          <span class="font-mono text-sm font-bold bg-slate-900 text-white px-2.5 py-0.5 rounded">
+  <div class="db-card p-6">
+    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-4 border-b border-slate-100">
+      <div class="space-y-1.5">
+        <div class="flex items-center flex-wrap gap-2">
+          <span class="font-mono text-sm font-bold bg-slate-900 text-white px-2.5 py-0.5 rounded-md">
             {subject.id}
           </span>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+          <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/80">
             {subject.riskLevel} risk
           </span>
-          <span class="text-xs text-slate-500">{subject.status}</span>
+          {#if subject.disposition}
+            <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">
+              {subject.disposition}
+            </span>
+          {/if}
+          {#if subject.cutOffScope}
+            <span class="text-[11px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-700">
+              {subject.cutOffScope}
+            </span>
+          {/if}
         </div>
         <h2 class="text-lg font-bold text-slate-900 mt-1">
-          {subject.syntheticSubject ? 'Synthetic demo record' : subject.initials + ' · ' + subject.sex + ', ' + subject.age + ' yrs'} &middot; Site {subject.siteId}
+          {subject.initials} &middot; {subject.sex}, {subject.age} yrs &middot; Site {subject.siteId}
         </h2>
-        <p class="text-xs text-slate-600">
-          Enrolled in {subject.cohort}
+        <p class="text-xs text-slate-500">
+          {subject.cohort} &middot; Ball in Court: <strong class="text-slate-700">{subject.ballInCourt || 'Site Coordinator'}</strong>
         </p>
       </div>
 
-      <div class="flex items-center space-x-4 bg-slate-50 rounded-md p-3 border border-slate-200 text-center">
+      <div class="flex items-center space-x-4 bg-slate-50/80 rounded-xl p-3 border border-slate-200/70 text-center">
         {#if subject.delayContributionDays != null}
         <div>
-          <div class="text-[10px] font-semibold text-slate-500 uppercase">Delay Contribution</div>
-          <div class="text-xl font-extrabold text-rose-600 num-tabular">+{subject.delayContributionDays}d</div>
-          <div class="text-[10px] text-slate-500">to study DBL</div>
+          <div class="text-[10px] font-semibold text-slate-500 uppercase">DBL Impact</div>
+          <div class="text-xl font-bold text-rose-600 num-tabular">+{subject.delayContributionDays}d</div>
         </div>
         <div class="h-8 w-px bg-slate-200"></div>
         {/if}
         <div>
           <div class="text-[10px] font-semibold text-slate-500 uppercase">Open Queries</div>
-          <div class="text-xl font-extrabold text-slate-900 num-tabular">{subject.openQueries}</div>
-          <div class="text-[10px] text-rose-600 font-semibold">{subject.criticalQueries} on critical path</div>
+          <div class="text-xl font-bold text-slate-900 num-tabular">{subject.openQueries}</div>
+          <div class="text-[10px] text-rose-600 font-semibold">{subject.criticalQueries} critical</div>
         </div>
       </div>
     </div>
 
     <!-- Active Blockers Summary -->
-    <div class="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-      {#if subject.saeSummary}
-        <div class="p-3 bg-rose-50/70 rounded-md border border-rose-200 space-y-1">
-          <span class="font-bold text-rose-900 uppercase text-[10px] flex items-center">
-            <ShieldAlert class="w-3.5 h-3.5 mr-1 text-rose-700" />
-            Safety Discrepancy Active
-          </span>
-          <p class="text-rose-800 font-medium">{subject.saeSummary}</p>
-        </div>
-      {/if}
+    {#if subject.saeSummary || subject.recistIssues}
+      <div class="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        {#if subject.saeSummary}
+          <div class="p-3.5 bg-rose-50/50 rounded-xl border border-rose-200/70 space-y-1">
+            <span class="font-bold text-rose-900 uppercase text-[10px] flex items-center">
+              <ShieldAlert class="w-3.5 h-3.5 mr-1 text-rose-700" />
+              Safety Discrepancy Active
+            </span>
+            <p class="text-rose-800 font-medium">{subject.saeSummary}</p>
+          </div>
+        {/if}
 
-      {#if subject.recistIssues}
-      <div class="p-3 bg-amber-50/70 rounded-md border border-amber-200 space-y-1">
-        <span class="font-bold text-amber-900 uppercase text-[10px] flex items-center">
-          <AlertTriangle class="w-3.5 h-3.5 mr-1 text-amber-700" />
-          Primary Endpoint Discrepancy
-        </span>
-        <p class="text-amber-800 font-medium">{subject.recistIssues}</p>
+        {#if subject.recistIssues}
+        <div class="p-3.5 bg-amber-50/50 rounded-xl border border-amber-200/70 space-y-1">
+          <span class="font-bold text-amber-900 uppercase text-[10px] flex items-center">
+            <AlertTriangle class="w-3.5 h-3.5 mr-1 text-amber-700" />
+            Primary Endpoint Discrepancy
+          </span>
+          <p class="text-amber-800 font-medium">{subject.recistIssues}</p>
+        </div>
+        {/if}
       </div>
-      {/if}
-    </div>
+    {/if}
   </div>
 
   {#if subject.cleaning}
     {@const cleaning = subject.cleaning}
-    <section class="rounded-lg border border-slate-200 bg-white p-5">
-      <h3 class="text-sm font-bold text-slate-900">EDC cleaning and freeze</h3>
-      {#if !subject.syntheticSubject}
-        <p class="mt-1 text-xs text-slate-500">Supplemental demo progress for the listed forms.</p>
-      {/if}
+    <section class="db-card p-5">
+      <h3 class="text-sm font-bold text-slate-900">EDC Cleaning &amp; Freeze Status</h3>
       <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
-        <div><dt>Entry</dt><dd class="font-bold">{cleaning.entered}/{cleaning.total} forms</dd></div>
-        <div><dt>SDV</dt><dd class="font-bold">{cleaning.sdv}/{cleaning.total} forms</dd></div>
-        <div><dt>SDR</dt><dd class="font-bold">{cleaning.sdr}/{cleaning.total} forms</dd></div>
-        <div><dt>Freeze</dt><dd class="font-bold">{cleaning.frozen ? 'Frozen' : 'Not frozen'}</dd></div>
-        <div><dt>Safety reconciliation</dt><dd class="font-bold">{cleaning.safetyOpen} open</dd></div>
-        <div><dt>Vendor reconciliation</dt><dd class="font-bold">{cleaning.vendorOpen} open</dd></div>
-        <div><dt>Medical coding</dt><dd class="font-bold">{cleaning.codingOpen} pending</dd></div>
-        <div><dt>PI sign-off</dt><dd class="font-bold">{cleaning.piSigned ? 'Signed' : 'Pending'}</dd></div>
+        <div><dt class="text-slate-500">Entry</dt><dd class="font-bold text-slate-900">{cleaning.entered}/{cleaning.total} forms</dd></div>
+        <div><dt class="text-slate-500">SDV</dt><dd class="font-bold text-slate-900">{cleaning.sdv}/{cleaning.total} forms</dd></div>
+        <div><dt class="text-slate-500">SDR</dt><dd class="font-bold text-slate-900">{cleaning.sdr}/{cleaning.total} forms</dd></div>
+        <div><dt class="text-slate-500">Freeze</dt><dd class="font-bold text-slate-900">{cleaning.frozen ? 'Frozen' : 'Not frozen'}</dd></div>
+        <div><dt class="text-slate-500">Safety Recon</dt><dd class="font-bold text-slate-900">{cleaning.safetyOpen} open</dd></div>
+        <div><dt class="text-slate-500">Vendor Recon</dt><dd class="font-bold text-slate-900">{cleaning.vendorOpen} open</dd></div>
+        <div><dt class="text-slate-500">Medical Coding</dt><dd class="font-bold text-slate-900">{cleaning.codingOpen} pending</dd></div>
+        <div><dt class="text-slate-500">PI Sign-Off</dt><dd class="font-bold text-slate-900">{cleaning.piSigned ? 'Signed' : 'Pending'}</dd></div>
       </dl>
     </section>
   {/if}
 
-  <section class="rounded-lg border border-slate-200 bg-white p-5">
-    <h3 class="text-sm font-bold text-slate-900">Open query records ({queries.length} listed)</h3>
+  <section class="db-card p-5">
+    <h3 class="text-sm font-bold text-slate-900">Open Query Records ({queries.length})</h3>
     {#if queries.length}
       <ul class="mt-2 divide-y divide-slate-100 text-xs">
         {#each queries as query (query.id)}
-          <li class="space-y-1 py-2">
-            <div class="font-bold">{query.id} · {query.form} · {query.isPrimaryEndpoint ? 'Endpoint-critical' : 'Routine'}</div>
-            <div>{query.queryText}</div>
-            <div class="text-slate-600">{query.status} · {query.ageDays} days open · {query.actionRequired}</div>
+          <li class="space-y-1 py-2.5">
+            <div class="font-bold text-slate-900">{query.id} &middot; {query.form} &middot; {query.isPrimaryEndpoint ? 'Endpoint-critical' : 'Routine'}</div>
+            <div class="text-slate-700">{query.queryText}</div>
+            <div class="text-slate-500">{query.status} &middot; {query.ageDays}d open &middot; {query.actionRequired}</div>
           </li>
         {/each}
       </ul>
     {:else}
-      <p class="mt-2 text-xs text-slate-500">No open query records in this snapshot for this subject.</p>
+      <p class="mt-2 text-xs text-slate-500">No open query records for this subject.</p>
     {/if}
   </section>
 

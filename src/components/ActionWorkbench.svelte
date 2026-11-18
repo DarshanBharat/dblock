@@ -221,64 +221,59 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- TOP DELAY DRIVERS <-> ACTION ALIGNMENT STRIP (Image 2 Blue Requirement)   -->
-  <!-- Keeps screen focused on driver-to-action alignment without repeating risk -->
-  <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-    <div class="flex items-center justify-between mb-2.5">
-      <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-        Top Delay Drivers Aligned to Recommended Actions
+  <div class="db-card p-5">
+    <div class="flex items-center justify-between mb-3">
+      <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">
+        Critical-Path Delay Drivers &amp; Linked Actions
       </span>
-      <span class="text-[11px] text-slate-500">Click any driver card to open its linked action</span>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
       <button
         type="button"
         on:click={() => openDrawer('ACT-001')}
-        class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-001' ? 'border-rose-500 bg-rose-50/40' : 'border-slate-200 hover:border-blue-300 bg-slate-50/50'}"
+        class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-001' ? 'border-rose-500 bg-rose-50/40' : 'border-slate-200/80 hover:border-blue-300 bg-slate-50/50'}"
       >
         <div class="flex justify-between font-bold text-slate-900">
           <span>1. Safety Recon (35%)</span>
-          <span class="text-emerald-600 font-mono">-3.0d</span>
+          <span class="text-emerald-600 font-mono">-2.1d</span>
         </div>
-        <div class="text-[11px] text-slate-700 font-semibold mt-1">ACT-001: Resolve 2 SAE discrepancies (Site 104)</div>
+        <div class="text-[11px] text-slate-600 font-medium mt-1">ACT-001: Resolve 2 SAE discrepancies (Site 104)</div>
       </button>
 
       <button
         type="button"
         on:click={() => openDrawer('ACT-002')}
-        class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-002' ? 'border-rose-500 bg-rose-50/40' : 'border-slate-200 hover:border-blue-300 bg-slate-50/50'}"
+        class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-002' ? 'border-rose-500 bg-rose-50/40' : 'border-slate-200/80 hover:border-blue-300 bg-slate-50/50'}"
       >
         <div class="flex justify-between font-bold text-slate-900">
           <span>2. Lab Transfer (30%)</span>
           <span class="text-emerald-600 font-mono">-1.8d</span>
         </div>
-        <div class="text-[11px] text-slate-700 font-semibold mt-1">ACT-002: Escalate LabCorp ctDNA batch #LXB-8921</div>
+        <div class="text-[11px] text-slate-600 font-medium mt-1">ACT-002: Re-export LabCorp ctDNA #LXB-8921</div>
       </button>
 
       <button
         type="button"
         on:click={() => openDrawer('ACT-003')}
-        class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-003' ? 'border-amber-500 bg-amber-50/40' : 'border-slate-200 hover:border-blue-300 bg-slate-50/50'}"
+        class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-003' ? 'border-amber-500 bg-amber-50/40' : 'border-slate-200/80 hover:border-blue-300 bg-slate-50/50'}"
       >
         <div class="flex justify-between font-bold text-slate-900">
           <span>3. Ageing Queries (22%)</span>
-          <span class="text-emerald-600 font-mono">-1.2d</span>
+          <span class="text-emerald-600 font-mono">-1.3d</span>
         </div>
-        <div class="text-[11px] text-slate-700 font-semibold mt-1">ACT-003: Resolve 5 RECIST endpoint queries (Site 317)</div>
+        <div class="text-[11px] text-slate-600 font-medium mt-1">ACT-003: Resolve 5 RECIST endpoint queries (Site 317)</div>
       </button>
 
       <button
         type="button"
         on:click={() => openDrawer('ACT-006')}
-        class="p-3 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-006' ? 'border-blue-500 bg-blue-50/40' : 'border-slate-200 hover:border-blue-300 bg-slate-50/50'}"
+        class="p-3.5 rounded-xl border text-left transition-all cursor-pointer {selectedActionId === 'ACT-006' ? 'border-blue-500 bg-blue-50/40' : 'border-slate-200/80 hover:border-blue-300 bg-slate-50/50'}"
       >
         <div class="flex justify-between font-bold text-slate-900">
           <span>4. PI Sign-offs (13%)</span>
-          <span class="text-emerald-600 font-mono">-0.9d</span>
+          <span class="text-emerald-600 font-mono">-0.8d</span>
         </div>
-        <div class="text-[11px] text-slate-700 font-semibold mt-1">ACT-006: Conduct PI batch sign-off session (Site 405)</div>
+        <div class="text-[11px] text-slate-600 font-medium mt-1">ACT-006: PI batch sign-off (18 casebooks)</div>
       </button>
     </div>
   </div>
@@ -286,38 +281,38 @@
   <!-- ========================================================================= -->
   <!-- ACTION TABLE & CONTROLS                                                   -->
   <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="db-card overflow-hidden">
     
     <!-- Filter bar -->
     <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center space-x-1.5 overflow-x-auto text-xs">
         <button
           on:click={() => priorityFilter = 'all'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {priorityFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
+          class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {priorityFilter === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
         >
           All ({countTotal})
         </button>
         <button
           on:click={() => priorityFilter = 'critical'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {priorityFilter === 'critical' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}"
+          class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {priorityFilter === 'critical' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'}"
         >
           Critical ({countCritical})
         </button>
         <button
           on:click={() => priorityFilter = 'high'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {priorityFilter === 'high' ? 'bg-amber-600 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}"
+          class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {priorityFilter === 'high' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}"
         >
           High ({countHigh})
         </button>
         <button
           on:click={() => priorityFilter = 'medium'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {priorityFilter === 'medium' ? 'bg-blue-600 text-white shadow-xs' : 'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200'}"
+          class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {priorityFilter === 'medium' ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700 hover:bg-blue-100'}"
         >
           Medium ({countMedium})
         </button>
         <button
           on:click={() => priorityFilter = 'low'}
-          class="px-3 py-1.5 rounded-lg font-semibold transition-all {priorityFilter === 'low' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}"
+          class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {priorityFilter === 'low' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}"
         >
           Low ({countLow})
         </button>
@@ -326,7 +321,7 @@
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <select
           bind:value={ownerFilter}
-          class="bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-700 font-medium focus:outline-hidden"
+          class="bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2.5 text-slate-700 font-medium focus:outline-hidden"
         >
           <option value="all">All owners</option>
           <option value="sarah">Dr. Sarah Lin</option>
@@ -339,7 +334,7 @@
 
         <select
           bind:value={domainFilter}
-          class="bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-700 font-medium focus:outline-hidden"
+          class="bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2.5 text-slate-700 font-medium focus:outline-hidden"
         >
           <option value="all">All data domains</option>
           <option value="Safety reconciliation">Safety reconciliation</option>
@@ -354,8 +349,8 @@
           <input
             type="text"
             bind:value={searchQuery}
-            placeholder="Search actions, sites or owners..."
-            class="text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 w-48"
+            placeholder="Search actions or sites"
+            class="text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 pl-8 pr-3 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 w-44"
           />
         </div>
       </div>
@@ -365,35 +360,35 @@
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse text-xs">
         <thead>
-          <tr class="bg-slate-50/80 text-slate-500 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider">
+          <tr class="bg-slate-50/70 text-slate-500 border-b border-slate-200/80 text-[10px] font-semibold uppercase tracking-wider">
             <th class="py-3 px-3">Priority</th>
             <th class="py-3 px-4">Recommended Action</th>
-            <th class="py-3 px-3">Aligned Delay Driver</th>
+            <th class="py-3 px-3">Ball in Court</th>
             <th class="py-3 px-3">Site / Scope</th>
-            <th class="py-3 px-3">Assigned Owner</th>
-            <th class="py-3 px-3">Target Date</th>
-            <th class="py-3 px-3 text-right">Potential DBL Shift</th>
-            <th class="py-3 px-3">Decision Status</th>
-            <th class="py-3 px-3 text-right">Review</th>
+            <th class="py-3 px-3">Owner</th>
+            <th class="py-3 px-3">Due</th>
+            <th class="py-3 px-3 text-right">DBL Shift</th>
+            <th class="py-3 px-3">Status</th>
+            <th class="py-3 px-3 text-right">Decision</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
           {#each filteredActions as action}
             <tr
-              class="hover:bg-blue-50/40 transition-colors cursor-pointer group {selectedActionId === action.id ? 'bg-blue-50/20' : ''}"
+              class="hover:bg-slate-50/80 transition-colors cursor-pointer group {selectedActionId === action.id ? 'bg-blue-50/20' : ''}"
               on:click={() => openDrawer(action.id)}
             >
               <td class="py-3.5 px-3">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border {getPriorityBadge(action.priority)}">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border {getPriorityBadge(action.priority)}">
                   {action.priority}
                 </span>
               </td>
               <td class="py-3.5 px-4 font-semibold text-slate-900">
                 <div class="group-hover:text-blue-600 transition-colors">{action.title}</div>
-                <div class="text-[10px] font-normal text-slate-400">{action.id}</div>
+                <div class="text-[10px] font-normal text-slate-400">{action.id} &middot; {action.domain || 'Critical Path'}</div>
               </td>
-              <td class="py-3.5 px-3 text-slate-600">
-                {action.domain || 'Critical Path'}
+              <td class="py-3.5 px-3 text-slate-700 font-medium">
+                {action.ballInCourt || 'Sponsor CDM'}
               </td>
               <td class="py-3.5 px-3 text-slate-700 font-medium">
                 {action.site || action.scope}
@@ -404,11 +399,11 @@
               <td class="py-3.5 px-3 font-mono text-[11px] text-slate-600">
                 {action.dueDate}
               </td>
-              <td class="py-3.5 px-3 text-right font-extrabold text-emerald-600 font-mono text-xs">
+              <td class="py-3.5 px-3 text-right font-bold text-emerald-600 font-mono text-xs num-tabular">
                 -{action.estImpactDays !== undefined ? `${action.estImpactDays.toFixed(1)}` : `${action.daysSaved.toFixed(1)}`}d
               </td>
               <td class="py-3.5 px-3">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border {getStatusBadge(action.status)}">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border {getStatusBadge(action.status)}">
                   {action.status}
                 </span>
               </td>
@@ -418,13 +413,13 @@
                     <button
                       type="button"
                       on:click|stopPropagation={() => acceptRecommendation(action)}
-                      class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-2xs transition-colors cursor-pointer"
-                      title="1-click approve recommendation"
+                      class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] transition-colors cursor-pointer"
+                      title="Approve recommendation"
                     >
                       Approve
                     </button>
                   {/if}
-                  <span class="text-blue-600 font-bold text-[11px] group-hover:underline">Details &rarr;</span>
+                  <span class="text-blue-600 font-semibold text-[11px] group-hover:underline">Details &rarr;</span>
                 </div>
               </td>
             </tr>
@@ -433,16 +428,15 @@
       </table>
     </div>
 
-    <!-- Table footer -->
-    <div class="p-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+    <div class="p-3.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
       <div>
-        Showing <strong class="text-slate-800">1&ndash;{filteredActions.length}</strong> of <strong class="text-slate-800">{countTotal}</strong> actions &middot; Study team makes the final decision
+        Showing <strong class="text-slate-800">{filteredActions.length}</strong> of <strong class="text-slate-800">{countTotal}</strong> actions
       </div>
       <button
         on:click={() => onSelectTab('simulator')}
-        class="text-blue-600 font-bold hover:underline flex items-center space-x-1"
+        class="text-blue-600 font-semibold hover:underline flex items-center space-x-1 cursor-pointer"
       >
-        <span>Simulate combined impact in Scenarios</span>
+        <span>Simulate combined impact</span>
         <ArrowRight size={13} />
       </button>
     </div>

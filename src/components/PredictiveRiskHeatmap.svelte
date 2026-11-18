@@ -62,21 +62,21 @@
     driverFilter = 'all';
   }
 
-  // Automated Multi-Vendor View state (Image 11 & 12)
+  // Automated Multi-Vendor View state
   let selectedVendorId = 'VND-LABCORP';
 
   const automatedVendors = [
     {
       id: 'VND-LABCORP',
       name: 'LabCorp Bioanalytical (Central Lab)',
-      feedType: 'Automated SFTP + HL7/FHIR API (No manual input)',
-      status: 'Late Transfer (Overdue 4d)',
+      feedType: 'SFTP + HL7/FHIR API · SDTM.LB',
+      status: 'Late Transfer (+4d)',
       statusColor: 'rose',
       cleanlinessAutoScore: 64,
       totalTransfers: 18,
       lateTransfersCount: 1,
       outstandingIssuesCount: 3,
-      lastAutomatedSync: '31 October 2026, 08:00 UTC',
+      lastAutomatedSync: '31 Oct 2026, 08:00 UTC',
       transfersAndIssues: [
         {
           id: 'LXB-8921',
@@ -105,14 +105,14 @@
     {
       id: 'VND-BIOCLINICA',
       name: 'BioClinica Central Imaging (BICR)',
-      feedType: 'Automated DICOM Portal API (No manual input)',
+      feedType: 'DICOM Portal API · SDTM.TU / TR',
       status: 'Adjudication Pending',
       statusColor: 'amber',
       cleanlinessAutoScore: 82,
       totalTransfers: 24,
       lateTransfersCount: 1,
       outstandingIssuesCount: 2,
-      lastAutomatedSync: '31 October 2026, 07:30 UTC',
+      lastAutomatedSync: '31 Oct 2026, 07:30 UTC',
       transfersAndIssues: [
         {
           id: 'IMG-44-BICR',
@@ -140,15 +140,15 @@
     },
     {
       id: 'VND-ARGUS',
-      name: 'Oracle Argus Safety (PV Reconciliation)',
-      feedType: 'Automated E2B(R3) Safety Gateway (No manual input)',
+      name: 'Oracle Argus Safety (PV Gateway)',
+      feedType: 'E2B(R3) Safety Gateway · SDTM.AE / CE',
       status: '2 Critical Discrepancies',
       statusColor: 'rose',
       cleanlinessAutoScore: 80,
       totalTransfers: 30,
       lateTransfersCount: 0,
       outstandingIssuesCount: 2,
-      lastAutomatedSync: '31 October 2026, 07:45 UTC',
+      lastAutomatedSync: '31 Oct 2026, 07:45 UTC',
       transfersAndIssues: [
         {
           id: 'SAE-REC-104-01',
@@ -176,15 +176,15 @@
     },
     {
       id: 'VND-EUROFINS',
-      name: 'Eurofins Central Lab (Serum Chemistry)',
-      feedType: 'Automated CDISC LB REST Feed (No manual input)',
-      status: 'QA Review (1d Late)',
+      name: 'Eurofins Central Lab (Chemistry)',
+      feedType: 'CDISC LB REST Feed · SDTM.LB',
+      status: 'QA Review (+1d)',
       statusColor: 'amber',
       cleanlinessAutoScore: 91,
       totalTransfers: 32,
       lateTransfersCount: 1,
       outstandingIssuesCount: 1,
-      lastAutomatedSync: '31 October 2026, 06:00 UTC',
+      lastAutomatedSync: '31 Oct 2026, 06:00 UTC',
       transfersAndIssues: [
         {
           id: 'LXB-8940',
@@ -201,15 +201,15 @@
     },
     {
       id: 'VND-SIGNANT',
-      name: 'Signant Health (eCOA / Patient Diaries)',
-      feedType: 'Automated Cloud Sync API (No manual input)',
+      name: 'Signant Health (eCOA / PRO)',
+      feedType: 'Cloud Sync API · SDTM.QS',
       status: 'Healthy (95% Sync)',
       statusColor: 'emerald',
       cleanlinessAutoScore: 95,
       totalTransfers: 45,
       lateTransfersCount: 0,
       outstandingIssuesCount: 1,
-      lastAutomatedSync: '31 October 2026, 06:30 UTC',
+      lastAutomatedSync: '31 Oct 2026, 06:30 UTC',
       transfersAndIssues: [
         {
           id: 'ECOA-233-SYNC',
@@ -228,14 +228,6 @@
 
   $: activeVendor = automatedVendors.find(v => v.id === selectedVendorId) || automatedVendors[0];
 
-  // =========================================================================
-  // SCREEN 4: RISK EXPLANATION & EVIDENCE DRAWER STATE (Image 12, 13, 14, 15)
-  // Simplified per manager instruction:
-  // - Removed unexplained risk-probability figure from drawer header
-  // - Removed recommended-actions/intervention tab from drawer
-  // - Aligned Site 104 percentages to 35% / 30% / 22% / 13% with explicit derivation
-  // - Added Vendor drill-down as a source of evidence
-  // =========================================================================
   let activeSite: any = null;
   let drawerTab: 'why' | 'evidence' | 'vendors' = 'why';
   let selectedFactorForEvidence = 'all';
@@ -250,7 +242,6 @@
     activeSite = null;
   }
 
-  // Compute query breakdown for each site (All outstanding queries vs Endpoint-critical queries)
   function getSiteQueryMetrics(site: any) {
     if (site.id === '104') return { totalQueries: 14, endpointCritical: 5, nonCritical: 9 };
     if (site.id === '208') return { totalQueries: 38, endpointCritical: 0, nonCritical: 38 };
@@ -261,40 +252,48 @@
     return { totalQueries: total, endpointCritical: crit, nonCritical: total - crit };
   }
 
-  // Study-level readiness parameters applied to every site (Image 9 Blue requirement)
-  function getSiteSeemaReadinessParams(site: any) {
+  function getSiteReadinessParams(site: any) {
     if (site.id === '104') {
       return [
-        { label: 'EDC data cleaning (Data entry & SDV)', pct: 84, detail: '40/48 subjects clean entry; Form DD-01 & TU-01 pending' },
-        { label: 'Query resolution (All & Endpoint-Critical)', pct: 68, detail: '14 open queries >14d (5 RECIST endpoint-critical, 9 routine)' },
-        { label: 'External data reconciliation (Vendor feeds)', pct: 52, detail: 'LabCorp ctDNA batch #LXB-8921 (48 samples) 4d overdue' },
-        { label: 'Medical coding (MedDRA / WHODrug)', pct: 88, detail: '2 Grade 3 CRS secondary terms awaiting medical review' },
-        { label: 'Site sign-offs (PI e-Signatures)', pct: 75, detail: '36/48 signed; 12 completed casebooks awaiting PI sign-off' },
-        { label: 'Safety reconciliation (Rave vs Argus)', pct: 55, detail: '2 unresolved SAE discrepancies blocking safety freeze' }
+        { label: 'EDC Data Entry & SDV', pct: 84, detail: '40/48 subjects clean entry; Form DD-01 & TU-01 pending' },
+        { label: 'Query Resolution', pct: 68, detail: '14 open queries >14d (5 RECIST endpoint-critical, 9 routine)' },
+        { label: 'External Vendor Reconciliation', pct: 52, detail: 'LabCorp ctDNA batch #LXB-8921 (48 samples) 4d overdue' },
+        { label: 'Medical Coding (MedDRA / WHODrug)', pct: 88, detail: '2 Grade 3 CRS secondary terms awaiting medical review' },
+        { label: 'Investigator e-Signatures (21 CFR 11)', pct: 83, detail: '40/48 signed; 8 completed casebooks awaiting PI sign-off' },
+        { label: 'Safety Reconciliation (Rave vs Argus)', pct: 55, detail: '2 unresolved SAE discrepancies blocking safety freeze' }
       ];
     }
     if (site.id === '208') {
       return [
-        { label: 'EDC data cleaning (Data entry & SDV)', pct: 91, detail: '33/36 subjects verified' },
-        { label: 'Query resolution (All & Endpoint-Critical)', pct: 74, detail: '38 open queries (0 primary-endpoint; 38 routine/admin)' },
-        { label: 'External data reconciliation (Vendor feeds)', pct: 86, detail: 'Eurofins batch #LXB-8940 in final QA review' },
-        { label: 'Medical coding (MedDRA / WHODrug)', pct: 92, detail: 'ConMed trade names under routine review' },
-        { label: 'Site sign-offs (PI e-Signatures)', pct: 89, detail: '32/36 casebooks signed' },
-        { label: 'Safety reconciliation (Rave vs Argus)', pct: 100, detail: 'Zero SAE discrepancies' }
+        { label: 'EDC Data Entry & SDV', pct: 91, detail: '33/36 subjects verified' },
+        { label: 'Query Resolution', pct: 74, detail: '38 open queries (0 primary-endpoint; 38 routine/admin)' },
+        { label: 'External Vendor Reconciliation', pct: 86, detail: 'Eurofins batch #LXB-8940 in final QA review' },
+        { label: 'Medical Coding (MedDRA / WHODrug)', pct: 92, detail: 'ConMed trade names under routine review' },
+        { label: 'Investigator e-Signatures (21 CFR 11)', pct: 89, detail: '32/36 casebooks signed' },
+        { label: 'Safety Reconciliation (Rave vs Argus)', pct: 100, detail: 'Zero SAE discrepancies' }
+      ];
+    }
+    if (site.id === '405') {
+      return [
+        { label: 'EDC Data Entry & SDV', pct: 88, detail: '14/16 subjects verified' },
+        { label: 'Query Resolution', pct: 82, detail: '9 open queries (2 endpoint-critical)' },
+        { label: 'External Vendor Reconciliation', pct: 85, detail: 'Eurofins chemistry calibration check in progress' },
+        { label: 'Medical Coding (MedDRA / WHODrug)', pct: 94, detail: 'All oncology ConMeds coded' },
+        { label: 'Investigator e-Signatures (21 CFR 11)', pct: 63, detail: '10/16 signed; 6 completed casebooks awaiting PI sign-off' },
+        { label: 'Safety Reconciliation (Rave vs Argus)', pct: 100, detail: 'Zero SAE discrepancies' }
       ];
     }
     const base = site.readinessScore || 80;
     return [
-      { label: 'EDC data cleaning (Data entry & SDV)', pct: Math.min(99, base + 6), detail: 'Automated EDC completeness check' },
-      { label: 'Query resolution (All & Endpoint-Critical)', pct: base, detail: 'All open queries tracked; endpoint-critical flagged' },
-      { label: 'External data reconciliation (Vendor feeds)', pct: Math.max(55, base - 5), detail: 'Automated vendor transfer status' },
-      { label: 'Medical coding (MedDRA / WHODrug)', pct: Math.min(98, base + 8), detail: 'MedDRA 27.0 & WHODrug C3 coding status' },
-      { label: 'Site sign-offs (PI e-Signatures)', pct: Math.max(60, base - 3), detail: 'PI electronic signature completion' },
-      { label: 'Safety reconciliation (Rave vs Argus)', pct: Math.min(100, base + 4), detail: 'Rave-Argus SAE alignment' }
+      { label: 'EDC Data Entry & SDV', pct: Math.min(99, base + 6), detail: 'Automated EDC completeness check' },
+      { label: 'Query Resolution', pct: base, detail: 'All open queries tracked; endpoint-critical flagged' },
+      { label: 'External Vendor Reconciliation', pct: Math.max(55, base - 5), detail: 'Automated vendor transfer status' },
+      { label: 'Medical Coding (MedDRA / WHODrug)', pct: Math.min(98, base + 8), detail: 'MedDRA 27.0 & WHODrug C3 coding status' },
+      { label: 'Investigator e-Signatures (21 CFR 11)', pct: Math.max(60, base - 3), detail: 'PI electronic signature completion' },
+      { label: 'Safety Reconciliation (Rave vs Argus)', pct: Math.min(100, base + 4), detail: 'Rave-Argus SAE alignment' }
     ];
   }
 
-  // Aligned Factor Contributions for Drawer (Site 104 aligned to 35% / 30% / 22% / 13% per Image 14 Blue)
   function getSiteFactorDerivations(site: any) {
     if (site.id === '104') {
       return [
@@ -303,28 +302,28 @@
           name: 'Safety reconciliation discrepancies',
           pct: 35,
           color: 'rose',
-          derivation: 'Derived from 2 unresolved SAE cases (SAE-REC-104-01 & SAE-REC-104-02) gating global safety freeze = 2.1 days of the 6.0-day critical-path impact (2.1 / 6.0 = 35%).'
+          derivation: '2 unresolved SAE cases (SAE-REC-104-01 & SAE-REC-104-02) gating global safety freeze = 2.1d of 6.0d critical-path impact (35%).'
         },
         {
           id: 'lab',
           name: 'Laboratory transfer delay (Vendor)',
           pct: 30,
           color: 'amber',
-          derivation: 'Derived from overdue LabCorp ctDNA batch #LXB-8921 (48 samples, 4d past SLA due to SHA-256 checksum error) = 1.8 days of the 6.0-day impact (1.8 / 6.0 = 30%).'
+          derivation: 'Overdue LabCorp ctDNA batch #LXB-8921 (48 samples, 4d past SLA due to SHA-256 checksum error) = 1.8d of 6.0d impact (30%).'
         },
         {
           id: 'queries',
           name: 'Ageing queries (14 total; 5 endpoint-critical)',
           pct: 22,
           color: 'orange',
-          derivation: 'Derived from 14 queries aged >14d (5 primary-endpoint RECIST queries weighted 2.0x + 9 non-critical queries weighted 0.5x) = 1.3 days of impact (1.3 / 6.0 = 22%).'
+          derivation: '14 queries aged >14d (5 primary-endpoint RECIST queries weighted 2.0x + 9 routine queries weighted 0.5x) = 1.3d of 6.0d impact (22%).'
         },
         {
           id: 'signoff',
-          name: 'Investigator sign-off status',
+          name: 'Investigator e-Signature backlog',
           pct: 13,
           color: 'blue',
-          derivation: 'Derived from 12 completed subject casebooks awaiting PI electronic signature (estimated 0.8 days batch signing time / 6.0 days = 13%).'
+          derivation: '8 completed subject casebooks at Site 104 awaiting PI e-signature (of 18 study-wide) = 0.8d of 6.0d impact (13%).'
         }
       ];
     }
@@ -335,40 +334,38 @@
         name: 'Safety reconciliation discrepancies',
         pct: b.safetyReconciliation || 10,
         color: 'rose',
-        derivation: 'Derived from Rave-Argus SAE reconciliation status and pharmacovigilance freeze dependency weight.'
+        derivation: 'Rave-Argus SAE reconciliation status and pharmacovigilance freeze dependency weight.'
       },
       {
         id: 'lab',
         name: 'Laboratory & external vendor transfers',
         pct: b.labTransferDelay || 20,
         color: 'amber',
-        derivation: 'Derived from external vendor batch SLA variance and specimen reconciliation completeness.'
+        derivation: 'External vendor batch SLA variance and specimen reconciliation completeness.'
       },
       {
         id: 'queries',
         name: 'Outstanding queries (All & Endpoint-Critical)',
         pct: b.ageingQueries || 50,
         color: 'orange',
-        derivation: 'Derived from total open query volume divided by site daily closure velocity, with endpoint-critical queries weighted 2.0x.'
+        derivation: 'Total open query volume divided by site daily closure velocity, with endpoint-critical queries weighted 2.0x.'
       },
       {
         id: 'signoff',
-        name: 'Investigator sign-off status',
+        name: 'Investigator e-Signature status',
         pct: b.signOffStatus || 20,
         color: 'blue',
-        derivation: 'Derived from unsigned completed subject eCRF casebooks vs historical PI signing cadence.'
+        derivation: 'Unsigned completed subject eCRF casebooks vs historical PI signing cadence.'
       }
     ];
   }
 
   $: countriesList = Array.from(new Set(sites.map(s => s.country))).sort();
 
-  // Sites available in Site filter dropdown (scoped by selectedCountry)
   $: siteOptionsForFilter = sites
     .filter(s => selectedCountry === 'all' || s.country === selectedCountry)
     .sort((a, b) => Number(a.id) - Number(b.id));
 
-  // Reset selectedSiteId if it's no longer in the selected country
   $: if (selectedSiteId !== 'all' && !siteOptionsForFilter.some(s => s.id === selectedSiteId)) {
     selectedSiteId = 'all';
   }
@@ -392,7 +389,6 @@
     searchQuery = '';
   }
 
-  // Filtered sites (Country + Site + Risk Tier + Impact + Driver + Criticality + Search)
   $: filteredSites = sites.filter(s => {
     if (selectedCountry !== 'all' && s.country !== selectedCountry) return false;
     if (selectedSiteId !== 'all' && s.id !== selectedSiteId) return false;
@@ -448,24 +444,10 @@
   });
 
   function getRiskBadge(level: string) {
-    if (level === 'Critical') return 'bg-rose-100 text-rose-800 border-rose-200';
-    if (level === 'High') return 'bg-amber-100 text-amber-800 border-amber-200';
-    if (level === 'Medium') return 'bg-orange-100 text-orange-800 border-orange-200';
-    return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-  }
-
-  function getSparklinePoints(trend: number[]) {
-    if (!trend || trend.length < 2) return '';
-    const min = Math.min(...trend) - 5;
-    const max = Math.max(...trend) + 5;
-    const range = max - min || 1;
-    const width = 50;
-    const height = 16;
-    return trend.map((val, idx) => {
-      const x = (idx / (trend.length - 1)) * width;
-      const y = height - ((val - min) / range) * height;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(' ');
+    if (level === 'Critical') return 'bg-rose-50 text-rose-700 border-rose-200/80';
+    if (level === 'High') return 'bg-amber-50 text-amber-700 border-amber-200/80';
+    if (level === 'Medium') return 'bg-orange-50 text-orange-700 border-orange-200/80';
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200/80';
   }
 </script>
 
@@ -474,37 +456,46 @@
   <!-- ========================================================================= -->
   <!-- PAGE HEADER + VIEW CONTROLS                                               -->
   <!-- ========================================================================= -->
-  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-1">
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
     <div>
-      <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
-        Sites &amp; Risks
+      <div class="flex items-center gap-2 text-xs font-medium text-slate-500 mb-1">
+        <span>CA-209-301</span>
+        <span>&middot;</span>
+        <span>12 Active Sites across {countriesList.length} Countries</span>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-slate-900 font-display">
+        Site &amp; Vendor Risk Intelligence
       </h1>
-      <p class="text-sm text-slate-500 mt-1">
-        Prioritise sites by potential DBL impact rather than raw open-item volume.
-      </p>
     </div>
 
-    <!-- View Controls (Map | Chart | Table | Automated Vendor View) -->
     <div class="flex flex-wrap items-center gap-3 shrink-0">
+      <button
+        type="button"
+        on:click={() => showRiskBasisInfo = !showRiskBasisInfo}
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 bg-white border border-slate-200/80 hover:text-slate-900 cursor-pointer"
+      >
+        <Info size={13} class="text-slate-400" />
+        <span>Risk Tier Thresholds</span>
+      </button>
+
       <div class="flex items-center gap-2 text-xs text-slate-600">
-        <span class="text-slate-500 font-medium">Rank by</span>
+        <span class="text-slate-400 font-medium">Sort</span>
         <select
           bind:value={viewByMetric}
-          class="bg-white border border-slate-200/90 rounded-xl py-2 px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:outline-hidden focus:border-blue-500"
+          class="bg-white border border-slate-200/80 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500"
         >
-          <option value="impact">Potential DBL impact (days)</option>
-          <option value="critical_path">Critical-path dependency</option>
-          <option value="probability">Risk probability (%)</option>
-          <option value="volume">Open-item volume</option>
-          <option value="weekly_change">Change since last week</option>
+          <option value="impact">Critical-Path Impact (Days)</option>
+          <option value="critical_path">Critical Blocker Count</option>
+          <option value="volume">Total Open Items</option>
+          <option value="weekly_change">7-Day Velocity</option>
         </select>
       </div>
 
-      <div class="flex items-center bg-white p-1 rounded-xl border border-slate-200/90 shadow-2xs">
+      <div class="db-segmented">
         <button
           type="button"
           on:click={() => viewMode = 'map'}
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'map' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+          class="db-segmented-btn flex items-center gap-1.5 {viewMode === 'map' ? 'db-segmented-btn-active' : ''}"
         >
           <MapPin size={13} />
           <span>Map</span>
@@ -512,15 +503,15 @@
         <button
           type="button"
           on:click={() => viewMode = 'chart'}
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'chart' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+          class="db-segmented-btn flex items-center gap-1.5 {viewMode === 'chart' ? 'db-segmented-btn-active' : ''}"
         >
           <BarChart3 size={13} />
-          <span>Chart</span>
+          <span>Quadrant</span>
         </button>
         <button
           type="button"
           on:click={() => viewMode = 'table'}
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'table' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+          class="db-segmented-btn flex items-center gap-1.5 {viewMode === 'table' ? 'db-segmented-btn-active' : ''}"
         >
           <Table size={13} />
           <span>Table</span>
@@ -528,7 +519,7 @@
         <button
           type="button"
           on:click={() => viewMode = 'vendors'}
-          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'vendors' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+          class="db-segmented-btn flex items-center gap-1.5 {viewMode === 'vendors' ? 'db-segmented-btn-active' : ''}"
         >
           <Server size={13} />
           <span>Vendors (5)</span>
@@ -537,108 +528,62 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- CONFIGURABLE PROTOTYPE RISK LABELS & BASIS DEFINITION (Image 10 Blue)     -->
-  <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-      <div class="flex items-center space-x-2 text-xs">
-        <Info size={16} class="text-blue-600 shrink-0" />
-        <span class="font-bold text-slate-900">Basis for Risk Labels &amp; Configurable Prototype Thresholds</span>
-        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-          Illustrative Dummy Values Until Calculation Documented
-        </span>
+  {#if showRiskBasisInfo}
+    <div class="db-card p-4 grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+      <div class="p-3 rounded-xl bg-rose-50/50 border border-rose-200/60">
+        <span class="font-bold text-rose-800 block">Critical Tier</span>
+        <span class="text-[11px] text-rose-700">&ge;5.0d critical-path impact or active safety freeze blocker</span>
       </div>
+      <div class="p-3 rounded-xl bg-amber-50/50 border border-amber-200/60">
+        <span class="font-bold text-amber-800 block">High Tier</span>
+        <span class="text-[11px] text-amber-700">3.0–4.9d critical-path impact or overdue vendor transfer</span>
+      </div>
+      <div class="p-3 rounded-xl bg-orange-50/50 border border-orange-200/60">
+        <span class="font-bold text-orange-800 block">Medium Tier</span>
+        <span class="text-[11px] text-orange-700">1.0–2.9d critical-path impact or ageing routine queries</span>
+      </div>
+      <div class="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/60">
+        <span class="font-bold text-emerald-800 block">Low Tier</span>
+        <span class="text-[11px] text-emerald-700">&lt;1.0d impact and zero primary-endpoint blockers</span>
+      </div>
+    </div>
+  {/if}
+
+  <!-- Country Filter Pill Strip -->
+  <div class="flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex items-center gap-1.5 flex-wrap text-xs">
       <button
         type="button"
-        on:click={() => showRiskBasisInfo = !showRiskBasisInfo}
-        class="text-xs font-bold text-blue-600 hover:text-blue-800 cursor-pointer"
+        on:click={() => selectedCountry = 'all'}
+        class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {selectedCountry === 'all' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200/80 hover:text-slate-900'}"
       >
-        {showRiskBasisInfo ? 'Hide calculation basis' : 'Show basis for each risk label'}
+        All Countries ({sites.length})
       </button>
-    </div>
-
-    {#if showRiskBasisInfo}
-      <p class="text-[11px] text-slate-600 mt-2 leading-relaxed">
-        <strong>Basis definition:</strong> Each site's risk tier is determined by the greater of its critical-path delay impact (estimated days added to study DBL based on unresolved SAE freeze blockers, overdue vendor transfers, and open queries divided by site closure velocity) or its Bayesian delay probability from historical oncology lock trajectories.
-      </p>
-    {/if}
-
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3 text-xs">
-      <div class="p-2.5 rounded-lg bg-rose-50/70 border border-rose-200">
-        <span class="font-extrabold text-rose-800 block">Critical</span>
-        <span class="text-[11px] text-rose-700">&gt;80% probability or &gt;5-day impact</span>
-      </div>
-      <div class="p-2.5 rounded-lg bg-amber-50/70 border border-amber-200">
-        <span class="font-extrabold text-amber-800 block">High</span>
-        <span class="text-[11px] text-amber-700">60–80% probability or 3–5-day impact</span>
-      </div>
-      <div class="p-2.5 rounded-lg bg-orange-50/70 border border-orange-200">
-        <span class="font-extrabold text-orange-800 block">Medium</span>
-        <span class="text-[11px] text-orange-700">30–60% probability or 1–3-day impact</span>
-      </div>
-      <div class="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200">
-        <span class="font-extrabold text-emerald-800 block">Low</span>
-        <span class="text-[11px] text-emerald-700">&lt;30% probability and &lt;1-day impact</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-    <div class="flex items-center space-x-2 text-xs flex-wrap gap-y-1">
-      <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700 bg-blue-50 px-2 py-1 rounded border border-blue-200">
-        Global Drill-Down
-      </span>
-      <span class="font-bold text-slate-800">Study CA-209-301</span>
-      <ChevronRight size={14} class="text-slate-400" />
-      <span class="text-slate-500 font-semibold">Country:</span>
-      <div class="flex flex-wrap gap-1.5">
+      {#each countriesList as ctry}
+        {@const ctrySites = sites.filter(s => s.country === ctry)}
         <button
           type="button"
-          on:click={() => selectedCountry = 'all'}
-          class="px-2.5 py-1 rounded-lg text-xs font-bold transition-colors cursor-pointer {selectedCountry === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
+          on:click={() => selectedCountry = ctry}
+          class="px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer {selectedCountry === ctry ? 'bg-slate-900 text-white font-semibold' : 'bg-white text-slate-600 border border-slate-200/80 hover:text-slate-900'}"
         >
-          All Countries ({sites.length} sites)
+          {ctry} ({ctrySites.length})
         </button>
-        {#each countriesList as ctry}
-          {@const ctrySites = sites.filter(s => s.country === ctry)}
-          <button
-            type="button"
-            on:click={() => selectedCountry = ctry}
-            class="px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer {selectedCountry === ctry ? 'bg-blue-600 text-white font-bold' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
-          >
-            {ctry} ({ctrySites.length})
-          </button>
-        {/each}
-      </div>
-    </div>
-
-    <div class="text-[11px] text-slate-500">
-      Country filter drills immediately into site-level open items &amp; subjects
+      {/each}
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- AUTOMATED MULTI-VENDOR VIEW (Image 11 & 12 Blue Requirement)              -->
-  <!-- Vendor -> Study -> Site -> Transfer or Outstanding Issue                  -->
+  <!-- AUTOMATED MULTI-VENDOR VIEW                                               -->
   <!-- ========================================================================= -->
   {#if viewMode === 'vendors'}
-    <div class="bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-5">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+    <div class="db-card p-6 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
         <div>
-          <div class="flex items-center space-x-2">
-            <Server size={16} class="text-blue-600" />
-            <h3 class="text-base font-extrabold text-slate-900">
-              Automated Multi-Vendor View (Zero Manual Cleanliness Input)
-            </h3>
-            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Live API / SFTP Ingestion
-            </span>
-          </div>
+          <h3 class="text-base font-bold text-slate-900">
+            External Data Vendor Feeds &amp; Reconciliation Gate
+          </h3>
           <p class="text-xs text-slate-500 mt-0.5">
-            Drill-down path: <strong>Vendor &rarr; Study &rarr; Site &rarr; Transfer or Outstanding Issue (due date, days late, record count)</strong>
+            Direct SFTP, HL7/FHIR, and E2B(R3) telemetry ahead of the 05 Dec Vendor Transfer Lock gate
           </p>
         </div>
       </div>
@@ -712,20 +657,22 @@
       </div>
     </div>
   {:else if viewMode === 'map'}
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
       <!-- World Map Container (2 Cols) -->
-      <div class="lg:col-span-2 bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between">
+      <div class="lg:col-span-2 db-card p-5 flex flex-col justify-between">
         <div>
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2">
+          <div class="flex items-center justify-between mb-3">
             <div>
-              <div class="flex items-center space-x-2">
-                <h3 class="text-sm font-bold text-slate-900">Site risk by location ({filteredSites.length} sites)</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  Real Global Map
-                </span>
-              </div>
-              <p class="text-[11px] text-slate-500">Click any marker to open the Risk Explanation &amp; Evidence Drawer</p>
+              <h3 class="text-sm font-bold text-slate-900">Global Site Distribution ({filteredSites.length} sites)</h3>
+              <p class="text-[11px] text-slate-500">Select a site marker to inspect critical-path blockers</p>
             </div>
+            <button
+              type="button"
+              on:click={() => openSiteDrawer(sites.find(s => s.id === '104') || sites[0])}
+              class="text-blue-600 hover:text-blue-800 text-xs font-semibold cursor-pointer"
+            >
+              Inspect Site 104 &rarr;
+            </button>
           </div>
 
           <RealWorldMap
@@ -734,73 +681,55 @@
             onSelectSite={openSiteDrawer}
           />
         </div>
-
-        <div class="mt-3 text-xs text-slate-500 flex items-center justify-between">
-          <span>Click any site marker or row below to inspect 4-level site &amp; vendor evidence</span>
-          <button
-            type="button"
-            on:click={() => openSiteDrawer(sites.find(s => s.id === '104') || sites[0])}
-            class="text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
-          >
-            Inspect Site 104 Drawer &rarr;
-          </button>
-        </div>
       </div>
 
       <!-- Quick Vendor & Query Summary Panel beside Map -->
-      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs flex flex-col justify-between space-y-4">
+      <div class="db-card p-5 flex flex-col justify-between space-y-4">
         <div>
-          <h3 class="text-sm font-bold text-slate-900 mb-1">All Queries vs Endpoint-Critical &amp; Vendors</h3>
-          <p class="text-[11px] text-slate-500 mb-3">
-            All outstanding queries can affect DBL; endpoint-critical queries are highlighted separately.
-          </p>
+          <h3 class="text-sm font-bold text-slate-900 mb-3">Study Query &amp; Vendor Telemetry</h3>
 
-          <div class="p-3 rounded-xl bg-amber-50/60 border border-amber-200 space-y-2 text-xs mb-3">
-            <div class="font-bold text-amber-950 flex items-center justify-between">
-              <span>Study-Wide Outstanding Queries</span>
-              <span class="font-mono font-extrabold text-sm text-slate-900">68 total</span>
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/70 space-y-2.5 text-xs mb-4">
+            <div class="font-semibold text-slate-700 flex items-center justify-between">
+              <span>Outstanding Queries</span>
+              <span class="font-mono font-bold text-sm text-slate-900">68 open</span>
             </div>
-            <div class="grid grid-cols-2 gap-2 pt-1">
-              <div class="p-2 bg-white rounded border border-rose-200">
-                <span class="text-[10px] text-rose-700 font-bold uppercase block">Endpoint-Critical</span>
-                <strong class="text-sm font-extrabold text-rose-600">14 queries</strong>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="p-2.5 bg-white rounded-lg border border-rose-200/70">
+                <span class="text-[10px] text-rose-700 font-semibold uppercase block">Endpoint-Critical</span>
+                <strong class="text-sm font-bold text-rose-600">14 queries</strong>
                 <span class="text-[10px] text-slate-500 block">RECIST / Primary PFS</span>
               </div>
-              <div class="p-2 bg-white rounded border border-slate-200">
-                <span class="text-[10px] text-slate-600 font-bold uppercase block">Other Outstanding</span>
-                <strong class="text-sm font-extrabold text-slate-800">54 queries</strong>
-                <span class="text-[10px] text-slate-500 block">AE / ConMed / Demographics</span>
+              <div class="p-2.5 bg-white rounded-lg border border-slate-200/70">
+                <span class="text-[10px] text-slate-600 font-semibold uppercase block">Routine</span>
+                <strong class="text-sm font-bold text-slate-800">54 queries</strong>
+                <span class="text-[10px] text-slate-500 block">AE / ConMed / Demo</span>
               </div>
             </div>
           </div>
 
           <div class="space-y-2">
-            <div class="flex items-center justify-between text-xs font-bold text-slate-800">
-              <span>Automated Vendor Feeds</span>
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-800">
+              <span>Vendor Feed Health</span>
               <button
                 type="button"
                 on:click={() => viewMode = 'vendors'}
                 class="text-blue-600 hover:underline text-[11px] cursor-pointer"
               >
-                Open Vendor View &rarr;
+                All 5 Vendors &rarr;
               </button>
             </div>
             {#each automatedVendors.slice(0, 3) as vnd}
-              <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+              <div class="p-2.5 rounded-xl bg-slate-50/80 border border-slate-200/60 flex items-center justify-between text-xs">
                 <div>
-                  <div class="font-bold text-slate-900">{vnd.name}</div>
-                  <div class="text-[10px] text-slate-500">{vnd.lateTransfersCount} late transfer &middot; {vnd.outstandingIssuesCount} open issues</div>
+                  <div class="font-semibold text-slate-900">{vnd.name}</div>
+                  <div class="text-[10px] text-slate-500">{vnd.lateTransfersCount} late &middot; {vnd.outstandingIssuesCount} open issues</div>
                 </div>
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold {vnd.statusColor === 'rose' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'}">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-bold {vnd.statusColor === 'rose' ? 'bg-rose-50 text-rose-700' : 'bg-amber-50 text-amber-700'}">
                   {vnd.cleanlinessAutoScore}%
                 </span>
               </div>
             {/each}
           </div>
-        </div>
-
-        <div class="pt-3 border-t border-slate-100 text-[11px] text-slate-500">
-          Automated vendor feeds require zero manual cleanliness input.
         </div>
       </div>
     </div>
@@ -815,9 +744,9 @@
   {/if}
 
   <!-- ========================================================================= -->
-  <!-- SITE TABLE VIEW (With All Queries vs Endpoint-Critical & Seema Params)    -->
+  <!-- SITE TABLE VIEW                                                           -->
   <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="db-card overflow-hidden">
     
     <!-- Filter Chips & Search Bar -->
     <div class="p-4 sm:p-5 border-b border-slate-100 space-y-3">
@@ -825,31 +754,31 @@
         <div class="flex items-center space-x-1.5 overflow-x-auto text-xs">
           <button
             on:click={() => riskTierFilter = 'all'}
-            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'all' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
+            class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {riskTierFilter === 'all' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}"
           >
             All sites ({filteredSites.length})
           </button>
           <button
             on:click={() => riskTierFilter = 'critical'}
-            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'critical' ? 'bg-rose-600 text-white shadow-xs' : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200'}"
+            class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {riskTierFilter === 'critical' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 hover:bg-rose-100'}"
           >
             Critical ({sites.filter(s => s.riskLevel === 'Critical').length})
           </button>
           <button
             on:click={() => riskTierFilter = 'high'}
-            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'high' ? 'bg-amber-600 text-white shadow-xs' : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'}"
+            class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {riskTierFilter === 'high' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 hover:bg-amber-100'}"
           >
             High ({sites.filter(s => s.riskLevel === 'High').length})
           </button>
           <button
             on:click={() => riskTierFilter = 'medium'}
-            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'medium' ? 'bg-orange-500 text-white shadow-xs' : 'bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200'}"
+            class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {riskTierFilter === 'medium' ? 'bg-orange-500 text-white' : 'bg-orange-50 text-orange-700 hover:bg-orange-100'}"
           >
             Medium ({sites.filter(s => s.riskLevel === 'Medium').length})
           </button>
           <button
             on:click={() => riskTierFilter = 'low'}
-            class="px-3 py-1.5 rounded-lg font-semibold transition-all {riskTierFilter === 'low' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'}"
+            class="px-3 py-1.5 rounded-full font-semibold transition-all cursor-pointer {riskTierFilter === 'low' ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}"
           >
             Low ({sites.filter(s => s.riskLevel === 'Low').length})
           </button>
@@ -870,21 +799,21 @@
             <input
               type="text"
               bind:value={searchQuery}
-              placeholder="Search site, country or site ID"
-              class="text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 pl-8 pr-3 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 w-52"
+              placeholder="Search site, country or ID"
+              class="text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 pl-8 pr-3 text-slate-800 placeholder-slate-400 focus:outline-hidden focus:border-blue-500 w-52"
             />
           </div>
         </div>
       </div>
 
-      <!-- Structured Table Column Filters: Country, Site, Risk Level, DBL Impact, Risk Driver, Criticality -->
+      <!-- Structured Table Column Filters -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-3 border-t border-slate-100">
         <div>
-          <label for="table-country-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Country</label>
+          <label for="table-country-filter" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Country</label>
           <select
             id="table-country-filter"
             bind:value={selectedCountry}
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+            class="w-full text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2 text-slate-800"
           >
             <option value="all">All countries ({countriesList.length})</option>
             {#each countriesList as ctry}
@@ -894,11 +823,11 @@
         </div>
 
         <div>
-          <label for="table-site-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Site</label>
+          <label for="table-site-filter" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Site</label>
           <select
             id="table-site-filter"
             bind:value={selectedSiteId}
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+            class="w-full text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2 text-slate-800"
           >
             <option value="all">All sites ({siteOptionsForFilter.length})</option>
             {#each siteOptionsForFilter as st}
@@ -908,11 +837,11 @@
         </div>
 
         <div>
-          <label for="table-risk-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Risk Level</label>
+          <label for="table-risk-filter" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Risk Level</label>
           <select
             id="table-risk-filter"
             bind:value={riskTierFilter}
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+            class="w-full text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2 text-slate-800"
           >
             <option value="all">All risk levels</option>
             <option value="critical">Critical</option>
@@ -923,11 +852,11 @@
         </div>
 
         <div>
-          <label for="table-impact-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">DBL Impact</label>
+          <label for="table-impact-filter" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">DBL Impact</label>
           <select
             id="table-impact-filter"
             bind:value={impactFilter}
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+            class="w-full text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2 text-slate-800"
           >
             <option value="all">All impacts</option>
             <option value="high">High (3+ days)</option>
@@ -937,11 +866,11 @@
         </div>
 
         <div>
-          <label for="table-driver-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Risk Driver</label>
+          <label for="table-driver-filter" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Risk Driver</label>
           <select
             id="table-driver-filter"
             bind:value={driverFilter}
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+            class="w-full text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2 text-slate-800"
           >
             <option value="all">All drivers</option>
             <option value="safety">Safety / SAE</option>
@@ -952,11 +881,11 @@
         </div>
 
         <div>
-          <label for="table-criticality-filter" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider block mb-1">Criticality</label>
+          <label for="table-criticality-filter" class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">Criticality</label>
           <select
             id="table-criticality-filter"
             bind:value={criticalityFilter}
-            class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2 text-slate-800"
+            class="w-full text-xs bg-slate-50 border border-slate-200/80 rounded-lg py-1.5 px-2 text-slate-800"
           >
             <option value="all">All items</option>
             <option value="critical_items">Has critical open items</option>
@@ -970,75 +899,70 @@
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse text-xs">
         <thead>
-          <tr class="bg-slate-50/80 text-slate-500 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider">
+          <tr class="bg-slate-50/70 text-slate-500 border-b border-slate-200/80 text-[10px] font-semibold uppercase tracking-wider">
             <th class="py-3 px-4">Site ID &amp; Name</th>
             <th class="py-3 px-2">Country</th>
             <th class="py-3 px-3 text-center">Open Items</th>
-            <th class="py-3 px-3 text-center">Outstanding Queries (All vs Endpoint-Crit)</th>
-            <th class="py-3 px-3 text-center">Potential DBL Impact</th>
-            <th class="py-3 px-3">Risk Label</th>
-            <th class="py-3 px-3">Leading Risk Drivers</th>
-            <th class="py-3 px-3">Actions</th>
+            <th class="py-3 px-3 text-center">Queries (Total / Critical)</th>
+            <th class="py-3 px-3 text-center">DBL Impact</th>
+            <th class="py-3 px-3">Risk Tier</th>
+            <th class="py-3 px-3">Primary Drivers</th>
+            <th class="py-3 px-3 text-right">Inspect</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
           {#each sortedSites as site}
             {@const qMetrics = getSiteQueryMetrics(site)}
             <tr
-              class="hover:bg-blue-50/40 transition-colors cursor-pointer group {site.id === '104' ? 'bg-amber-50/20' : ''}"
+              class="hover:bg-slate-50/80 transition-colors cursor-pointer group"
               on:click={() => openSiteDrawer(site)}
             >
               <td class="py-3.5 px-4">
-                <div class="font-bold text-slate-900 group-hover:text-blue-600">{site.code}: {site.name}</div>
-                <div class="text-[10px] text-slate-400">Readiness: {site.readinessScore}/100 &middot; {site.enrolledSubjects} enrolled subjects</div>
+                <div class="font-semibold text-slate-900 group-hover:text-blue-600">{site.code}: {site.name}</div>
+                <div class="text-[11px] text-slate-500">Readiness {site.readinessScore}% &middot; {site.enrolledSubjects} subjects</div>
               </td>
-              <td class="py-3.5 px-2 text-slate-700 font-semibold">
+              <td class="py-3.5 px-2 text-slate-700">
                 {site.country} ({site.countryCode})
               </td>
-              <!-- Open items: Site 208 has 41, Site 104 has 19 -->
-              <td class="py-3.5 px-3 text-center font-bold {site.id === '208' ? 'text-blue-700 font-extrabold' : 'text-slate-800'}">
+              <td class="py-3.5 px-3 text-center font-semibold text-slate-800 num-tabular">
                 {site.openItems}
               </td>
-              <!-- Query Indicator: All outstanding queries + Endpoint-critical highlighted separately (Image 10 Blue) -->
               <td class="py-3.5 px-3 text-center">
-                <div class="font-bold text-slate-900">{qMetrics.totalQueries} total open</div>
+                <div class="font-semibold text-slate-900 num-tabular">{qMetrics.totalQueries} open</div>
                 {#if qMetrics.endpointCritical > 0}
-                  <span class="inline-block px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold mt-0.5">
+                  <span class="inline-block px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 text-[10px] font-semibold mt-0.5">
                     {qMetrics.endpointCritical} endpoint-critical
                   </span>
                 {:else}
-                  <span class="inline-block px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium mt-0.5">
-                    0 endpoint-critical ({qMetrics.nonCritical} routine)
-                  </span>
+                  <span class="text-[10px] text-slate-400 mt-0.5 block">0 endpoint-critical</span>
                 {/if}
               </td>
-              <!-- Potential DBL impact -->
-              <td class="py-3.5 px-3 text-center font-bold font-mono {site.maxDelayDays >= 5 ? 'text-rose-600 text-sm' : site.maxDelayDays >= 3 ? 'text-amber-600' : 'text-slate-700'}">
-                {site.forecastImpactDays} days
+              <td class="py-3.5 px-3 text-center font-semibold font-mono num-tabular {site.maxDelayDays >= 5 ? 'text-rose-600' : site.maxDelayDays >= 3 ? 'text-amber-600' : 'text-slate-700'}">
+                {site.forecastImpactDays}d
               </td>
               <td class="py-3.5 px-3">
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border {getRiskBadge(site.riskLevel)}">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold border {getRiskBadge(site.riskLevel)}">
                   {site.riskLevel}
                 </span>
               </td>
-              <td class="py-3.5 px-3 text-slate-600 truncate max-w-[170px]">
+              <td class="py-3.5 px-3 text-slate-600 truncate max-w-[180px]">
                 {site.keyRiskDrivers}
               </td>
-              <td class="py-3.5 px-3 whitespace-nowrap">
-                <div class="flex items-center space-x-2">
+              <td class="py-3.5 px-3 whitespace-nowrap text-right">
+                <div class="flex items-center justify-end space-x-1.5">
                   <button
                     type="button"
                     on:click|stopPropagation={() => openSiteDrawer(site)}
-                    class="px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[11px] border border-blue-200 cursor-pointer"
+                    class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 font-semibold text-[11px] cursor-pointer"
                   >
-                    Risk Drawer
+                    Breakdown
                   </button>
                   <button
                     type="button"
                     on:click|stopPropagation={() => onSelectSite(site.id)}
-                    class="px-2 py-1 rounded bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold text-[11px] cursor-pointer"
+                    class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-semibold text-[11px] cursor-pointer"
                   >
-                    Site Drill-Down &rarr;
+                    Casebooks &rarr;
                   </button>
                 </div>
               </td>
@@ -1050,21 +974,15 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SCREEN 4: RISK EXPLANATION AND EVIDENCE DRAWER (SLIDE-OVER)               -->
-  <!-- Updated per Manager Notes (Images 12, 13, 14, 15):                        -->
-  <!-- 1. Removed unexplained risk-probability figure                            -->
-  <!-- 2. Aligned Site 104 percentages to 35% / 30% / 22% / 13% + derivation     -->
-  <!-- 3. Removed recommended-actions/intervention section; retained risks &     -->
-  <!--    supporting evidence + Vendor drill-down                                -->
+  <!-- RISK EXPLANATION AND EVIDENCE DRAWER (SLIDE-OVER)                         -->
   <!-- ========================================================================= -->
   {#if activeSite}
     {@const siteFactors = getSiteFactorDerivations(activeSite)}
-    {@const siteSeemaParams = getSiteSeemaReadinessParams(activeSite)}
+    {@const siteReadinessParams = getSiteReadinessParams(activeSite)}
     {@const siteQueryStats = getSiteQueryMetrics(activeSite)}
     <div class="fixed inset-0 z-50 flex justify-end">
-      <!-- Backdrop -->
       <div
-        class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs transition-opacity"
+        class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
         on:click={closeDrawer}
         on:keydown={(e) => e.key === 'Escape' && closeDrawer()}
         role="button"
@@ -1072,23 +990,21 @@
         aria-label="Close risk drawer backdrop"
       ></div>
 
-      <!-- Drawer Panel -->
       <aside class="relative w-full max-w-2xl bg-white h-full shadow-2xl border-l border-slate-200 overflow-y-auto flex flex-col z-10">
         
-        <!-- Drawer Header -->
-        <div class="p-6 border-b border-slate-200 sticky top-0 bg-white/95 backdrop-blur-md z-10 flex items-start justify-between">
+        <div class="p-6 border-b border-slate-200/80 sticky top-0 bg-white/95 backdrop-blur-md z-10 flex items-start justify-between">
           <div>
             <div class="flex items-center space-x-2">
-              <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">4. Risk Explanation &amp; Evidence Drawer</span>
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold border {getRiskBadge(activeSite.riskLevel)}">
-                {activeSite.riskLevel} risk
+              <span class="text-xs font-semibold text-slate-500">Site {activeSite.id} Risk &amp; Evidence</span>
+              <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold border {getRiskBadge(activeSite.riskLevel)}">
+                {activeSite.riskLevel} Risk
               </span>
             </div>
-            <h2 class="text-xl font-extrabold text-slate-900 mt-1">
-              Site {activeSite.id} &ndash; {activeSite.name}
+            <h2 class="text-xl font-bold text-slate-900 mt-1">
+              {activeSite.name}
             </h2>
             <p class="text-xs text-slate-500">
-              {activeSite.city}, {activeSite.country} &middot; Enrolled subjects: {activeSite.enrolledSubjects}
+              {activeSite.city}, {activeSite.country} &middot; {activeSite.enrolledSubjects} enrolled subjects
             </p>
             <button
               type="button"
@@ -1097,120 +1013,105 @@
                 closeDrawer();
                 onSelectSite(siteId);
               }}
-              class="mt-2 inline-flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              class="mt-2 inline-flex items-center space-x-1 text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
             >
-              <span>Open full site &amp; subject clean-patient tracker &rarr;</span>
+              <span>Open Full Site Casebook Tracker &rarr;</span>
             </button>
           </div>
 
           <button
             on:click={closeDrawer}
-            class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
+            class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
             aria-label="Close drawer"
           >
             <X size={20} />
           </button>
         </div>
 
-        <div class="grid grid-cols-3 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-center">
-          <div class="p-2.5 bg-white rounded-lg border border-slate-200/80">
-            <span class="text-[10px] text-slate-400 uppercase font-bold block">Site Readiness</span>
-            <strong class="text-sm font-extrabold text-slate-900">{activeSite.readinessScore}/100</strong>
-            <span class="text-[10px] text-slate-500 block">Matches study-level parameters</span>
+        <div class="grid grid-cols-3 gap-3 p-4 bg-slate-50/70 border-b border-slate-200/80 text-center">
+          <div class="p-2.5 bg-white rounded-xl border border-slate-200/70">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Site Readiness</span>
+            <strong class="text-sm font-bold text-slate-900">{activeSite.readinessScore}%</strong>
           </div>
-          <div class="p-2.5 bg-white rounded-lg border border-slate-200/80">
-            <span class="text-[10px] text-slate-400 uppercase font-bold block">Potential DBL Impact</span>
-            <strong class="text-sm font-extrabold text-rose-600">{activeSite.forecastImpactDays} days</strong>
-            <span class="text-[10px] text-slate-500 block">Critical-path delay</span>
+          <div class="p-2.5 bg-white rounded-xl border border-slate-200/70">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">DBL Impact</span>
+            <strong class="text-sm font-bold text-rose-600">{activeSite.forecastImpactDays}d</strong>
           </div>
-          <div class="p-2.5 bg-white rounded-lg border border-slate-200/80">
-            <span class="text-[10px] text-slate-400 uppercase font-bold block">Open Items &amp; Queries</span>
-            <strong class="text-sm font-extrabold text-slate-900">{activeSite.openItems} items</strong>
-            <span class="text-[10px] text-rose-600 font-bold block">{siteQueryStats.totalQueries} queries ({siteQueryStats.endpointCritical} endpoint-crit)</span>
+          <div class="p-2.5 bg-white rounded-xl border border-slate-200/70">
+            <span class="text-[10px] text-slate-400 uppercase font-semibold block">Open Queries</span>
+            <strong class="text-sm font-bold text-slate-900">{siteQueryStats.totalQueries} ({siteQueryStats.endpointCritical} critical)</strong>
           </div>
         </div>
 
-        <!-- Recommended-actions section removed from drawer per Image 14 Blue instruction -->
-        <div class="flex border-b border-slate-200 px-6 text-xs font-bold text-slate-600 bg-white">
+        <div class="flex border-b border-slate-200/80 px-6 text-xs font-semibold text-slate-600 bg-white">
           <button
             on:click={() => drawerTab = 'why'}
-            class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'why' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent hover:text-slate-900'}"
+            class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'why' ? 'border-blue-600 text-blue-600' : 'border-transparent hover:text-slate-900'}"
           >
-            Why at risk?
+            Delay Drivers
           </button>
           <button
             on:click={() => drawerTab = 'evidence'}
-            class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'evidence' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent hover:text-slate-900'}"
+            class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'evidence' ? 'border-blue-600 text-blue-600' : 'border-transparent hover:text-slate-900'}"
           >
-            Supporting Evidence
+            Source Records
           </button>
           <button
             on:click={() => drawerTab = 'vendors'}
-            class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'vendors' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent hover:text-slate-900'}"
+            class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'vendors' ? 'border-blue-600 text-blue-600' : 'border-transparent hover:text-slate-900'}"
           >
-            Vendor Evidence
+            Vendor Feeds
           </button>
         </div>
 
-        <!-- Drawer Tab Content -->
         <div class="p-6 space-y-6 flex-1 text-xs text-slate-700">
           
           {#if drawerTab === 'why'}
-            <div class="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-blue-950 space-y-1">
-              <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                Selected Site Risk Summary &amp; Reason the Site Matters
-              </div>
-              <p class="leading-relaxed">
-                <strong>Site {activeSite.id} ({activeSite.name})</strong> has <strong>{activeSite.openItems} open items</strong> and is on the study critical path with a potential DBL impact of <strong>{activeSite.forecastImpactDays} days</strong>. Below are the aligned factor contributions and how each percentage is derived.
-              </p>
-            </div>
-
             <div>
-              <div class="flex items-center justify-between mb-2">
-                <h3 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                  Contributing Factors &amp; How Each Contribution is Derived
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                  Critical-Path Contribution Breakdown
                 </h3>
-                <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
-                  Aligned: 35% / 30% / 22% / 13%
+                <span class="text-[11px] text-slate-500 font-medium">
+                  Total: {activeSite.forecastImpactDays}d impact
                 </span>
               </div>
 
               <div class="space-y-3">
                 {#each siteFactors as factor}
-                  <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-1.5">
-                    <div class="flex justify-between font-bold text-slate-900 text-xs">
+                  <div class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-1.5">
+                    <div class="flex justify-between font-semibold text-slate-900 text-xs">
                       <span>{factor.name}</span>
-                      <span class="font-extrabold {factor.color === 'rose' ? 'text-rose-600' : factor.color === 'amber' ? 'text-amber-600' : factor.color === 'orange' ? 'text-orange-600' : 'text-blue-600'}">
+                      <span class="font-bold {factor.color === 'rose' ? 'text-rose-600' : factor.color === 'amber' ? 'text-amber-600' : factor.color === 'orange' ? 'text-orange-600' : 'text-blue-600'}">
                         {factor.pct}%
                       </span>
                     </div>
-                    <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div class="w-full bg-slate-200/80 rounded-full h-1.5">
                       <div
                         class="h-full rounded-full {factor.color === 'rose' ? 'bg-rose-500' : factor.color === 'amber' ? 'bg-amber-500' : factor.color === 'orange' ? 'bg-orange-500' : 'bg-blue-600'}"
                         style="width: {factor.pct}%"
                       ></div>
                     </div>
                     <p class="text-[11px] text-slate-600 leading-relaxed pt-0.5">
-                      <strong>Derivation:</strong> {factor.derivation}
+                      {factor.derivation}
                     </p>
                   </div>
                 {/each}
               </div>
             </div>
 
-            <!-- Site Readiness Parameters matching Seema's Study-Level Drill-Down (Image 9 Blue) -->
-            <div class="pt-2 border-t border-slate-200 space-y-2.5">
-              <h4 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                Site-Level Readiness Parameters (Matching Study-Level Categories)
+            <div class="pt-4 border-t border-slate-200/80 space-y-2.5">
+              <h4 class="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                Site Readiness Dimensions
               </h4>
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {#each siteSeemaParams as sp}
-                  <div class="p-2.5 rounded-lg border border-slate-200 bg-white">
-                    <div class="flex items-center justify-between font-bold text-slate-900 text-[11px]">
+                {#each siteReadinessParams as sp}
+                  <div class="p-3 rounded-xl border border-slate-200/80 bg-white">
+                    <div class="flex items-center justify-between font-semibold text-slate-900 text-[11px]">
                       <span>{sp.label}</span>
                       <span class="{sp.pct < 70 ? 'text-rose-600' : sp.pct < 85 ? 'text-amber-600' : 'text-emerald-700'}">{sp.pct}%</span>
                     </div>
-                    <div class="w-full bg-slate-100 rounded-full h-1.5 my-1">
+                    <div class="w-full bg-slate-100 rounded-full h-1.5 my-1.5">
                       <div class="h-full rounded-full {sp.pct < 70 ? 'bg-rose-500' : sp.pct < 85 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: {sp.pct}%"></div>
                     </div>
                     <div class="text-[10px] text-slate-500">{sp.detail}</div>
@@ -1222,86 +1123,77 @@
           {:else if drawerTab === 'evidence'}
             <div class="space-y-4">
               <div class="flex items-center justify-between">
-                <div>
-                  <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-                    Factor &rarr; Supporting Evidence &rarr; Source Record
-                  </span>
-                  <h3 class="text-sm font-bold text-slate-900">
-                    Traceable Source Records for Site {activeSite.id}
-                  </h3>
-                </div>
-                <span class="text-[10px] text-slate-500 font-mono">Last Refresh: 31 Oct 2026, 08:00 UTC</span>
+                <h3 class="text-sm font-bold text-slate-900">
+                  Traceable Source Records · Site {activeSite.id}
+                </h3>
+                <span class="text-[10px] text-slate-500 font-mono">31 Oct 2026, 08:00 UTC</span>
               </div>
 
-              <div class="border border-slate-200 rounded-xl overflow-hidden">
+              <div class="border border-slate-200/80 rounded-xl overflow-hidden">
                 <table class="w-full text-left border-collapse text-xs">
-                  <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                  <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-semibold border-b border-slate-200">
                     <tr>
-                      <th class="py-2.5 px-3">Record ID &amp; Factor</th>
-                      <th class="py-2.5 px-2">Source System</th>
-                      <th class="py-2.5 px-3">Rule Applied &amp; Evidence Detail</th>
-                      <th class="py-2.5 px-2">Status &amp; Extract</th>
+                      <th class="py-2.5 px-3">Record ID</th>
+                      <th class="py-2.5 px-2">System</th>
+                      <th class="py-2.5 px-3">Evidence Detail</th>
+                      <th class="py-2.5 px-2">Status</th>
                     </tr>
                   </thead>
                   <tbody class="divide-y divide-slate-100 font-medium">
                     <tr>
                       <td class="py-2.5 px-3">
                         <div class="font-mono font-bold text-slate-900">SAE-REC-104-01</div>
-                        <div class="text-[10px] text-rose-600 font-bold">Safety Recon (35%)</div>
+                        <div class="text-[10px] text-rose-600 font-semibold">SDTM.AE</div>
                       </td>
-                      <td class="py-2.5 px-2 text-slate-600">Argus Safety &harr; Rave EDC</td>
+                      <td class="py-2.5 px-2 text-slate-600">Argus &harr; Rave</td>
                       <td class="py-2.5 px-3">
                         <div class="font-semibold text-slate-900">Subj 104-003 Grade 3 CRS Onset Discordance</div>
-                        <div class="text-[10px] text-slate-500">Rule: 21-CFR-312.32 48h Onset &amp; Causality Match</div>
+                        <div class="text-[10px] text-slate-500">Ball in Court: Medical Monitor / PV</div>
                       </td>
                       <td class="py-2.5 px-2">
-                        <span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold block text-center">Discrepant (12d)</span>
-                        <span class="text-[9px] text-slate-400 font-mono block mt-0.5">31 Oct 08:00 UTC</span>
+                        <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 text-[10px] font-semibold block text-center">Discrepant (12d)</span>
                       </td>
                     </tr>
                     <tr>
                       <td class="py-2.5 px-3">
                         <div class="font-mono font-bold text-slate-900">LXB-8921</div>
-                        <div class="text-[10px] text-amber-600 font-bold">Lab Transfer (30%)</div>
+                        <div class="text-[10px] text-amber-600 font-semibold">SDTM.LB</div>
                       </td>
-                      <td class="py-2.5 px-2 text-slate-600">LabCorp SFTP API</td>
+                      <td class="py-2.5 px-2 text-slate-600">LabCorp SFTP</td>
                       <td class="py-2.5 px-3">
                         <div class="font-semibold text-slate-900">48 ctDNA NGS samples failed SHA-256 checksum</div>
-                        <div class="text-[10px] text-slate-500">Rule: Automated Vendor Package Integrity Gate</div>
+                        <div class="text-[10px] text-slate-500">Ball in Court: LabCorp Vendor QA</div>
                       </td>
                       <td class="py-2.5 px-2">
-                        <span class="px-1.5 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold block text-center">Overdue (4d)</span>
-                        <span class="text-[9px] text-slate-400 font-mono block mt-0.5">31 Oct 08:00 UTC</span>
+                        <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 text-[10px] font-semibold block text-center">Overdue (4d)</span>
                       </td>
                     </tr>
                     <tr>
                       <td class="py-2.5 px-3">
                         <div class="font-mono font-bold text-slate-900">QRY-104-089</div>
-                        <div class="text-[10px] text-orange-600 font-bold">Ageing Queries (22%)</div>
+                        <div class="text-[10px] text-orange-600 font-semibold">SDTM.TU</div>
                       </td>
-                      <td class="py-2.5 px-2 text-slate-600">Medidata Rave EDC</td>
+                      <td class="py-2.5 px-2 text-slate-600">Rave EDC</td>
                       <td class="py-2.5 px-3">
-                        <div class="font-semibold text-slate-900">Subj 104-003 Form TU-01 RECIST sum diameter mismatch [Endpoint-Critical]</div>
-                        <div class="text-[10px] text-slate-500">Rule: RECIST 1.1 Source Worksheet Reconciliation (+9 routine queries open)</div>
+                        <div class="font-semibold text-slate-900">Subj 104-003 Form TU-01 RECIST sum diameter mismatch</div>
+                        <div class="text-[10px] text-slate-500">Ball in Court: Site Coordinator</div>
                       </td>
                       <td class="py-2.5 px-2">
-                        <span class="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold block text-center">Open (16d)</span>
-                        <span class="text-[9px] text-slate-400 font-mono block mt-0.5">31 Oct 08:00 UTC</span>
+                        <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-semibold block text-center">Open (16d)</span>
                       </td>
                     </tr>
                     <tr>
                       <td class="py-2.5 px-3">
                         <div class="font-mono font-bold text-slate-900">SIG-104-C4C6</div>
-                        <div class="text-[10px] text-blue-600 font-bold">PI Sign-off (13%)</div>
+                        <div class="text-[10px] text-blue-600 font-semibold">21 CFR 11</div>
                       </td>
-                      <td class="py-2.5 px-2 text-slate-600">Rave e-Signature</td>
+                      <td class="py-2.5 px-2 text-slate-600">Rave e-Sign</td>
                       <td class="py-2.5 px-3">
-                        <div class="font-semibold text-slate-900">12 completed subject casebooks awaiting PI sign-off</div>
-                        <div class="text-[10px] text-slate-500">Rule: ICH E6(R2) Investigator Casebook Attestation</div>
+                        <div class="font-semibold text-slate-900">8 completed subject casebooks awaiting PI sign-off</div>
+                        <div class="text-[10px] text-slate-500">Ball in Court: Principal Investigator</div>
                       </td>
                       <td class="py-2.5 px-2">
-                        <span class="px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 text-[10px] font-bold block text-center">Pending (8d)</span>
-                        <span class="text-[9px] text-slate-400 font-mono block mt-0.5">31 Oct 08:00 UTC</span>
+                        <span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-semibold block text-center">Pending (8d)</span>
                       </td>
                     </tr>
                   </tbody>
@@ -1310,45 +1202,41 @@
             </div>
 
           {:else}
-            <!-- Tab 3: Vendor Drill-Down (Outstanding Issues and Late Transfers per Vendor as a Source of Evidence) -->
             <div class="space-y-4">
               <div>
-                <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-                  Vendor Evidence Drill-Down (Image 14 &amp; 15 Blue)
-                </span>
-                <h3 class="text-sm font-bold text-slate-900 mt-0.5">
-                  Vendor &rarr; Outstanding Issues &amp; Late Transfers Affecting Site {activeSite.id}
+                <h3 class="text-sm font-bold text-slate-900">
+                  Vendor Feeds Affecting Site {activeSite.id}
                 </h3>
                 <p class="text-[11px] text-slate-500">
-                  Automated vendor metrics ingested without manual cleanliness input.
+                  Direct SFTP / HL7 / E2B(R3) ingestion status.
                 </p>
               </div>
 
               <div class="space-y-3">
                 {#each automatedVendors as vnd}
-                  <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
+                  <div class="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2">
                     <div class="flex items-center justify-between">
                       <div>
-                        <strong class="font-bold text-slate-900 text-xs">{vnd.name}</strong>
+                        <strong class="font-semibold text-slate-900 text-xs">{vnd.name}</strong>
                         <span class="text-[10px] text-slate-500 block">{vnd.feedType}</span>
                       </div>
-                      <span class="px-2 py-0.5 rounded text-[10px] font-bold {vnd.statusColor === 'rose' ? 'bg-rose-100 text-rose-800' : vnd.statusColor === 'amber' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}">
-                        Auto-Cleanliness: {vnd.cleanlinessAutoScore}%
+                      <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold {vnd.statusColor === 'rose' ? 'bg-rose-50 text-rose-700' : vnd.statusColor === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">
+                        {vnd.cleanlinessAutoScore}% Clean
                       </span>
                     </div>
 
                     <div class="space-y-1.5 pt-1">
                       {#each vnd.transfersAndIssues as ti}
-                        <div class="p-2.5 bg-white rounded-lg border border-slate-200 flex items-start justify-between gap-2 text-[11px]">
+                        <div class="p-2.5 bg-white rounded-lg border border-slate-200/70 flex items-start justify-between gap-2 text-[11px]">
                           <div>
                             <span class="font-mono font-bold text-slate-900">{ti.id}</span>
-                            <span class="font-semibold text-slate-800 ml-1">&middot; {ti.type}</span>
+                            <span class="font-medium text-slate-800 ml-1">&middot; {ti.type}</span>
                             <div class="text-[10px] text-slate-500 mt-0.5">
-                              Site: {ti.siteId} &middot; Due: {ti.dueDate} &middot; Volume: {ti.recordCount}
+                              Site {ti.siteId} &middot; Due {ti.dueDate} &middot; {ti.recordCount}
                             </div>
                           </div>
-                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-bold text-[10px] shrink-0">
-                            +{ti.daysLate}d late
+                          <span class="px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-semibold text-[10px] shrink-0">
+                            +{ti.daysLate}d
                           </span>
                         </div>
                       {/each}

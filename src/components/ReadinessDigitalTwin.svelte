@@ -121,15 +121,11 @@
     fiveComponents = fiveComponents.map(c => ({ ...c, weight: c.suggestedWeight }));
   }
 
-  // =========================================================================
-  // SPECIFIED PARAMETERS (Seema consolidated list + Overview categories)
-  // data entry, SDV/SDR, PI signatures, coding, queries and vendor data
-  // =========================================================================
   const readinessParameters = [
     {
       id: 'edc_cleaning',
       label: 'Data entry & EDC data cleaning',
-      seemaParam: 'Data entry',
+      shortLabel: 'Data Entry',
       pct: 92,
       weeklyDelta: '+2% vs W-1',
       color: 'emerald',
@@ -171,7 +167,7 @@
     {
       id: 'sdv_sdr',
       label: 'SDV / SDR verification',
-      seemaParam: 'SDV/SDR',
+      shortLabel: 'SDV / SDR',
       pct: 87,
       weeklyDelta: '+3% vs W-1',
       color: 'emerald',
@@ -213,16 +209,16 @@
     {
       id: 'site_signoffs',
       label: 'PI signatures (Site sign-offs)',
-      seemaParam: 'PI signatures',
+      shortLabel: 'PI Signatures',
       pct: 75,
       weeklyDelta: '+1% vs W-1',
       color: 'amber',
       componentParent: 'Site readiness (20% weight)',
-      formula: '165 PI-signed subject casebooks / 220 total enrolled subjects = 75.0% (55 pending; 18 overdue on critical path)',
+      formula: '165 PI-signed subject casebooks / 220 total enrolled subjects = 75.0% (55 pending; 18 overdue: 8 Site 104, 6 Site 405, 4 Site 317)',
       criticalVsNonCriticalRule: 'LSLV-completed casebooks unsigned >7d = Critical (2.0x); recently cleaned casebooks awaiting batch sign-off = Noncritical (0.5x).',
       countries: [
-        { code: 'KR', name: 'South Korea', score: 64, sites: ['405', '455'] },
-        { code: 'US', name: 'United States', score: 76, sites: ['104', '208'] },
+        { code: 'KR', name: 'South Korea', score: 63, sites: ['405', '455'] },
+        { code: 'US', name: 'United States', score: 83, sites: ['104', '208'] },
         { code: 'FR', name: 'France', score: 92, sites: ['722'] }
       ],
       records: [
@@ -230,9 +226,9 @@
           id: 'SIG-405-001',
           country: 'KR',
           siteId: '405',
-          subjectId: 'SUBJ-104-003',
+          subjectId: 'SUBJ-405-002',
           changeType: 'Newly Detected Blocker',
-          item: '18 completed subject casebooks awaiting PI e-signature at Site 405 (PI on academic leave)',
+          item: '6 completed subject casebooks awaiting PI e-signature at Site 405 (of 18 study-wide)',
           criticality: 'Critical',
           source: 'Medidata Rave e-Signature / Veeva eTMF',
           owner: 'Tom Becker (TMF Lead)',
@@ -243,7 +239,7 @@
     {
       id: 'medical_coding',
       label: 'Medical coding (MedDRA & WHODrug)',
-      seemaParam: 'Coding',
+      shortLabel: 'Coding',
       pct: 90,
       weeklyDelta: '+4% vs W-1',
       color: 'emerald',
@@ -285,7 +281,7 @@
     {
       id: 'query_resolution',
       label: 'Queries (All & Endpoint-Critical)',
-      seemaParam: 'Queries',
+      shortLabel: 'Queries',
       pct: 85,
       weeklyDelta: '+2% vs W-1',
       color: 'emerald',
@@ -326,8 +322,8 @@
     },
     {
       id: 'external_recon',
-      label: 'Vendor data & External reconciliation (Automated)',
-      seemaParam: 'Vendor data',
+      label: 'Vendor data & External reconciliation',
+      shortLabel: 'Vendor Data',
       pct: 65,
       weeklyDelta: '-4% vs W-1',
       color: 'amber',
@@ -369,7 +365,7 @@
     {
       id: 'safety_recon',
       label: 'Safety reconciliation (Rave vs Argus)',
-      seemaParam: 'Safety recon',
+      shortLabel: 'Safety Recon',
       pct: 80,
       weeklyDelta: '-3% vs W-1',
       color: 'emerald',
@@ -411,66 +407,80 @@
 
   $: activeParam = readinessParameters.find(p => p.id === activeParamId) || readinessParameters[0];
 
-  // Clean-Patient Tracker Subject-Based Health View (Reference for explaining the calculation - Image 1 Blue)
   const cleanPatientReferenceRows = [
     {
       subjectId: 'SUBJ-104-003',
       site: 'Site 104 (US)',
+      disposition: 'On-Treatment (Cycle 5)',
+      cutOffScope: 'In 30 Nov Cut-Off',
+      ballInCourt: 'Medical Monitor / PV',
       dataEntry: 'Clean (100%)',
       sdvSdr: 'Blocked (TU-01)',
       piSignature: 'Pending',
       coding: '1 Critical PT',
-      queries: '5 open (3 Endpoint-Crit)',
-      vendorData: 'SAE Unmatched (Argus)',
-      classification: 'Critical Unresolved (2.0x Penalty)',
+      queries: '5 open (3 Critical)',
+      vendorData: 'SAE Unmatched',
+      classification: 'Critical (2.0x)',
       badgeColor: 'rose'
     },
     {
       subjectId: 'SUBJ-104-012',
       site: 'Site 104 (US)',
+      disposition: 'Deceased (Form DD-01 Req)',
+      cutOffScope: 'In 30 Nov Cut-Off',
+      ballInCourt: 'Site Coordinator',
       dataEntry: 'Missing DD-01',
       sdvSdr: 'Pending DD-01',
       piSignature: 'Blocked',
       coding: 'Clean (100%)',
-      queries: '4 open (2 Endpoint-Crit)',
-      vendorData: 'SAE Unmatched (Argus)',
-      classification: 'Critical Unresolved (2.0x Penalty)',
+      queries: '4 open (2 Critical)',
+      vendorData: 'SAE Unmatched',
+      classification: 'Critical (2.0x)',
       badgeColor: 'rose'
     },
     {
       subjectId: 'SUBJ-104-019',
       site: 'Site 104 (US)',
+      disposition: 'On-Treatment (Cycle 4)',
+      cutOffScope: 'In 30 Nov Cut-Off',
+      ballInCourt: 'LabCorp Vendor QA',
       dataEntry: 'Clean (100%)',
       sdvSdr: 'Verified',
       piSignature: 'Pending',
       coding: 'Clean (100%)',
-      queries: '3 open (2 Endpoint-Crit)',
-      vendorData: 'Lab Batch #LXB-8921 Overdue',
-      classification: 'Critical Unresolved (2.0x Penalty)',
+      queries: '3 open (2 Critical)',
+      vendorData: 'LXB-8921 Overdue',
+      classification: 'Critical (2.0x)',
       badgeColor: 'rose'
     },
     {
       subjectId: 'SUBJ-208-014',
       site: 'Site 208 (US)',
+      disposition: 'Survival Follow-Up',
+      cutOffScope: 'In 30 Nov Cut-Off',
+      ballInCourt: 'Sponsor CDM',
       dataEntry: 'Clean (100%)',
       sdvSdr: 'Verified',
       piSignature: 'Signed',
       coding: '1 ConMed Term',
-      queries: '6 open (0 Endpoint-Crit)',
+      queries: '6 open (0 Critical)',
       vendorData: 'Clean (100%)',
-      classification: 'Noncritical Only (0.5x Penalty)',
+      classification: 'Routine (0.5x)',
       badgeColor: 'amber'
     },
     {
-      subjectId: 'SUBJ-722-001 (+157 others)',
+      subjectId: 'SUBJ-722-001 (+157)',
       site: 'All Sites (Global)',
+      disposition: 'Completed / Follow-Up',
+      cutOffScope: 'In 30 Nov Cut-Off',
+      ballInCourt: 'Complete',
       dataEntry: 'Clean (100%)',
       sdvSdr: '100% Verified',
       piSignature: 'Signed',
       coding: '100% Coded',
       queries: '0 Open Queries',
       vendorData: '100% Reconciled',
-      classification: 'Clean Subject (158/220 = 72% Base)',
+      classification: 'Clean (158/220)',
       badgeColor: 'emerald'
     }
   ];
@@ -541,23 +551,14 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- LEVEL 1 & FORECAST MOVEMENT: WEEKLY SCRUBBER (Week -4 to Current Week)    -->
-  <!-- Selected week -> parameter change -> forecast movement -> records         -->
-  <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+  <div class="db-card p-6 space-y-4">
     <div class="flex flex-col md:flex-row items-center justify-between gap-6">
       <div class="flex-1 w-full">
         <div class="flex items-center justify-between mb-2">
-          <div>
-            <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">
-              Study Readiness Over Time (Week -8 / Week -4 to Current Week W0)
-            </span>
-            <p class="text-[11px] text-slate-500">
-              Click any week to inspect parameter changes since the previous week, forecast date movement, and contributing records.
-            </p>
-          </div>
-          <span class="text-xs text-blue-600 font-bold">Selected: {currentSnapshot.weekLabel || currentSnapshot.weekCode}</span>
+          <span class="text-xs font-bold text-slate-900 uppercase tracking-wider">
+            Weekly Readiness Trajectory (W-8 to W0)
+          </span>
+          <span class="text-xs text-blue-600 font-semibold">{currentSnapshot.weekLabel || currentSnapshot.weekCode}</span>
         </div>
 
         <div class="relative pt-6 pb-2">
@@ -573,17 +574,17 @@
                 on:click={() => selectedWeekIndex = idx}
                 class="flex flex-col items-center group cursor-pointer focus:outline-hidden"
               >
-                <div class="w-6 h-6 rounded-full flex items-center justify-center transition-all {selectedWeekIndex === idx ? 'bg-blue-600 ring-4 ring-blue-100 text-white scale-125' : selectedWeekIndex > idx ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-600 group-hover:bg-slate-400'}">
+                <div class="w-6 h-6 rounded-full flex items-center justify-center transition-all {selectedWeekIndex === idx ? 'bg-blue-600 ring-4 ring-blue-100 text-white scale-110' : selectedWeekIndex > idx ? 'bg-blue-600 text-white' : 'bg-slate-300 text-slate-600 group-hover:bg-slate-400'}">
                   <span class="w-2 h-2 rounded-full bg-white"></span>
                 </div>
                 <div class="mt-2.5 text-center">
-                  <span class="text-[11px] font-bold block {selectedWeekIndex === idx ? 'text-blue-600' : 'text-slate-700'}">
+                  <span class="text-[11px] font-semibold block {selectedWeekIndex === idx ? 'text-blue-600' : 'text-slate-700'}">
                     {snap.weekCode}
                   </span>
                   <span class="text-[10px] text-slate-500 block font-medium">
-                    {snap.readinessScore}/100
+                    {snap.readinessScore}%
                   </span>
-                  <span class="text-[9px] font-bold block {snap.delayDays >= 6 ? 'text-rose-600' : 'text-amber-600'}">
+                  <span class="text-[9px] font-semibold block {snap.delayDays >= 6 ? 'text-rose-600' : 'text-amber-600'}">
                     +{snap.delayDays}d
                   </span>
                 </div>
@@ -593,44 +594,35 @@
         </div>
       </div>
 
-      <!-- Forecast Movement Box for Selected Week (Image 1 Blue Drill-Down) -->
-      <div class="shrink-0 p-4 rounded-xl bg-blue-50/70 border border-blue-200 min-w-[300px] max-w-sm text-xs space-y-1.5">
-        <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-          Forecast Movement at {currentSnapshot.weekCode} ({currentSnapshot.date})
+      <div class="shrink-0 p-4 rounded-xl bg-slate-50 border border-slate-200/80 min-w-[300px] max-w-sm text-xs space-y-1.5">
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          {currentSnapshot.weekCode} Forecast &middot; {currentSnapshot.date}
         </div>
         <div class="flex justify-between">
-          <span class="text-slate-600">Potential DBL at {currentSnapshot.weekCode}:</span>
-          <strong class="font-mono text-slate-900">{currentSnapshot.forecastDate} (+{currentSnapshot.delayDays}d vs 15 Dec target)</strong>
+          <span class="text-slate-600">Potential DBL:</span>
+          <strong class="font-mono text-slate-900">{currentSnapshot.forecastDate} (+{currentSnapshot.delayDays}d)</strong>
         </div>
-        <div class="text-[11px] text-blue-900 leading-snug pt-1 border-t border-blue-200/60">
-          <strong>Reason it changed:</strong> {currentSnapshot.netImpact || 'Lab transfer #LXB-8921 overdue (+1.8d) and 2 new SAE discrepancies (+2.1d) offset routine query closures.'}
+        <div class="text-[11px] text-slate-700 leading-snug pt-1 border-t border-slate-200/60">
+          {currentSnapshot.netImpact || 'Lab transfer #LXB-8921 overdue (+1.8d) and 2 new SAE discrepancies (+2.1d) offset routine query closures.'}
         </div>
         <div class="text-[10px] text-slate-500 font-mono">
-          Contributing records: SAE-REC-104-01, SAE-REC-104-02, LXB-8921, QRY-104-089
+          Records: SAE-REC-104-01, SAE-REC-104-02, LXB-8921, QRY-104-089
         </div>
       </div>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- CLEAN-PATIENT TRACKER SUBJECT-BASED HEALTH VIEW (CALCULATION REFERENCE)   -->
-  <!-- (Image 1 Blue: Use existing clean-patient tracker's subject-based health  -->
-  <!-- view as the reference for explaining the calculation)                     -->
+  <!-- CLEAN-PATIENT SUBJECT HEALTH VIEW                                         -->
   <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+  <div class="db-card p-6 space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
       <div>
-        <div class="flex items-center space-x-2">
-          <Users size={16} class="text-blue-600" />
-          <h2 class="text-sm font-extrabold text-slate-900">
-            Clean-Patient Tracker Subject-Based Health View (Reference for Readiness Calculation)
-          </h2>
-          <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-            158 Clean + 44 Noncritical + 18 Critical = 220 Enrolled Subjects
-          </span>
-        </div>
+        <h2 class="text-sm font-bold text-slate-900">
+          Clean-Patient Subject Health Matrix
+        </h2>
         <p class="text-xs text-slate-500 mt-0.5">
-          Demonstrates how each enrolled subject is evaluated across the 6 consolidated parameters (<strong>Data entry, SDV/SDR, PI signatures, Coding, Queries, Vendor data</strong>) to compute the 72/100 study readiness score.
+          158 Clean + 44 Routine + 18 Critical = 220 Enrolled Subjects in 30 Nov Cut-Off
         </p>
       </div>
     </div>
@@ -638,32 +630,32 @@
     <div class="overflow-x-auto">
       <table class="w-full text-left border-collapse text-xs">
         <thead>
-          <tr class="bg-slate-50 text-slate-500 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider">
-            <th class="py-2.5 px-3">Subject Cohort / ID</th>
-            <th class="py-2.5 px-2">1. Data Entry</th>
-            <th class="py-2.5 px-2">2. SDV / SDR</th>
-            <th class="py-2.5 px-2">3. PI Signatures</th>
-            <th class="py-2.5 px-2">4. Coding</th>
-            <th class="py-2.5 px-2">5. Queries</th>
-            <th class="py-2.5 px-2">6. Vendor Data (Auto)</th>
-            <th class="py-2.5 px-3">Subject Readiness Impact</th>
+          <tr class="bg-slate-50/70 text-slate-500 border-b border-slate-200/80 text-[10px] font-semibold uppercase tracking-wider">
+            <th class="py-2.5 px-3">Subject &amp; Disposition</th>
+            <th class="py-2.5 px-2">Ball in Court</th>
+            <th class="py-2.5 px-2">Data Entry</th>
+            <th class="py-2.5 px-2">SDV / SDR</th>
+            <th class="py-2.5 px-2">PI Sign-Off</th>
+            <th class="py-2.5 px-2">Queries</th>
+            <th class="py-2.5 px-2">Vendor Feeds</th>
+            <th class="py-2.5 px-3">Weighting</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
           {#each cleanPatientReferenceRows as row}
-            <tr class="hover:bg-slate-50">
+            <tr class="hover:bg-slate-50/80">
               <td class="py-2.5 px-3">
                 <div class="font-bold text-slate-900">{row.subjectId}</div>
-                <div class="text-[10px] text-slate-500">{row.site}</div>
+                <div class="text-[10px] text-slate-500">{row.site} &middot; {row.disposition}</div>
               </td>
+              <td class="py-2.5 px-2 font-semibold text-slate-700">{row.ballInCourt}</td>
               <td class="py-2.5 px-2">{row.dataEntry}</td>
               <td class="py-2.5 px-2">{row.sdvSdr}</td>
               <td class="py-2.5 px-2">{row.piSignature}</td>
-              <td class="py-2.5 px-2">{row.coding}</td>
               <td class="py-2.5 px-2">{row.queries}</td>
               <td class="py-2.5 px-2">{row.vendorData}</td>
               <td class="py-2.5 px-3">
-                <span class="px-2 py-0.5 rounded text-[10px] font-bold {row.badgeColor === 'rose' ? 'bg-rose-100 text-rose-800 border border-rose-200' : row.badgeColor === 'amber' ? 'bg-amber-100 text-amber-800 border border-amber-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'}">
+                <span class="px-2 py-0.5 rounded-md text-[10px] font-semibold {row.badgeColor === 'rose' ? 'bg-rose-50 text-rose-700' : row.badgeColor === 'amber' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'}">
                   {row.classification}
                 </span>
               </td>
@@ -675,22 +667,18 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SECTION B: 4-LEVEL READINESS PARAMETER DERIVATION DRILL-DOWN              -->
+  <!-- READINESS PARAMETER DERIVATION DRILL-DOWN                                 -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- Left 5 Cols: Specified Parameters Selector (with Weekly Change Delta) -->
-    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+    <div class="lg:col-span-5 db-card p-5 space-y-4">
       <div>
-        <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-          Selected Week ({currentSnapshot.weekCode}) &rarr; Readiness Parameter &rarr; Weekly &Delta;
+        <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+          {currentSnapshot.weekCode} Dimension Breakdown
         </span>
-        <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">
-          Consolidated Parameters (Click to inspect derivation)
+        <h3 class="text-sm font-bold text-slate-900 mt-0.5">
+          Clinical Readiness Parameters
         </h3>
-        <p class="text-[11px] text-slate-500 mt-0.5">
-          Parameters: Data entry (92%), SDV/SDR (87%), PI signatures (75%), Coding (90%), Queries (85%), Vendor data (65%), Safety recon (80%).
-        </p>
       </div>
 
       <div class="space-y-2.5">
@@ -698,65 +686,64 @@
           <button
             type="button"
             on:click={() => activeParamId = param.id}
-            class="w-full text-left p-3 rounded-xl border transition-all cursor-pointer {activeParamId === param.id ? 'bg-blue-50/70 border-blue-500 ring-2 ring-blue-100 shadow-xs' : 'bg-white border-slate-200 hover:border-blue-300'}"
+            class="w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer {activeParamId === param.id ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-200' : 'bg-white border-slate-200/80 hover:border-slate-300'}"
           >
-            <div class="flex items-center justify-between text-xs font-bold text-slate-900">
+            <div class="flex items-center justify-between text-xs font-semibold text-slate-900">
               <span>{param.label}</span>
               <div class="flex items-center space-x-2">
-                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded {param.weeklyDelta.startsWith('-') ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}">
+                <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded {param.weeklyDelta.startsWith('-') ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}">
                   {param.weeklyDelta}
                 </span>
-                <span class="text-sm font-extrabold num-tabular {param.pct < 70 ? 'text-amber-600' : param.pct < 80 ? 'text-amber-600' : 'text-emerald-700'}">
+                <span class="text-sm font-bold num-tabular {param.pct < 70 ? 'text-amber-600' : param.pct < 80 ? 'text-amber-600' : 'text-emerald-700'}">
                   {param.pct}%
                 </span>
               </div>
             </div>
-            <div class="w-full bg-slate-100 rounded-full h-2 mt-1.5 overflow-hidden">
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
               <div
                 class="h-full rounded-full {param.color === 'emerald' ? 'bg-emerald-500' : 'bg-amber-500'}"
                 style="width: {param.pct}%"
               ></div>
             </div>
-            <div class="text-[10px] text-slate-500 mt-1 flex items-center justify-between">
-              <span>Parameter: <strong>{param.seemaParam}</strong> &middot; {param.componentParent}</span>
-              <span class="text-blue-600 font-bold">Drill down &rarr;</span>
+            <div class="text-[10px] text-slate-500 mt-1.5 flex items-center justify-between">
+              <span>{param.shortLabel} &middot; {param.componentParent}</span>
+              <span class="text-blue-600 font-semibold">Inspect &rarr;</span>
             </div>
           </button>
         {/each}
       </div>
     </div>
 
-    <div class="lg:col-span-7 bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-5">
+    <div class="lg:col-span-7 db-card p-6 space-y-5">
       
-      <div class="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
+      <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
         <div class="flex items-center justify-between">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-            Derivation &middot; {activeParam.seemaParam} ({activeParam.weeklyDelta})
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            {activeParam.shortLabel} &middot; {activeParam.weeklyDelta}
           </span>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-600 text-white">
-            {activeParam.pct}% Derived Score
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-600 text-white">
+            {activeParam.pct}% Score
           </span>
         </div>
-        <h3 class="text-base font-extrabold text-slate-900">{activeParam.label}</h3>
-        <div class="p-2.5 rounded-lg bg-white border border-blue-100 text-xs font-mono text-slate-800">
-          <strong>Formula:</strong> {activeParam.formula}
+        <h3 class="text-base font-bold text-slate-900">{activeParam.label}</h3>
+        <div class="p-2.5 rounded-lg bg-white border border-slate-200/70 text-xs font-mono text-slate-800">
+          {activeParam.formula}
         </div>
-        <p class="text-[11px] text-blue-900 leading-relaxed">
-          <strong>Critical vs. Noncritical Treatment:</strong> {activeParam.criticalVsNonCriticalRule}
+        <p class="text-[11px] text-slate-600 leading-relaxed">
+          <strong>Weighting Rule:</strong> {activeParam.criticalVsNonCriticalRule}
         </p>
       </div>
 
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-            Parameter &rarr; Country &rarr; Site &rarr; Subject
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            Country &amp; Site Breakdown
           </span>
-          <span class="text-[11px] text-slate-500">Click any site pill to open full site clean-patient tracker</span>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           {#each activeParam.countries as ctry}
-            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div class="p-3 rounded-xl bg-slate-50/70 border border-slate-200/80 space-y-2">
               <div class="flex items-center justify-between">
                 <strong class="text-slate-900">{ctry.name} ({ctry.code})</strong>
                 <span class="font-bold {ctry.score < 75 ? 'text-amber-600' : 'text-emerald-700'}">{ctry.score}%</span>
@@ -766,7 +753,7 @@
                   <button
                     type="button"
                     on:click={() => onSelectSite(sId)}
-                    class="px-2 py-0.5 rounded bg-white hover:bg-blue-50 text-blue-700 border border-slate-200 hover:border-blue-300 font-bold text-[10px] cursor-pointer"
+                    class="px-2 py-0.5 rounded-md bg-white hover:bg-blue-50 text-blue-700 border border-slate-200/80 font-semibold text-[10px] cursor-pointer"
                   >
                     Site {sId} &rarr;
                   </button>

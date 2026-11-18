@@ -72,25 +72,57 @@ export const demoSubjects = snapshot.sites.flatMap((site, siteIndex) => {
     });
     forms.push({ name: 'Investigator Sign-off', flag: 'PI signature', status: piSigned ? 'Signed' : 'Pending PI signature' });
 
+    const dispositions = [
+      'On-Treatment (Cycle 6)',
+      'On-Treatment (Cycle 5)',
+      'Survival Follow-Up',
+      'Completed Treatment',
+      'Discontinued (AE)',
+      'On-Treatment (Cycle 4)'
+    ];
+    const disposition = dispositions[(index + siteIndex) % dispositions.length];
+    const cutOffScope = index % 9 === 0 ? 'Post-Cut-Off (Safety Only)' : 'In 30 Nov Cut-Off';
+    const ballInCourtOptions = [
+      'Site Coordinator',
+      'Sponsor CDM',
+      'Medical Monitor / PV',
+      'Central Imaging (ICR)',
+      'Principal Investigator'
+    ];
+    const ballInCourt = openQueries > 0 || !piSigned
+      ? ballInCourtOptions[(index + siteIndex) % ballInCourtOptions.length]
+      : 'Clean · Ready for Freeze';
+
     const queries = [
-      ...(endpointQueries ? [{ form: 'Tumor Assessment', field: 'ASSESSMENT_DATE', queryText: 'Confirm the assessment date against the source record.', isPrimaryEndpoint: true }] : []),
-      ...(stage < 6 ? [{ form: 'Baseline Medical History', field: 'ONSET_DATE', queryText: 'Confirm the onset date or document that it is unknown.', isPrimaryEndpoint: false }] : [])
+      ...(endpointQueries ? [{ form: 'Form TU-01 (RECIST 1.1)', domainCode: 'SDTM.TU', field: 'ASSESSMENT_DATE', queryText: 'Confirm RECIST 1.1 target lesion assessment date against radiology DICOM header.', isPrimaryEndpoint: true, ballInCourt: 'Site Coordinator' }] : []),
+      ...(stage < 6 ? [{ form: 'Form MH-01 (Medical History)', domainCode: 'SDTM.MH', field: 'ONSET_DATE', queryText: 'Confirm prior therapy completion date or document as unknown per eCRF guidelines.', isPrimaryEndpoint: false, ballInCourt: index % 2 === 0 ? 'Sponsor CDM' : 'Site Coordinator' }] : [])
     ].map((query, queryIndex) => ({
       ...query,
-      id: `DEMO-Q-${id.slice(5)}-${queryIndex + 1}`,
+      id: `QRY-${id.slice(5)}-${queryIndex + 1}`,
       subjectId: id,
       siteId: site.id,
-      ageDays: 2 + stage * 4,
+      ageDays: 2 + stage * 3,
       isCriticalPath: query.isPrimaryEndpoint,
-      status: 'Awaiting Site Response',
-      actionRequired: 'Review source record and respond in EDC'
+      status: query.ballInCourt === 'Sponsor CDM' ? 'Site Answered · CDM Review' : 'Awaiting Site Entry',
+      actionRequired: query.ballInCourt === 'Sponsor CDM' ? 'Sponsor CDM verification & query closure' : 'Site source verification & eCRF update'
     }));
 
     return {
-      id, siteId: site.id, syntheticSubject: true, cohort: 'Demo cohort', status: 'Synthetic subject', initials: '',
+      id,
+      siteId: site.id,
+      syntheticSubject: true,
+      cohort: index % 2 === 0 ? 'Arm A (Pembrolizumab + Investigational)' : 'Arm B (Control Chemotherapy)',
+      status: disposition,
+      disposition,
+      cutOffScope,
+      ballInCourt,
+      initials: `${String.fromCharCode(65 + (index % 20))}.${String.fromCharCode(67 + ((index * 3) % 20))}.`,
       riskLevel: endpointQueries || safetyOpen ? 'Critical' : openQueries ? 'High' : 'Low',
-      openQueries, criticalQueries: endpointQueries, hasSaeDiscrepancy: safetyOpen > 0,
-      forms, queries,
+      openQueries,
+      criticalQueries: endpointQueries,
+      hasSaeDiscrepancy: safetyOpen > 0,
+      forms,
+      queries,
       cleaning: { total, entered, sdv, sdr, safetyOpen, vendorOpen, codingOpen, piSigned, frozen }
     };
   }).filter(subject => !existingIds.has(subject.id));
@@ -104,25 +136,29 @@ export const additionalSnapshotQueries = [
     siteId: '104',
     subjectId: 'SUBJ-104-021',
     form: 'CM-02 (Concomitant Meds)',
+    domainCode: 'SDTM.CM',
     field: 'CM_DOSE_UNIT',
     queryText: 'Clarify concomitant dexamethasone prophylaxis dose unit (mg vs mL) for Cycle 3.',
     ageDays: 7,
     isCriticalPath: false,
     isPrimaryEndpoint: false,
-    status: 'Open (Routine)',
-    actionRequired: 'Site coordinator data entry clarification'
+    status: 'Site Answered · CDM Review',
+    ballInCourt: 'Sponsor CDM',
+    actionRequired: 'Sponsor CDM dose unit verification'
   },
   {
     id: 'QRY-104-124',
     siteId: '104',
     subjectId: 'SUBJ-104-019',
     form: 'VS-01 (Vital Signs)',
+    domainCode: 'SDTM.VS',
     field: 'SYS_BP_VAL',
     queryText: 'Cycle 5 pre-infusion blood pressure reading missing timestamp.',
     ageDays: 5,
     isCriticalPath: false,
     isPrimaryEndpoint: false,
-    status: 'Open (Routine)',
+    status: 'Awaiting Site Entry',
+    ballInCourt: 'Site Coordinator',
     actionRequired: 'Verify nursing flowsheet timestamp'
   }
 ];

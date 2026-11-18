@@ -33,7 +33,7 @@
         {
           driver: 'Safety Reconciliation Accelerated',
           sitesOrVendors: 'Site 104 (Boston Medical Center) & Oracle Argus',
-          items: 'SAE-REC-104-01 & SAE-REC-104-02 reconciled within 24h (-3.0d shift)'
+          items: 'SAE-REC-104-01 & SAE-REC-104-02 reconciled within 24h (-2.1d shift)'
         },
         {
           driver: 'Expedited LabCorp ctDNA Re-Export',
@@ -86,8 +86,8 @@
         },
         {
           driver: 'PI Electronic Signature Bottleneck',
-          sitesOrVendors: 'Site 405 (Seoul) & Site 104 (Boston)',
-          items: 'SIG-405-C4C6 (18 completed casebooks unsigned >14 days)'
+          sitesOrVendors: 'Sites 104 (8), 405 (6), & 317 (4)',
+          items: 'SIG-STUDY-18 (18 completed casebooks unsigned >14 days)'
         }
       ]
     }
@@ -117,7 +117,6 @@
 
   <!-- ========================================================================= -->
   <!-- TOP 3 KPI CARDS: TARGET DATE (UNCHANGED) | POTENTIAL DBL | LIKELIHOOD     -->
-  <!-- (Image 4 Blue: Separate Target vs Forecast + Bijal Target Likelihood)     -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     

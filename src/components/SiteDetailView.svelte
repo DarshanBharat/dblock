@@ -91,55 +91,55 @@
     if (trackerFilter === 'signoff') return !!row.pendingSignoff;
     return true;
   }).sort((a, b) => b.endpointQueries - a.endpointQueries || b.openQueries - a.openQueries);
-  $: siteSeemaCategories = [
+  $: siteReadinessCategories = [
     {
       id: 'edc_cleaning',
       impact: null,
-      label: 'EDC data cleaning (Entry & SDV/SDR)',
-      pct: site.id === '104' ? 84 : 91,
+      label: 'EDC Data Entry & SDV',
+      pct: site.id === '104' ? 84 : site.id === '405' ? 88 : 91,
       targetTab: 'subjects' as const,
-      summary: 'Missing pages, SDV/SDR verification & form completeness'
+      summary: 'Missing pages, SDV/SDR verification & completeness'
     },
     {
       id: 'query_resolution',
       impact: site.breakdown.ageingQueries,
       driver: 'Ageing queries',
-      label: 'Query resolution (All & Endpoint-Critical)',
-      pct: site.id === '104' ? 68 : 74,
+      label: 'Query Resolution',
+      pct: site.id === '104' ? 68 : site.id === '405' ? 82 : 74,
       targetTab: 'queries' as const,
-      summary: `${siteQueries.length} open queries shown (${siteQueries.filter(q => q.isPrimaryEndpoint).length} endpoint-critical flagged)`
+      summary: `${siteQueries.length} open queries (${siteQueries.filter(q => q.isPrimaryEndpoint).length} endpoint-critical)`
     },
     {
       id: 'external_recon',
       impact: site.breakdown.labTransferDelay,
       driver: 'Laboratory transfer',
-      label: 'External data reconciliation (Vendor)',
+      label: 'External Vendor Reconciliation',
       pct: site.id === '104' ? 52 : 86,
       targetTab: 'lab' as const,
-      summary: `${siteLabs.length} vendor transfer batch(es) affecting site`
+      summary: `${siteLabs.length} vendor batch(es) affecting site`
     },
     {
       id: 'medical_coding',
       impact: null,
-      label: 'Medical coding (MedDRA & WHODrug)',
+      label: 'Medical Coding (MedDRA / WHODrug)',
       pct: site.id === '104' ? 88 : 92,
       targetTab: 'subjects' as const,
-      summary: 'Automated dictionary coding & manual review terms'
+      summary: 'Automated dictionary coding & medical review'
     },
     {
       id: 'site_signoffs',
       impact: site.breakdown.signOffStatus,
       driver: 'PI sign-off',
-      label: 'Site sign-offs (PI e-Signatures)',
-      pct: site.id === '104' ? 75 : 89,
+      label: 'Investigator e-Signatures (21 CFR 11)',
+      pct: site.id === '104' ? 83 : site.id === '405' ? 63 : 89,
       targetTab: 'subjects' as const,
-      summary: 'Investigator electronic casebook signatures'
+      summary: 'PI electronic casebook signatures'
     },
     {
       id: 'safety_recon',
       impact: site.breakdown.safetyReconciliation,
       driver: 'Safety reconciliation',
-      label: 'Safety reconciliation (Rave vs Argus)',
+      label: 'Safety Reconciliation (Rave vs Argus)',
       pct: site.id === '104' ? 55 : 100,
       targetTab: 'sae' as const,
       summary: `${siteSaes.length} unresolved SAE discrepancy case(s)`
@@ -151,78 +151,66 @@
 
 <div class="space-y-6">
 
-  <!-- ========================================================================= -->
-  <!-- ========================================================================= -->
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
+  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 db-card p-3.5">
     <div class="flex items-center space-x-2 text-xs flex-wrap">
       <button
         type="button"
         on:click={onBackToSites}
-        class="inline-flex items-center text-blue-600 hover:text-blue-800 font-bold cursor-pointer"
+        class="inline-flex items-center text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
       >
         <ArrowLeft class="w-3.5 h-3.5 mr-1" />
         <span>Back to Sites &amp; Risks</span>
       </button>
       <span class="text-slate-300">/</span>
-      <span class="text-slate-500 font-semibold">Study CA-209-301</span>
+      <span class="text-slate-500 font-medium">CA-209-301</span>
       <span class="text-slate-300">/</span>
-      <span class="text-slate-600 font-semibold">{site.country} ({site.countryCode})</span>
+      <span class="text-slate-600 font-medium">{site.country} ({site.countryCode})</span>
       <span class="text-slate-300">/</span>
-      <span class="font-extrabold text-slate-900">{site.code}: {site.name}</span>
+      <span class="font-bold text-slate-900">{site.code}: {site.name}</span>
     </div>
 
     <div class="flex items-center space-x-2 text-xs">
-      <span class="text-slate-500">Sources:</span>
-      <span class="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+      <span class="font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">
         {site.traceability.sourceSystem}
       </span>
-      <span class="text-slate-500">&middot; Refreshed:</span>
-      <span class="text-slate-700 font-semibold">31 Oct 2026, 08:00 UTC</span>
+      <span class="text-slate-400">&middot;</span>
+      <span class="text-slate-600 font-medium">31 Oct 2026, 08:00 UTC</span>
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- HERO SITE CARD & ALIGNED 35/30/22/13 CONTRIBUTIONS (No Risk Prob Figure)  -->
-  <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-5">
-    <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-5 pb-5 border-b border-slate-200/80">
+  <div class="db-card p-6 space-y-5">
+    <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-5 pb-5 border-b border-slate-100">
       
       <div class="space-y-1.5 max-w-xl">
-        <div class="flex items-center space-x-2.5">
-          <span class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-rose-600 text-white">
+        <div class="flex items-center space-x-2">
+          <span class="text-xs font-mono font-bold px-2 py-0.5 rounded-md bg-rose-600 text-white">
             {site.code}
           </span>
-          <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+          <span class="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/80">
             {site.riskLevel} Risk
           </span>
           <span class="text-xs text-slate-500">{site.city}, {site.country}</span>
         </div>
 
-        <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">
           {site.name}
         </h1>
-        <p class="text-xs text-slate-600">
-          Select a readiness category to review the supporting records.
-        </p>
       </div>
 
-      <!-- 3 Key Numerical Metrics (Unexplained Delay Probability removed per Image 13 & 14) -->
       <div class="grid grid-cols-3 gap-3 shrink-0">
-        <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 text-center">
-          <div class="text-[10px] font-bold text-slate-500 uppercase">Site Readiness</div>
-          <div class="text-xl font-extrabold text-slate-900 num-tabular">{site.readinessScore}/100</div>
-          <div class="text-[10px] text-slate-500">Study-aligned parameters</div>
+        <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/70 text-center">
+          <div class="text-[10px] font-semibold text-slate-500 uppercase">Site Readiness</div>
+          <div class="text-xl font-bold text-slate-900 num-tabular">{site.readinessScore}%</div>
         </div>
 
-        <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 text-center">
-          <div class="text-[10px] font-bold text-slate-500 uppercase">Potential Impact</div>
-          <div class="text-xl font-extrabold text-rose-600 num-tabular">{site.forecastImpactDays}d</div>
-          <div class="text-[10px] text-slate-500">on DBL critical path</div>
+        <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/70 text-center">
+          <div class="text-[10px] font-semibold text-slate-500 uppercase">DBL Impact</div>
+          <div class="text-xl font-bold text-rose-600 num-tabular">{site.forecastImpactDays}d</div>
         </div>
 
-        <div class="bg-slate-50 rounded-lg p-3 border border-slate-200 text-center">
-          <div class="text-[10px] font-bold text-slate-500 uppercase">Enrolled Subjects</div>
-          <div class="text-xl font-extrabold text-slate-900 num-tabular">{site.enrolledSubjects}</div>
+        <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/70 text-center">
+          <div class="text-[10px] font-semibold text-slate-500 uppercase">Enrolled</div>
+          <div class="text-xl font-bold text-slate-900 num-tabular">{site.enrolledSubjects}</div>
           <div class="text-[10px] text-rose-600 font-semibold">{site.openItems} open items</div>
         </div>
       </div>
@@ -230,211 +218,169 @@
     </div>
 
     <section aria-labelledby="site-readiness-heading">
-      <h2 id="site-readiness-heading" class="text-sm font-extrabold text-slate-900">Site readiness &amp; lock risk</h2>
-      <p class="mt-1 mb-3 text-xs text-slate-500">Readiness shows progress within each category. Risk share shows each modeled driver's contribution to the {site.forecastImpactDays}-day forecast impact.</p>
+      <h2 id="site-readiness-heading" class="text-sm font-bold text-slate-900 mb-3">Site Readiness &amp; Critical-Path Drivers</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
-        {#each siteSeemaCategories as cat}
+        {#each siteReadinessCategories as cat}
           <button
             type="button"
             on:click={() => {
               activeSubTab = cat.targetTab;
               trackerFilter = cat.id === 'site_signoffs' ? 'signoff' : 'all';
             }}
-            class="p-3 rounded-xl border border-slate-200 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/40 text-left transition-all cursor-pointer"
+            class="p-3.5 rounded-xl border border-slate-200/80 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 text-left transition-all cursor-pointer"
           >
-            <div class="flex items-center justify-between font-bold text-slate-900">
+            <div class="flex items-center justify-between font-semibold text-slate-900">
               <span>{cat.label}</span>
-              <span class="font-extrabold {cat.pct < 70 ? 'text-rose-600' : cat.pct < 85 ? 'text-amber-600' : 'text-emerald-700'}">{cat.pct}% ready</span>
+              <span class="font-bold {cat.pct < 70 ? 'text-rose-600' : cat.pct < 85 ? 'text-amber-600' : 'text-emerald-700'}">{cat.pct}%</span>
             </div>
-            <div class="w-full bg-slate-200 rounded-full h-1.5 my-1.5">
+            <div class="w-full bg-slate-200/80 rounded-full h-1.5 my-2">
               <div class="h-full rounded-full {cat.pct < 70 ? 'bg-rose-500' : cat.pct < 85 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: {cat.pct}%"></div>
             </div>
             {#if cat.impact != null}
               <div class="mb-1 text-[11px] font-semibold text-amber-800">
-                {cat.driver} · {cat.impact}% risk share · {(site.forecastImpactDays * cat.impact / 100).toFixed(1)}d
+                {cat.driver} &middot; {cat.impact}% share &middot; {(site.forecastImpactDays * cat.impact / 100).toFixed(1)}d
               </div>
             {/if}
-            <div class="text-[10px] text-slate-500 flex items-center justify-between gap-2">
+            <div class="text-[11px] text-slate-500 flex items-center justify-between gap-2">
               <span>{cat.summary}</span>
-              <span class="text-blue-600 font-bold">Inspect &rarr;</span>
+              <span class="text-blue-600 font-semibold">Inspect &rarr;</span>
             </div>
           </button>
         {/each}
       </div>
-      {#if site.breakdown.other > 0}
-        <p class="mt-2 text-xs text-slate-500">Other modeled drivers account for {site.breakdown.other}% of forecast impact.</p>
-      {/if}
     </section>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- ========================================================================= -->
-  <div class="border-b border-slate-200 bg-white px-4 rounded-t-xl">
-    <nav class="flex space-x-5 text-xs font-bold overflow-x-auto">
-      <button
-        type="button"
-        on:click={() => { activeSubTab = 'subjects'; trackerFilter = 'all'; }}
-        class="py-3 border-b-2 transition-colors inline-flex items-center space-x-1.5 cursor-pointer {
-          activeSubTab === 'subjects' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
-        }"
-      >
-        <span>Clean Patient Tracker</span>
-        <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">{siteSubjects.length}</span>
-      </button>
-
-      <button
-        type="button"
-        on:click={() => activeSubTab = 'queries'}
-        class="py-3 border-b-2 transition-colors inline-flex items-center space-x-1.5 cursor-pointer {
-          activeSubTab === 'queries' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
-        }"
-      >
-        <span>All Outstanding Queries (Endpoint-Critical Flagged)</span>
-        <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">{siteQueries.length}</span>
-      </button>
-
-      <button
-        type="button"
-        on:click={() => activeSubTab = 'sae'}
-        class="py-3 border-b-2 transition-colors inline-flex items-center space-x-1.5 cursor-pointer {
-          activeSubTab === 'sae' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
-        }"
-      >
-        <span>SAE Discrepancies</span>
-        <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-700 font-bold">{siteSaes.length}</span>
-      </button>
-
-      <button
-        type="button"
-        on:click={() => activeSubTab = 'lab'}
-        class="py-3 border-b-2 transition-colors inline-flex items-center space-x-1.5 cursor-pointer {
-          activeSubTab === 'lab' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
-        }"
-      >
-        <span>External Vendor Transfers</span>
-        <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 font-bold">{siteLabs.length}</span>
-      </button>
-    </nav>
+  <div class="db-segmented inline-flex">
+    <button
+      type="button"
+      on:click={() => { activeSubTab = 'subjects'; trackerFilter = 'all'; }}
+      class="db-segmented-btn {activeSubTab === 'subjects' ? 'db-segmented-btn-active' : ''}"
+    >
+      Clean Patient Tracker ({siteSubjects.length})
+    </button>
+    <button
+      type="button"
+      on:click={() => activeSubTab = 'queries'}
+      class="db-segmented-btn {activeSubTab === 'queries' ? 'db-segmented-btn-active' : ''}"
+    >
+      Open Queries ({siteQueries.length})
+    </button>
+    <button
+      type="button"
+      on:click={() => activeSubTab = 'sae'}
+      class="db-segmented-btn {activeSubTab === 'sae' ? 'db-segmented-btn-active' : ''}"
+    >
+      SAE Discrepancies ({siteSaes.length})
+    </button>
+    <button
+      type="button"
+      on:click={() => activeSubTab = 'lab'}
+      class="db-segmented-btn {activeSubTab === 'lab' ? 'db-segmented-btn-active' : ''}"
+    >
+      Vendor Transfers ({siteLabs.length})
+    </button>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- ========================================================================= -->
   {#if activeSubTab === 'subjects'}
-    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-      <div>
-        <h2 class="text-base font-extrabold text-slate-900">Clean Patient Tracker</h2>
-        <p class="mt-1 text-xs text-slate-500">EDC data cleaning · {siteSubjects.length} demo subjects at {site.code}. Supplemented rows show demo progress for the listed forms.</p>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="relative">
-          <Search class="w-3.5 h-3.5 text-slate-600 absolute left-2.5 top-2.5" />
-          <input
-            type="search"
-            aria-label="Search by subject ID or cohort"
-            placeholder="Subject ID or cohort"
-            bind:value={subjectSearch}
-            class="pl-8 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-md w-52"
-          />
+    <div class="db-card p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Subject Casebook Cleaning Status</h2>
+          <p class="text-xs text-slate-500">{site.code} &middot; {siteSubjects.length} tracked subjects in 30 Nov Cut-Off</p>
         </div>
-        <select bind:value={trackerFilter} aria-label="Filter by cleaning task" class="rounded-md border border-slate-200 bg-white p-2 text-xs">
-          <option value="all">All cleaning tasks</option>
-          <option value="open">Subjects with open work</option>
-          <option value="clean">Clean subjects</option>
-          <option value="unfrozen">Awaiting freeze</option>
-          <option value="forms">Open eCRF items</option>
-          <option value="endpoint">Endpoint-critical queries</option>
-          <option value="queries">Any open query</option>
-          <option value="signoff">Pending PI sign-off</option>
-        </select>
-        <span class="text-xs text-slate-500" aria-live="polite">{filteredSiteSubjects.length} of {siteSubjects.length} subjects</span>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="relative">
+            <Search class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+            <input
+              type="search"
+              aria-label="Search by subject ID or cohort"
+              placeholder="Subject ID or cohort"
+              bind:value={subjectSearch}
+              class="pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200/80 rounded-lg w-48"
+            />
+          </div>
+          <select bind:value={trackerFilter} aria-label="Filter by cleaning task" class="rounded-lg border border-slate-200/80 bg-slate-50 py-1.5 px-2.5 text-xs">
+            <option value="all">All cleaning tasks</option>
+            <option value="open">Subjects with open work</option>
+            <option value="clean">Clean subjects</option>
+            <option value="unfrozen">Awaiting freeze</option>
+            <option value="forms">Open eCRF items</option>
+            <option value="endpoint">Endpoint-critical queries</option>
+            <option value="queries">Any open query</option>
+            <option value="signoff">Pending PI sign-off</option>
+          </select>
+        </div>
       </div>
 
       {#if filteredSiteSubjects.length}
         <div class="overflow-x-auto">
           <table class="min-w-full text-xs text-left divide-y divide-slate-200">
-            <thead class="bg-slate-50 text-slate-600 font-bold">
+            <thead class="bg-slate-50/70 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
               <tr>
-                <th scope="col" class="p-3">Subject</th>
-                <th scope="col" class="p-3">Cleaning status</th>
-                <th scope="col" class="p-3">Open queries</th>
-                <th scope="col" class="p-3">Entry</th>
-                <th scope="col" class="p-3">SDV / SDR</th>
+                <th scope="col" class="p-3">Subject &amp; Disposition</th>
+                <th scope="col" class="p-3">Status</th>
+                <th scope="col" class="p-3">Ball in Court</th>
+                <th scope="col" class="p-3">Open Queries</th>
+                <th scope="col" class="p-3">Entry / SDV</th>
                 <th scope="col" class="p-3">Reconciliation</th>
-                <th scope="col" class="p-3">Coding</th>
-                <th scope="col" class="p-3">PI sign-off</th>
+                <th scope="col" class="p-3">PI Sign-Off</th>
                 <th scope="col" class="p-3">Freeze</th>
-                <th scope="col" class="p-3">Records</th>
+                <th scope="col" class="p-3 text-right">eCRF</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 align-top">
               {#each filteredSiteSubjects as row (row.subject.id)}
-                <tr class="hover:bg-slate-50">
+                <tr class="hover:bg-slate-50/80">
                   <th scope="row" class="p-3 font-semibold text-slate-900">
                     {row.subject.id}
-                    <span class="block max-w-48 font-normal text-slate-500">{row.subject.syntheticSubject ? 'Synthetic demo' : row.subject.cohort}</span>
-                    {#if !row.subject.syntheticSubject && row.cleaning}
-                      <span class="block font-normal text-slate-500">Demo progress added</span>
+                    <span class="block font-normal text-slate-500 text-[11px]">{row.subject.disposition || row.subject.cohort}</span>
+                    {#if row.subject.cutOffScope}
+                      <span class="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium">{row.subject.cutOffScope}</span>
                     {/if}
                   </th>
                   <td class="p-3">
-                    <span class="inline-block rounded px-2 py-1 font-semibold {row.hasOpenWork ? 'bg-amber-50 text-amber-800' : row.isClean ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
-                      {row.hasOpenWork ? 'Open cleaning items' : row.isClean ? 'Clean' : 'Clean status unverified'}
+                    <span class="inline-block rounded-md px-2 py-0.5 font-semibold text-[11px] {row.hasOpenWork ? 'bg-amber-50 text-amber-800' : row.isClean ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
+                      {row.hasOpenWork ? 'Open items' : row.isClean ? 'Clean' : 'Unverified'}
                     </span>
+                  </td>
+                  <td class="p-3 text-slate-700 font-medium">
+                    {row.subject.ballInCourt || (row.hasOpenWork ? 'Site Coordinator' : 'Complete')}
                   </td>
                   <td class="p-3">
                     <span class="font-semibold whitespace-nowrap">{row.openQueries} open</span>
-                    <span class="block text-slate-500">{row.openQueries - row.endpointQueries} routine</span>
                     {#if row.endpointQueries}
-                      <span class="block font-bold text-rose-700">{row.endpointQueries} endpoint-critical</span>
-                    {/if}
-                  </td>
-                  <td class="p-3">
-                    {#if row.cleaning}
-                      <span class="whitespace-nowrap">{row.cleaning.entered}/{row.cleaning.total} entered</span>
-                      {#if row.cleaning.entered < row.cleaning.total}
-                        <span class="block text-amber-800">{row.cleaning.total - row.cleaning.entered} missing</span>
-                      {/if}
-                    {:else}
-                      Status unavailable
+                      <span class="block font-semibold text-rose-700 text-[11px]">{row.endpointQueries} endpoint-critical</span>
                     {/if}
                   </td>
                   <td class="p-3 whitespace-nowrap">
                     {#if row.cleaning}
-                      <div>SDV {row.cleaning.sdv}/{row.cleaning.total}</div>
-                      <div>SDR {row.cleaning.sdr}/{row.cleaning.total}</div>
-                    {:else if row.verifiedForms}
-                      {row.verifiedForms} of {row.formCount} listed forms marked verified
+                      <div>Entry {row.cleaning.entered}/{row.cleaning.total}</div>
+                      <div class="text-slate-500">SDV {row.cleaning.sdv}/{row.cleaning.total}</div>
                     {:else}
-                      Status unavailable
+                      <span class="text-slate-400">&mdash;</span>
                     {/if}
                   </td>
                   <td class="p-3">
                     {#if row.cleaning}
-                      <div class="whitespace-nowrap">Safety: {row.cleaning.safetyOpen} open</div>
-                      <div class="whitespace-nowrap">Vendor: {row.cleaning.vendorOpen} open</div>
+                      <div class="whitespace-nowrap">Safety: {row.cleaning.safetyOpen}</div>
+                      <div class="whitespace-nowrap text-slate-500">Vendor: {row.cleaning.vendorOpen}</div>
+                    {:else if row.hasSafetyDiscrepancy}
+                      <span class="font-semibold text-rose-700">SAE discrepancy</span>
                     {:else}
-                      {#if row.hasSafetyDiscrepancy}
-                        <span class="block font-semibold text-rose-700">SAE discrepancy</span>
-                      {/if}
-                      {#each row.vendorItems as form}
-                        <span class="block text-amber-800">{form.status}</span>
-                      {/each}
-                      {#if !row.hasSafetyDiscrepancy && !row.vendorItems.length}
-                        <span class="text-slate-500">Status unavailable</span>
-                      {/if}
+                      <span class="text-slate-400">Clean</span>
                     {/if}
                   </td>
-                  <td class="p-3 whitespace-nowrap">{row.cleaning ? `${row.cleaning.codingOpen} pending` : 'Status unavailable'}</td>
-                  <td class="p-3">{row.signoff?.status ?? (row.cleaning ? (row.cleaning.piSigned ? 'Signed' : 'Pending PI signature') : 'Status unavailable')}</td>
-                  <td class="p-3 whitespace-nowrap">{row.cleaning ? (row.cleaning.frozen ? 'Frozen' : 'Not frozen') : 'Status unavailable'}</td>
-                  <td class="p-3">
+                  <td class="p-3">{row.signoff?.status ?? (row.cleaning ? (row.cleaning.piSigned ? 'Signed' : 'Pending PI') : '—')}</td>
+                  <td class="p-3 whitespace-nowrap">{row.cleaning ? (row.cleaning.frozen ? 'Frozen' : 'Not frozen') : '—'}</td>
+                  <td class="p-3 text-right">
                     <button
                       type="button"
                       on:click={() => onSelectSubject(row.subject.id)}
-                      class="inline-flex items-center whitespace-nowrap rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                      class="inline-flex items-center whitespace-nowrap rounded-lg bg-blue-50 px-2.5 py-1 font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
                     >
-                      Inspect eCRF <ChevronRight class="ml-0.5 size-3" />
+                      Inspect <ChevronRight class="ml-0.5 size-3" />
                     </button>
                   </td>
                 </tr>
@@ -443,83 +389,81 @@
           </table>
         </div>
       {:else}
-        <p class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-          {siteSubjects.length ? 'No subjects match the current search and filter.' : 'No subject records are available for this site in the demo snapshot.'}
+        <p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">
+          No subjects match the current search and filter.
         </p>
       {/if}
     </div>
 
-  <!-- ========================================================================= -->
-  <!-- SUB-TAB 2: ALL OUTSTANDING QUERIES (ENDPOINT-CRITICAL HIGHLIGHTED)        -->
-  <!-- (Image 10 Blue Requirement)                                               -->
-  <!-- ========================================================================= -->
   {:else if activeSubTab === 'queries'}
-    <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+    <div class="db-card p-5 space-y-4">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h3 class="text-sm font-extrabold text-slate-900">
-            All Outstanding Queries at {site.code} ({siteQueries.length})
+          <h3 class="text-sm font-bold text-slate-900">
+            Outstanding Queries · {site.code} ({siteQueries.length})
           </h3>
-          <p class="text-xs text-slate-500">
-            All outstanding queries are shown because any unresolved query can affect DBL; endpoint-critical queries are highlighted separately.
-          </p>
         </div>
 
-        <div class="flex items-center space-x-1.5 text-xs">
+        <div class="db-segmented">
           <button
             type="button"
             on:click={() => queryFilter = 'all'}
-            class="px-2.5 py-1 rounded-lg font-bold cursor-pointer {queryFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}"
+            class="db-segmented-btn {queryFilter === 'all' ? 'db-segmented-btn-active' : ''}"
           >
-            All Outstanding ({siteQueries.length})
+            All ({siteQueries.length})
           </button>
           <button
             type="button"
             on:click={() => queryFilter = 'endpoint_critical'}
-            class="px-2.5 py-1 rounded-lg font-bold cursor-pointer {queryFilter === 'endpoint_critical' ? 'bg-rose-600 text-white' : 'bg-rose-50 text-rose-700 border border-rose-200'}"
+            class="db-segmented-btn {queryFilter === 'endpoint_critical' ? 'db-segmented-btn-active' : ''}"
           >
             Endpoint-Critical ({siteQueries.filter(q => q.isPrimaryEndpoint).length})
           </button>
           <button
             type="button"
             on:click={() => queryFilter = 'non_critical'}
-            class="px-2.5 py-1 rounded-lg font-bold cursor-pointer {queryFilter === 'non_critical' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-700'}"
+            class="db-segmented-btn {queryFilter === 'non_critical' ? 'db-segmented-btn-active' : ''}"
           >
-            Non-Endpoint / Routine ({siteQueries.filter(q => !q.isPrimaryEndpoint).length})
+            Routine ({siteQueries.filter(q => !q.isPrimaryEndpoint).length})
           </button>
         </div>
       </div>
 
       <div class="overflow-x-auto">
         <table class="min-w-full text-xs text-left divide-y divide-slate-200">
-          <thead class="bg-slate-50 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+          <thead class="bg-slate-50/70 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
             <tr>
               <th class="py-2.5 px-3">Query ID &amp; Subject</th>
-              <th class="py-2.5 px-3">Classification</th>
-              <th class="py-2.5 px-3">Form &amp; Target Field</th>
-              <th class="py-2.5 px-3">Discrepancy Details</th>
-              <th class="py-2.5 px-3 text-center">Age (Days)</th>
+              <th class="py-2.5 px-3">Domain &amp; Tier</th>
+              <th class="py-2.5 px-3">Ball in Court</th>
+              <th class="py-2.5 px-3">Form &amp; Field</th>
+              <th class="py-2.5 px-3">Discrepancy</th>
+              <th class="py-2.5 px-3 text-center">Age</th>
               <th class="py-2.5 px-3 text-right">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100 font-medium">
             {#each filteredQueries as q}
-              <tr class="hover:bg-slate-50 transition-colors">
+              <tr class="hover:bg-slate-50/80 transition-colors">
                 <td class="py-3 px-3">
                   <div class="font-bold text-slate-900 font-mono">{q.id}</div>
                   <div class="text-[11px] text-blue-600 font-semibold">{q.subjectId}</div>
                 </td>
                 <td class="py-3 px-3">
+                  {#if q.domainCode}
+                    <span class="font-mono text-[10px] font-semibold text-slate-600 mr-1">{q.domainCode}</span>
+                  {/if}
                   {#if q.isPrimaryEndpoint}
-                    <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 border border-rose-200 text-[10px] font-bold">
+                    <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 text-[10px] font-semibold">
                       Endpoint-Critical
                     </span>
                   {:else}
-                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[10px] font-semibold">
-                      Other Outstanding (Affects DBL)
+                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-[10px] font-medium">
+                      Routine
                     </span>
                   {/if}
                 </td>
+                <td class="py-3 px-3 text-slate-700 font-semibold">{q.ballInCourt || 'Site Coordinator'}</td>
                 <td class="py-3 px-3">
                   <div class="text-slate-800 font-semibold">{q.form}</div>
                   <div class="font-mono text-[10px] text-slate-500">{q.field}</div>
@@ -534,7 +478,7 @@
                     on:click={() => onSelectSubject(q.subjectId)}
                     class="text-blue-600 hover:text-blue-800 font-semibold text-xs inline-flex items-center cursor-pointer"
                   >
-                    <span>View Form</span>
+                    <span>Form</span>
                     <ChevronRight class="w-3 h-3 ml-0.5" />
                   </button>
                 </td>

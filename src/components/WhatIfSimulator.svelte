@@ -122,13 +122,13 @@
       id: 'INT-05',
       category: 'Site',
       title: 'Obtain investigator sign-offs',
-      assumptions: 'Sub-investigator delegation approved at Site 405; 1-hour signing clinic held with PIs at Sites 104 and 405.',
+      assumptions: 'Sub-investigator delegation approved at Site 405; 1-hour signing clinic held with PIs at Sites 104, 405, and 317.',
       overlapNote: 'Dependent on prior query and SAE resolution on those subject casebooks.',
-      affectedEntities: 'Sites 104 (Boston) & 405 (Seoul National Univ. Hospital) · 18 completed subject casebooks',
+      affectedEntities: 'Sites 104 (8), 405 (6), & 317 (4) · 18 completed subject casebooks',
       records: [
         {
-          recordId: 'SIG-405-C4C6',
-          desc: '18 completed subject eCRF casebooks awaiting PI electronic signature',
+          recordId: 'SIG-STUDY-18',
+          desc: '18 completed subject eCRF casebooks awaiting PI electronic signature (8 Site 104, 6 Site 405, 4 Site 317)',
           readinessBefore: '72/100',
           readinessAfter: '74/100',
           potentialDblBefore: '21 Dec 2026',

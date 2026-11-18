@@ -136,66 +136,71 @@
   $: currentSubject = selectedSubjectId ? trackerSubjects.find((s: any) => s.id === selectedSubjectId) : null;
   $: currentSite = selectedSiteId ? sites.find((s: any) => s.id === selectedSiteId) : null;
 
+  // 5-Step Pre-DBL Hard Gate Sequence (Item C)
+  const hardGates = [
+    {
+      step: 1,
+      id: 'lslv',
+      name: 'LSLV Cut-Off',
+      date: '30 Nov',
+      status: 'on_track',
+      metric: '220/220 Enrolled',
+      roleFilter: 'all' as const
+    },
+    {
+      step: 2,
+      id: 'vendor_lock',
+      name: 'Vendor Transfer Lock',
+      date: '05 Dec',
+      status: 'blocked',
+      metric: '1 Batch Blocked (#LXB-8921)',
+      roleFilter: 'vendor' as const
+    },
+    {
+      step: 3,
+      id: 'safety_freeze',
+      name: 'Safety / SAE Freeze',
+      date: '08 Dec',
+      status: 'blocked',
+      metric: '2 SAE Discordances',
+      roleFilter: 'safety' as const
+    },
+    {
+      step: 4,
+      id: 'coding_query_lock',
+      name: 'Coding & Query Lock',
+      date: '11 Dec',
+      status: 'at_risk',
+      metric: '14 Crit Queries · 12 Terms',
+      roleFilter: 'cdm' as const
+    },
+    {
+      step: 5,
+      id: 'pi_sign_dbl',
+      name: 'PI e-Sign & Hard DBL',
+      date: '15 Dec',
+      status: 'delayed',
+      metric: '18 Unsigned · Forecast 21 Dec (+6d)',
+      roleFilter: 'cra_site' as const
+    }
+  ];
+
   // Role / Workstream operational filter (#2)
   let activeRole: 'all' | 'my_queue' | 'cra_site' | 'cdm' | 'safety' | 'vendor' = 'all';
 
   const roleQueues = [
     { id: 'all', label: 'All Workstreams', count: 8, desc: 'Full study view across all 6 data domains' },
     { id: 'my_queue', label: 'My Queue (Sarah)', count: 4, desc: 'Critical path decisions awaiting Study Data Lead sign-off' },
-    { id: 'cra_site', label: 'CRA / Site Monitoring', count: 3, desc: 'SDV backlog, eCRF entry & 18 pending PI signatures (Sites 104, 317, 405)' },
-    { id: 'cdm', label: 'CDM / Queries & Coding', count: 3, desc: '14 critical queries >14d & 12 uncoded MedDRA/WHODrug terms' },
-    { id: 'safety', label: 'Safety / PV (SAE)', count: 2, desc: '2 Rave-vs-Argus SAE discrepancies at Site 104 blocking freeze' },
-    { id: 'vendor', label: 'External Vendors', count: 2, desc: 'LabCorp ctDNA #LXB-8921 checksum failure & Eurofins QA batch' }
+    { id: 'cra_site', label: 'CRA / Site Ops', count: 3, desc: 'SDV backlog, eCRF entry & 18 pending PI signatures (8 Site 104, 6 Site 405, 4 Site 317)' },
+    { id: 'cdm', label: 'CDM & Coding', count: 3, desc: '14 critical RECIST queries >14d & 12 uncoded MedDRA 27.0 / WHODrug C3 terms' },
+    { id: 'safety', label: 'Safety / PV', count: 2, desc: '2 Rave-vs-Argus SAE discrepancies at Site 104 blocking 08 Dec safety freeze' },
+    { id: 'vendor', label: 'External Vendors', count: 2, desc: 'LabCorp ctDNA #LXB-8921 SHA-256 failure & Eurofins chemistry QA batch' }
   ] as const;
 
   $: activeRoleObj = roleQueues.find(r => r.id === activeRole) || roleQueues[0];
-
-  function getAiInsightText(tab: string) {
-    switch (tab) {
-      case 'command_centre':
-        return {
-          text: 'Study CA-209-301 is 72% ready (158/220 clean subjects). Resolving 3 critical blockers can shift Potential DBL 4–6 days closer to the 15 Dec target.',
-          actionLabel: 'Open Action Workbench',
-          targetTab: 'action_workbench'
-        };
-      case 'risk_matrix':
-        return {
-          text: 'Site 104 has fewer open items (19) than Site 208 (41), but a 5–7d DBL impact due to 2 SAE discrepancies and LabCorp ctDNA batch #LXB-8921.',
-          actionLabel: 'Inspect Site 104',
-          targetTab: 'risk_matrix'
-        };
-      case 'digital_twin':
-        return {
-          text: 'External data reconciliation (65%) and Site sign-offs (75%) are the lowest-scoring readiness components.',
-          actionLabel: 'Prioritise actions',
-          targetTab: 'action_workbench'
-        };
-      case 'action_workbench':
-        return {
-          text: 'Accepting the top 3 critical recommendations saves a combined ~4.8 days (after 0.82x overlap damping).',
-          actionLabel: 'Simulate DBL shift',
-          targetTab: 'simulator'
-        };
-      case 'simulator':
-      case 'forecast_scenarios':
-        return {
-          text: 'Executing SAE reconciliation + LabCorp re-export increases 15 Dec target-meeting likelihood from 28% to 74%.',
-          actionLabel: 'Confirm in Actions',
-          targetTab: 'action_workbench'
-        };
-      default:
-        return {
-          text: 'DBLock AI continuously tracks record-level readiness across EDC, Safety, Lab, eCOA, and Coding.',
-          actionLabel: 'Open Overview',
-          targetTab: 'command_centre'
-        };
-    }
-  }
-
-  $: currentAiInsight = getAiInsightText(activeTab);
 </script>
 
-<div class="min-h-screen bg-[#f4f6f9] text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
+<div class="min-h-screen bg-[#f5f5f7] text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
   
   <!-- Unified Top Header Bar -->
   <Header
@@ -211,7 +216,7 @@
   <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
     
     {#if activeTab === 'portfolio'}
-      <!-- Screen 1: Full Portfolio View (Entry Point before opening Study CA-209-301) -->
+      <!-- Screen 1: Full Portfolio View -->
       <PortfolioView
         {portfolioStudies}
         {sites}
@@ -223,86 +228,99 @@
         onSelectSite={handleSelectSite}
       />
     {:else}
-      <!-- Full-Width Operational Study Workspace (No duplicate left nav!) -->
+      <!-- Full-Width Operational Study Workspace -->
       <div class="space-y-5">
 
         <!-- ================================================================= -->
-        <!-- STUDY CONTEXT + ROLE / WORKSTREAM FILTER BAR (#2 & #5)            -->
+        <!-- STUDY CONTEXT + 5-STEP HARD GATE SEQUENCE + WORKSTREAM FILTER     -->
         <!-- ================================================================= -->
-        <div class="db-card p-3.5 sm:px-5 sm:py-3.5 flex flex-col gap-3">
+        <div class="db-card p-4 sm:px-5 sm:py-4 flex flex-col gap-3.5">
           
-          <!-- Top Row: Active Study Switcher + Hard Gate Countdown Strip + AI Insight Pill -->
-          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-            <div class="flex items-center gap-3 flex-wrap">
+          <!-- Row 1: Study Switcher + 5-Step Sequential Hard Gate Pipeline -->
+          <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
+            <div class="flex items-center gap-3 shrink-0">
               <button
                 type="button"
                 on:click={() => handleSelectTab('portfolio')}
-                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-xs font-bold text-slate-900 transition-colors cursor-pointer"
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/90 hover:bg-slate-200/70 text-xs font-semibold text-slate-900 transition-colors cursor-pointer"
                 title="Switch study in Portfolio"
               >
-                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Study</span>
-                <span class="font-mono text-blue-700">{study.protocol}</span>
+                <span class="font-mono font-bold text-slate-900">{study.protocol}</span>
+                <span class="text-slate-400">&middot;</span>
+                <span class="text-slate-600">{study.id}</span>
                 <ChevronDown size={13} class="text-slate-400" />
               </button>
-
-              <div class="hidden sm:flex items-center gap-2 text-xs text-slate-600">
-                <span class="font-medium text-slate-700">{study.therapeuticArea} &middot; Phase III</span>
+              <div class="hidden sm:flex items-center gap-2 text-xs text-slate-500">
+                <span>{study.therapeuticArea} &middot; Phase III</span>
                 <span class="text-slate-300">|</span>
-                <span class="num-tabular">LSLV: <strong class="text-slate-800">30 Nov</strong></span>
-                <span class="text-slate-300">&rarr;</span>
-                <span class="num-tabular">Target DBL: <strong class="text-slate-900">15 Dec</strong></span>
-                <span class="text-slate-300">&rarr;</span>
-                <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/70 font-semibold num-tabular text-[11px]">
-                  Potential DBL: 21 Dec (+6d)
-                </span>
+                <span class="num-tabular">30 Nov Cut-Off</span>
               </div>
             </div>
 
-            <!-- Compact Inline AI Insight + Action Link -->
-            <div class="flex items-center gap-2 text-xs bg-blue-50/70 border border-blue-200/60 px-3 py-1.5 rounded-xl max-w-xl">
-              <Sparkles size={13} class="text-blue-600 shrink-0" />
-              <span class="text-slate-700 truncate">{currentAiInsight.text}</span>
-              <button
-                type="button"
-                on:click={() => handleSelectTab(currentAiInsight.targetTab)}
-                class="font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0 inline-flex items-center gap-0.5 cursor-pointer"
-              >
-                <span>{currentAiInsight.actionLabel}</span>
-                <ArrowRight size={11} />
-              </button>
-            </div>
-          </div>
-
-          <!-- Bottom Row: Role / Workstream Filter Pills (#2) -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">
-                Workstream:
-              </span>
-              {#each roleQueues as rq}
+            <!-- 5-Step Hard Gate Sequence Strip (Item C) -->
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 flex-1 max-w-4xl">
+              {#each hardGates as gate}
                 <button
                   type="button"
-                  on:click={() => activeRole = rq.id}
-                  class="px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 {activeRole === rq.id ? 'bg-slate-900 text-white shadow-2xs' : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'}"
+                  on:click={() => activeRole = activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'all' : gate.roleFilter}
+                  class="group text-left px-2.5 py-1.5 rounded-xl border transition-all cursor-pointer flex flex-col justify-between {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'bg-slate-900 text-white border-slate-900 shadow-xs' : 'bg-slate-50/70 hover:bg-slate-100/80 border-slate-200/70 text-slate-800'}"
+                  title="Filter workspace to {gate.name}"
                 >
-                  <span>{rq.label}</span>
-                  <span class="px-1.5 py-0.2 rounded-full text-[10px] num-tabular {activeRole === rq.id ? 'bg-white/20 text-white' : 'bg-white text-slate-600'}">
-                    {rq.count}
-                  </span>
+                  <div class="flex items-center justify-between gap-1 w-full">
+                    <span class="text-[10px] font-semibold tracking-tight flex items-center gap-1.5 {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'text-slate-300' : 'text-slate-500'}">
+                      <span class="w-1.5 h-1.5 rounded-full shrink-0 {gate.status === 'on_track' ? 'bg-emerald-500' : gate.status === 'at_risk' ? 'bg-amber-500' : 'bg-rose-500'}"></span>
+                      <span class="truncate">{gate.step}. {gate.name}</span>
+                    </span>
+                    <span class="text-[10px] font-mono font-semibold num-tabular shrink-0 {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'text-white' : 'text-slate-700'}">{gate.date}</span>
+                  </div>
+                  <div class="text-[11px] font-medium truncate mt-0.5 num-tabular {activeRole === gate.roleFilter && gate.roleFilter !== 'all' ? 'text-slate-200' : gate.status === 'on_track' ? 'text-emerald-700' : gate.status === 'at_risk' ? 'text-amber-700' : 'text-rose-600'}">
+                    {gate.metric}
+                  </div>
                 </button>
               {/each}
             </div>
+          </div>
+
+          <!-- Row 2: Role / Workstream Segmented Filter Pills (#2) -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <span class="text-[11px] font-medium text-slate-400 mr-1 shrink-0">
+                Queue:
+              </span>
+              <div class="db-segmented">
+                {#each roleQueues as rq}
+                  <button
+                    type="button"
+                    on:click={() => activeRole = rq.id}
+                    class="db-segmented-btn flex items-center gap-1.5 {activeRole === rq.id ? 'active' : ''}"
+                  >
+                    <span>{rq.label}</span>
+                    <span class="text-[10px] num-tabular {activeRole === rq.id ? 'text-blue-600 font-bold' : 'text-slate-400'}">
+                      {rq.count}
+                    </span>
+                  </button>
+                {/each}
+              </div>
+            </div>
 
             {#if activeRole !== 'all'}
-              <div class="flex items-center justify-between sm:justify-end gap-2 text-xs text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-lg border border-blue-200/60 shrink-0">
-                <span class="font-medium">{activeRoleObj.desc}</span>
+              <div class="flex items-center justify-between sm:justify-end gap-2 text-xs text-slate-700 bg-slate-100/80 px-3 py-1 rounded-lg shrink-0">
+                <span>{activeRoleObj.desc}</span>
                 <button
                   type="button"
                   on:click={() => activeRole = 'all'}
-                  class="text-[11px] font-bold underline hover:text-blue-900 cursor-pointer ml-1"
+                  class="text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer ml-1.5"
                 >
-                  Reset
+                  Clear
                 </button>
+              </div>
+            {:else}
+              <div class="hidden lg:flex items-center gap-2 text-xs text-slate-500 shrink-0">
+                <span>Clean Patient Tracker: <strong class="text-slate-800 num-tabular">158 / 220 (71.8%)</strong></span>
+                <span class="text-slate-300">&middot;</span>
+                <span>Target DBL: <strong class="text-slate-800 num-tabular">15 Dec 2026</strong></span>
+                <span class="text-slate-300">&middot;</span>
+                <span class="text-rose-600 font-semibold num-tabular">Forecast: 21 Dec (+6d)</span>
               </div>
             {/if}
           </div>
@@ -313,28 +331,29 @@
         <!-- UNIFIED FORECAST & SIMULATION MODE SWITCHER (#5)                  -->
         <!-- ================================================================= -->
         {#if activeTab === 'simulator' || activeTab === 'forecast_scenarios'}
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white rounded-xl border border-slate-200/90 px-4 py-2.5 shadow-2xs">
-            <div class="flex items-center gap-2 text-xs text-slate-600">
-              <Sliders size={14} class="text-blue-600" />
-              <span class="font-semibold text-slate-900">Forecast &amp; Simulation Workspace</span>
-              <span class="hidden md:inline text-slate-400">&mdash; Test interventions or compare Best / Most Likely / At-Risk trajectories</span>
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 db-card px-5 py-3">
+            <div class="flex items-center gap-2.5 text-xs text-slate-600">
+              <Sliders size={15} class="text-slate-700" />
+              <span class="font-semibold text-slate-900 text-sm">Forecast &amp; Simulation</span>
+              <span class="hidden md:inline text-slate-400">&middot;</span>
+              <span class="hidden md:inline text-slate-500">Model operational interventions or compare trajectory confidence intervals</span>
             </div>
-            <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 self-start sm:self-auto">
+            <div class="db-segmented self-start sm:self-auto">
               <button
                 type="button"
                 on:click={() => handleSelectTab('simulator')}
-                class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {activeTab === 'simulator' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+                class="db-segmented-btn flex items-center gap-1.5 {activeTab === 'simulator' ? 'active' : ''}"
               >
                 <Sliders size={13} />
-                <span>What-If Intervention Simulator</span>
+                <span>Intervention Simulator</span>
               </button>
               <button
                 type="button"
                 on:click={() => handleSelectTab('forecast_scenarios')}
-                class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {activeTab === 'forecast_scenarios' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+                class="db-segmented-btn flex items-center gap-1.5 {activeTab === 'forecast_scenarios' ? 'active' : ''}"
               >
                 <TrendingUp size={13} />
-                <span>Forecast Scenarios &amp; Target Likelihood</span>
+                <span>Trajectory Scenarios</span>
               </button>
             </div>
           </div>

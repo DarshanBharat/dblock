@@ -13,15 +13,17 @@
 
   body {
     font-family: var(--font-sans);
-    background-color: #f4f6f9;
+    background-color: #f5f5f7;
     color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    letter-spacing: -0.011em;
   }
 
   h1, h2, h3, .font-display {
     font-family: var(--font-display);
+    letter-spacing: -0.025em;
   }
 
   code, .font-mono {
@@ -34,26 +36,57 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Clean elevated card surface */
+/* Apple / Linear elevated card surface */
 .db-card {
   background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
+  border: 1px solid rgba(15, 23, 42, 0.065);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025), 0 6px 20px -4px rgba(15, 23, 42, 0.03);
 }
 
 .db-card-interactive {
   background: #ffffff;
-  border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 1rem;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.02);
-  transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+  border: 1px solid rgba(15, 23, 42, 0.065);
+  border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.025), 0 6px 20px -4px rgba(15, 23, 42, 0.03);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1), border-color 180ms ease;
 }
 
 .db-card-interactive:hover {
-  border-color: rgba(37, 99, 235, 0.35);
-  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(37, 99, 235, 0.08);
+  border-color: rgba(15, 23, 42, 0.14);
+  box-shadow: 0 8px 28px -6px rgba(15, 23, 42, 0.07), 0 2px 6px rgba(15, 23, 42, 0.03);
   transform: translateY(-1px);
+}
+
+/* Apple-style segmented control */
+.db-segmented {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(15, 23, 42, 0.055);
+  padding: 3px;
+  border-radius: 11px;
+  gap: 2px;
+}
+
+.db-segmented-btn {
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.db-segmented-btn:hover {
+  color: #0f172a;
+}
+
+.db-segmented-btn.active {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 1px rgba(15, 23, 42, 0.04);
 }
 
 /* Custom crisp scrollbar */
