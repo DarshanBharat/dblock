@@ -196,7 +196,7 @@
   $: currentAiInsight = getAiInsightText(activeTab);
 </script>
 
-<div class="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
+<div class="min-h-screen bg-[#f4f6f9] text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
   
   <!-- Unified Top Header Bar -->
   <Header
@@ -209,7 +209,7 @@
   />
 
   <!-- Main View Container -->
-  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
     
     {#if activeTab === 'portfolio'}
       <!-- Screen 1: Full Portfolio View (Entry Point before opening Study CA-209-301) -->
@@ -224,66 +224,70 @@
         onSelectSite={handleSelectSite}
       />
     {:else}
-      <!-- Study Workspace Layout: Left Sidebar + Study Main View -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Study Workspace Layout: Left Sidebar (240px) + Study Main View -->
+      <div class="flex flex-col lg:flex-row gap-6 items-start">
         
         <!-- =================================================================== -->
         <!-- LEFT STUDY CONTEXT SIDEBAR                                          -->
         <!-- =================================================================== -->
-        <aside class="lg:col-span-2 hidden lg:flex flex-col space-y-5 sticky top-20">
+        <aside class="lg:w-60 shrink-0 hidden lg:flex flex-col space-y-4 sticky top-20">
           
           <!-- Study Switcher Card -->
-          <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs">
-            <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              <span>Study</span>
+          <div class="db-card p-4">
+            <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+              <span>Active Study</span>
               <button
+                type="button"
                 on:click={() => handleSelectTab('portfolio')}
-                class="text-blue-600 hover:text-blue-800 font-bold capitalize cursor-pointer text-xs"
+                class="text-blue-600 hover:text-blue-700 font-semibold capitalize cursor-pointer text-[11px]"
               >
-                Portfolio
+                All studies
               </button>
             </div>
 
             <!-- Current Protocol Selector -->
             <button
+              type="button"
               on:click={() => handleSelectTab('portfolio')}
-              class="w-full mt-2 p-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-left flex items-center justify-between text-xs font-bold text-slate-900 transition-colors"
+              class="w-full mt-2.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-left flex items-center justify-between text-xs font-bold text-slate-900 transition-colors cursor-pointer"
             >
-              <span>{study.protocol}</span>
-              <ChevronDown size={14} class="text-slate-500" />
+              <span class="font-mono">{study.protocol}</span>
+              <ChevronDown size={14} class="text-slate-400" />
             </button>
 
-            <div class="text-[11px] text-slate-500 mt-2 font-medium">
+            <div class="text-[11px] text-slate-500 mt-2.5 font-medium">
               {study.therapeuticArea} &middot; Phase III &middot; Global
             </div>
           </div>
 
           <!-- Left Vertical Navigation Links -->
-          <div class="bg-white rounded-xl border border-slate-200 p-2 shadow-xs space-y-1">
+          <div class="db-card p-2 space-y-0.5">
             {#each studyNavLinks as nav}
               {@const Icon = nav.icon}
               <button
+                type="button"
                 on:click={() => handleSelectTab(nav.id)}
-                class="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg text-xs font-bold transition-all text-left {activeTab === nav.id ? 'bg-blue-50 text-blue-700 font-extrabold' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}"
+                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all text-left cursor-pointer {activeTab === nav.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}"
               >
-                <Icon size={16} class={activeTab === nav.id ? 'text-blue-600' : 'text-slate-400'} />
+                <Icon size={15} class={activeTab === nav.id ? 'text-blue-600' : 'text-slate-400'} />
                 <span>{nav.label}</span>
               </button>
             {/each}
           </div>
 
           <!-- Left AI Insight Card -->
-          <div class="bg-gradient-to-br from-blue-50 to-indigo-50/80 rounded-xl border border-blue-200/90 p-4 shadow-xs space-y-2">
-            <div class="flex items-center space-x-1.5 text-blue-900 font-bold text-xs">
+          <div class="db-card p-4 space-y-2.5 border-l-4 border-l-blue-600">
+            <div class="flex items-center gap-1.5 text-slate-900 font-semibold text-xs">
               <Sparkles size={14} class="text-blue-600" />
               <span>AI Insight</span>
             </div>
-            <p class="text-[11px] text-blue-900/90 leading-relaxed font-medium">
+            <p class="text-xs text-slate-600 leading-relaxed">
               {currentAiInsight.text}
             </p>
             <button
+              type="button"
               on:click={() => handleSelectTab(currentAiInsight.targetTab)}
-              class="text-[11px] font-bold text-blue-700 hover:text-blue-900 hover:underline flex items-center space-x-1 pt-1"
+              class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 pt-0.5 cursor-pointer"
             >
               <span>{currentAiInsight.actionLabel}</span>
               <ArrowRight size={12} />
@@ -295,7 +299,7 @@
         <!-- =================================================================== -->
         <!-- STUDY MAIN CONTENT VIEW                                             -->
         <!-- =================================================================== -->
-        <div class="lg:col-span-10 min-w-0">
+        <div class="flex-1 min-w-0 w-full">
           
           {#if activeTab === 'command_centre'}
             <!-- Screen 2: Study Command Centre / Overview -->

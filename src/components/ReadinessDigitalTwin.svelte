@@ -512,6 +512,26 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
+  <!-- PAGE HEADER                                                               -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1">
+    <div>
+      <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
+        Readiness Traceability
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Clean-patient basis ({configuredReadinessScore}/100 &mdash; 158 of 220 subjects clean) across 5 weighted clinical components.
+      </p>
+    </div>
+    <div class="flex items-center gap-2 text-xs shrink-0">
+      <span class="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-slate-700 font-semibold shadow-2xs num-tabular">
+        Target: 15 Dec &middot; Potential: <span class="text-rose-600">21 Dec (+6d)</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- LEVEL 1 & FORECAST MOVEMENT: WEEKLY SCRUBBER (Week -4 to Current Week)    -->
   <!-- Selected week -> parameter change -> forecast movement -> records         -->
   <!-- ========================================================================= -->
   <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">

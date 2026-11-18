@@ -458,52 +458,68 @@
 <div class="space-y-5">
 
   <!-- ========================================================================= -->
-  <!-- VIEW CONTROLS BAR (Map | Chart | Table | Automated Vendor View)           -->
+  <!-- PAGE HEADER + VIEW CONTROLS                                               -->
   <!-- ========================================================================= -->
-  <div class="bg-white rounded-xl border border-slate-200 px-4 py-3 shadow-xs flex flex-wrap items-center justify-between gap-3">
-    <div class="flex items-center space-x-1.5 text-xs text-slate-600">
-      <span class="text-slate-500 font-medium">Rank sites by:</span>
-      <select
-        bind:value={viewByMetric}
-        class="bg-slate-50 border border-slate-200 rounded-lg py-1.5 px-2.5 text-xs font-semibold text-slate-900 focus:outline-hidden focus:border-blue-500"
-      >
-        <option value="impact">Potential DBL impact (days)</option>
-        <option value="critical_path">Critical-path dependency</option>
-        <option value="probability">Risk probability (%)</option>
-        <option value="volume">Open-item volume</option>
-        <option value="weekly_change">Change since last week</option>
-      </select>
+  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 pb-1">
+    <div>
+      <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
+        Sites &amp; Risks
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Prioritise sites by potential DBL impact rather than raw open-item volume.
+      </p>
     </div>
 
-    <div class="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200">
-      <button
-        on:click={() => viewMode = 'map'}
-        class="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center space-x-1 transition-all cursor-pointer {viewMode === 'map' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
-      >
-        <MapPin size={13} />
-        <span>Map</span>
-      </button>
-      <button
-        on:click={() => viewMode = 'chart'}
-        class="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center space-x-1 transition-all cursor-pointer {viewMode === 'chart' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
-      >
-        <BarChart3 size={13} />
-        <span>Chart</span>
-      </button>
-      <button
-        on:click={() => viewMode = 'table'}
-        class="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center space-x-1 transition-all cursor-pointer {viewMode === 'table' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
-      >
-        <Table size={13} />
-        <span>Table</span>
-      </button>
-      <button
-        on:click={() => viewMode = 'vendors'}
-        class="px-2.5 py-1 rounded-md text-xs font-semibold flex items-center space-x-1 transition-all cursor-pointer {viewMode === 'vendors' ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'}"
-      >
-        <Server size={13} />
-        <span>Vendor View (5)</span>
-      </button>
+    <!-- View Controls (Map | Chart | Table | Automated Vendor View) -->
+    <div class="flex flex-wrap items-center gap-3 shrink-0">
+      <div class="flex items-center gap-2 text-xs text-slate-600">
+        <span class="text-slate-500 font-medium">Rank by</span>
+        <select
+          bind:value={viewByMetric}
+          class="bg-white border border-slate-200/90 rounded-xl py-2 px-3 text-xs font-semibold text-slate-800 shadow-2xs focus:outline-hidden focus:border-blue-500"
+        >
+          <option value="impact">Potential DBL impact (days)</option>
+          <option value="critical_path">Critical-path dependency</option>
+          <option value="probability">Risk probability (%)</option>
+          <option value="volume">Open-item volume</option>
+          <option value="weekly_change">Change since last week</option>
+        </select>
+      </div>
+
+      <div class="flex items-center bg-white p-1 rounded-xl border border-slate-200/90 shadow-2xs">
+        <button
+          type="button"
+          on:click={() => viewMode = 'map'}
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'map' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+        >
+          <MapPin size={13} />
+          <span>Map</span>
+        </button>
+        <button
+          type="button"
+          on:click={() => viewMode = 'chart'}
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'chart' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+        >
+          <BarChart3 size={13} />
+          <span>Chart</span>
+        </button>
+        <button
+          type="button"
+          on:click={() => viewMode = 'table'}
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'table' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+        >
+          <Table size={13} />
+          <span>Table</span>
+        </button>
+        <button
+          type="button"
+          on:click={() => viewMode = 'vendors'}
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {viewMode === 'vendors' ? 'bg-blue-600 text-white shadow-2xs' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'}"
+        >
+          <Server size={13} />
+          <span>Vendors (5)</span>
+        </button>
+      </div>
     </div>
   </div>
 

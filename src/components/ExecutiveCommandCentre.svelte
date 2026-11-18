@@ -182,21 +182,44 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- 4 TOP KPI CARDS (With Distinct Target vs Potential DBL & Calc Link)       -->
+  <!-- PAGE HEADER                                                               -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1">
+    <div>
+      <div class="flex items-center gap-2.5 flex-wrap">
+        <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
+          Study {study.protocol} &middot; Overview
+        </h1>
+        <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold">
+          Active
+        </span>
+      </div>
+      <p class="text-sm text-slate-500 mt-1">
+        Oncology (NSCLC) &middot; Phase III &middot; Global &mdash; 158 of 220 subjects clean, Potential DBL 6 days after target.
+      </p>
+    </div>
+    <div class="text-left sm:text-right shrink-0">
+      <div class="text-xs font-medium text-slate-500">Data refreshed 31 Oct 2026, 08:00 UTC</div>
+      <div class="text-[11px] text-slate-400 mt-0.5">EDC, Safety, Central Lab, eCOA, Coding</div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 4 TOP KPI CARDS                                                           -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
     
-    <!-- 1. Overall Readiness: 72/100 + "How is this calculated?" link (Image 4 & 5 Blue) -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between">
-      <div class="flex items-center justify-between">
+    <!-- 1. Overall Readiness -->
+    <div class="db-card p-5 flex flex-col justify-between">
+      <div class="flex items-center justify-between gap-3">
         <div>
-          <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Overall Readiness</div>
-          <div class="flex items-baseline space-x-1.5 mt-1">
-            <span class="text-3xl font-extrabold text-slate-900 num-tabular">{study.overallReadinessScore}</span>
-            <span class="text-sm text-slate-400 font-semibold">/100</span>
+          <div class="text-xs font-semibold text-slate-500">Overall Readiness</div>
+          <div class="flex items-baseline gap-1 mt-1.5">
+            <span class="text-3xl font-bold text-slate-900 num-tabular tracking-tight">{study.overallReadinessScore}</span>
+            <span class="text-sm text-slate-400 font-medium">/100</span>
           </div>
-          <div class="text-[11px] text-slate-600 font-medium mt-0.5">
-            <strong>158/220</strong> clean subjects (72%)
+          <div class="text-xs text-slate-600 mt-1">
+            <strong class="font-semibold text-slate-800">158/220</strong> clean subjects
           </div>
         </div>
 
@@ -213,100 +236,98 @@
               stroke-linecap="round"
             />
           </svg>
-          <span class="absolute text-xs font-bold text-slate-700">{study.overallReadinessScore}%</span>
+          <span class="absolute text-xs font-bold text-slate-800 num-tabular">{study.overallReadinessScore}%</span>
         </div>
       </div>
 
-      <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
         <button
           type="button"
           on:click={() => showReadinessDefinitionModal = true}
-          class="text-blue-600 hover:text-blue-800 font-bold underline flex items-center space-x-1 cursor-pointer"
+          class="text-blue-600 hover:text-blue-700 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
         >
-          <HelpCircle size={12} />
-          <span>How is this calculated?</span>
+          <HelpCircle size={13} />
+          <span>How it's calculated</span>
         </button>
         <button
           type="button"
           on:click={() => onSelectTab('digital_twin', 'edc_cleaning', true)}
-          class="text-slate-500 hover:text-blue-600 font-semibold cursor-pointer"
+          class="text-slate-500 hover:text-slate-800 font-medium cursor-pointer"
         >
           Weights &rarr;
         </button>
       </div>
     </div>
 
-    <!-- 2. Potential DBL Date vs Unchanged Target Date (Image 4 & 5 Blue) -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between">
+    <!-- 2. Potential DBL Date -->
+    <div class="db-card p-5 flex flex-col justify-between">
       <div>
-        <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Potential DBL Date</span>
-          <span class="text-[10px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
-            Moderate confidence
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-xs font-semibold text-slate-500">Potential DBL Date</span>
+          <span class="text-[11px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/70">
+            Moderate conf.
           </span>
         </div>
-        <div class="text-xl font-extrabold text-slate-900 mt-1 num-tabular">
-          21 December 2026
+        <div class="text-2xl font-bold text-slate-900 mt-1.5 num-tabular tracking-tight">
+          21 Dec 2026
         </div>
-        <div class="text-[11px] font-semibold text-slate-600 mt-0.5">
-          Target: <strong>15 December 2026</strong> <span class="text-slate-400">(unchanged)</span>
+        <div class="text-xs text-slate-500 mt-1">
+          Target: <strong class="font-semibold text-slate-700">15 Dec 2026</strong> (unchanged)
         </div>
       </div>
-      <div class="mt-2 pt-2 border-t border-slate-100 space-y-0.5">
-        <div class="text-[11px] font-bold text-rose-600">
-          Potential DBL date is six days after target
-        </div>
-        <div class="text-[10px] text-slate-500">
-          Range: <strong>18–22 December</strong> &middot; Illustrative
-        </div>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="font-semibold text-rose-600">+6 days after target</span>
+        <span class="text-slate-400 num-tabular">18–22 Dec</span>
       </div>
     </div>
 
-    <!-- 3. Eight Critical Blockers -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col justify-between">
+    <!-- 3. Critical Blockers -->
+    <div class="db-card p-5 flex flex-col justify-between">
       <div>
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Critical Blockers</span>
-          <AlertTriangle size={15} class="text-rose-500" />
+          <span class="text-xs font-semibold text-slate-500">Critical Blockers</span>
+          <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center">
+            <AlertTriangle size={15} />
+          </div>
         </div>
-        <div class="text-3xl font-extrabold text-slate-900 mt-1 num-tabular">
+        <div class="text-3xl font-bold text-slate-900 mt-1.5 num-tabular tracking-tight">
           {study.criticalBlockersCount}
         </div>
-        <div class="text-xs font-medium text-slate-600 mt-0.5">
-          2 SAEs &middot; 2 Lab batches &middot; 3 Query groups &middot; 1 PI sign-off
+        <div class="text-xs text-slate-500 mt-1">
+          2 SAEs &middot; 2 Labs &middot; 3 Queries &middot; 1 PI
         </div>
       </div>
-      <div class="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
-        <span class="text-emerald-600 font-bold">Trend: Improved by 1d this week</span>
+      <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+        <span class="text-emerald-600 font-semibold">Improved 1d this week</span>
         <button
           type="button"
           on:click={() => onSelectTab('digital_twin')}
-          class="text-blue-600 font-bold hover:underline cursor-pointer"
+          class="text-blue-600 font-semibold hover:underline cursor-pointer"
         >
           Drill down &rarr;
         </button>
       </div>
     </div>
 
-    <!-- 4. Three Higher-Risk Sites -->
+    <!-- 4. Higher-Risk Sites -->
     <button
       type="button"
-      class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-blue-400 cursor-pointer transition-all group flex flex-col justify-between text-left"
+      class="db-card-interactive p-5 cursor-pointer group flex flex-col justify-between text-left"
       on:click={() => onSelectTab('risk_matrix')}
     >
       <div class="w-full">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Higher-risk Sites</span>
+          <span class="text-xs font-semibold text-slate-500">Higher-Risk Sites</span>
           <ChevronRight size={16} class="text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 transition-all" />
         </div>
-        <div class="text-3xl font-extrabold text-slate-900 mt-1 num-tabular">
-          {study.highRiskSitesCount} <span class="text-sm font-semibold text-slate-400">of {study.totalSites}</span>
+        <div class="text-3xl font-bold text-slate-900 mt-1.5 num-tabular tracking-tight">
+          {study.highRiskSitesCount} <span class="text-base font-medium text-slate-400">/ {study.totalSites}</span>
         </div>
-        <div class="text-[11px] text-slate-500 mt-0.5">
-          Sites 104 (Critical), 317 (High), 405 (High)
+        <div class="text-xs text-slate-500 mt-1">
+          Sites 104 (Critical), 317, 405
         </div>
       </div>
-      <div class="mt-2 pt-2 border-t border-slate-100 w-full text-xs font-semibold text-blue-600 group-hover:underline">
+      <div class="mt-4 pt-3 border-t border-slate-100 w-full text-xs font-semibold text-blue-600 group-hover:underline">
         Inspect sites &amp; vendor risks &rarr;
       </div>
     </button>

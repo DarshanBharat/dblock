@@ -197,6 +197,24 @@
 <div class="space-y-5">
 
   <!-- ========================================================================= -->
+  <!-- PAGE HEADER                                                               -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1">
+    <div>
+      <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
+        Action Decision Workbench
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Review AI-recommended interventions aligned to top delay drivers. Human approval is required before any action executes.
+      </p>
+    </div>
+    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs font-semibold text-slate-700 shadow-2xs shrink-0">
+      <Lock size={13} class="text-emerald-600" />
+      <span>Human-in-the-loop governance</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- TOP DELAY DRIVERS <-> ACTION ALIGNMENT STRIP (Image 2 Blue Requirement)   -->
   <!-- Keeps screen focused on driver-to-action alignment without repeating risk -->
   <!-- ========================================================================= -->

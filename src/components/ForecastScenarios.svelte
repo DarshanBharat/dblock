@@ -99,54 +99,69 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
+  <!-- PAGE HEADER                                                               -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1">
+    <div>
+      <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
+        Forecast &amp; Scenarios
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Compare the unchanged Target DBL (15 Dec) against Potential DBL trajectories and target-meeting likelihood.
+      </p>
+    </div>
+    <div class="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs font-semibold text-slate-700 shadow-2xs shrink-0 num-tabular">
+      Target Likelihood: <span class="text-amber-600">28% baseline</span> &rarr; <span class="text-emerald-600">74% with actions</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- TOP 3 KPI CARDS: TARGET DATE (UNCHANGED) | POTENTIAL DBL | LIKELIHOOD     -->
   <!-- (Image 4 Blue: Separate Target vs Forecast + Bijal Target Likelihood)     -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     
     <!-- 1. Agreed Target DBL Date (Unchanged) -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-        <Clock size={22} />
+    <div class="db-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+        <Clock size={20} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Agreed Target DBL (Unchanged)</div>
-        <div class="text-2xl font-extrabold text-slate-900 mt-0.5 num-tabular">
-          15 December 2026
+        <div class="text-xs font-semibold text-slate-500">Agreed Target DBL</div>
+        <div class="text-xl font-bold text-slate-900 mt-1 num-tabular tracking-tight">
+          15 Dec 2026
         </div>
-        <div class="text-[11px] text-slate-500 mt-0.5">Protocol baseline &middot; Planned LSLV: 30 Nov 2026</div>
+        <div class="text-xs text-slate-500 mt-0.5">Unchanged &middot; LSLV 30 Nov 2026</div>
       </div>
     </div>
 
     <!-- 2. Potential DBL Date (Based on Current Progress) -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
-        <Calendar size={22} />
+    <div class="db-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+        <Calendar size={20} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Potential DBL (Current Progress)</div>
-        <div class="text-xl font-extrabold text-slate-900 mt-0.5 num-tabular">
-          21 December 2026
-          <span class="text-xs font-bold text-rose-600 ml-1">(6d after target)</span>
+        <div class="text-xs font-semibold text-slate-500">Potential DBL (Current)</div>
+        <div class="text-xl font-bold text-slate-900 mt-1 num-tabular tracking-tight">
+          21 Dec 2026
+          <span class="text-xs font-semibold text-rose-600 ml-1">(+6d)</span>
         </div>
-        <div class="text-[11px] text-slate-500 mt-0.5">Range: 18–22 Dec &middot; Moderate confidence</div>
+        <div class="text-xs text-slate-500 mt-0.5">Range: 18–22 Dec &middot; Moderate conf.</div>
       </div>
     </div>
 
-    <!-- 3. Likelihood of Meeting Agreed Target Date (Bijal Discussion Point) -->
-    <div class="bg-white rounded-xl border-2 border-blue-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-        <CheckCircle2 size={22} />
+    <!-- 3. Likelihood of Meeting Agreed Target Date -->
+    <div class="db-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+        <CheckCircle2 size={20} />
       </div>
       <div>
-        <div class="flex items-center space-x-1.5">
-          <span class="text-[11px] font-extrabold text-blue-900 uppercase tracking-wider">Likelihood of Meeting Target</span>
+        <div class="text-xs font-semibold text-slate-500">Target-Meeting Likelihood</div>
+        <div class="text-xl font-bold text-emerald-600 mt-1 num-tabular tracking-tight">
+          28% &rarr; 74% <span class="text-xs font-medium text-slate-500">with actions</span>
         </div>
-        <div class="text-xl font-extrabold text-emerald-600 mt-0.5 num-tabular">
-          28% &rarr; 74% <span class="text-xs font-semibold text-slate-600">(with actions)</span>
-        </div>
-        <div class="text-[10px] text-slate-500 mt-0.5">
-          Indicates probability of locking on/before 15 Dec 2026
+        <div class="text-xs text-slate-500 mt-0.5">
+          Probability of locking by 15 Dec 2026
         </div>
       </div>
     </div>

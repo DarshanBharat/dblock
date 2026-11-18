@@ -315,37 +315,56 @@
 <div class="space-y-5">
 
   <!-- ========================================================================= -->
-  <!-- PROTOTYPE METRIC DEFINITIONS & SUPPORTING DATA CALLOUT (Image 1 Blue)      -->
+  <!-- PAGE HEADER                                                               -->
   <!-- ========================================================================= -->
-  <div class="bg-blue-50/90 border border-blue-200 rounded-xl p-4 shadow-xs">
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div class="flex items-start space-x-3">
-        <Info size={18} class="text-blue-600 shrink-0 mt-0.5" />
-        <div class="text-xs text-blue-950">
-          <div class="flex items-center space-x-2 flex-wrap">
-            <strong class="font-extrabold uppercase tracking-wider text-[11px] text-blue-900">
-              Prototype Metric Basis &amp; Dummy-Value Governance Notice
-            </strong>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-300">
-              Entry Point Screen 1 &middot; Illustrative Prototype Values
-            </span>
-          </div>
-          <p class="text-[11px] text-blue-800 mt-1 leading-relaxed">
-            All scores, probabilities, risk categories, and potential DBL figures shown are illustrative dummy values. Every metric is paired below with its exact calculation formula and supporting source data (EDC, Safety, Central Lab, eCOA, Coding, IRT).
-          </p>
-        </div>
-      </div>
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1">
+    <div>
+      <h1 class="text-2xl sm:text-[28px] font-bold tracking-tight text-slate-900 font-display">
+        Study Portfolio
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Monitor database lock readiness, target variance, and critical-path blockers across active studies.
+      </p>
+    </div>
+    <div class="flex items-center gap-2.5 shrink-0">
       <button
         type="button"
         on:click={() => showCalcDefinitions = !showCalcDefinitions}
-        class="shrink-0 px-3 py-1.5 rounded-lg bg-white text-blue-700 hover:bg-blue-100 border border-blue-300 font-bold text-xs transition-colors cursor-pointer"
+        class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200/90 font-semibold text-xs shadow-2xs transition-colors cursor-pointer"
       >
-        {showCalcDefinitions ? 'Hide calculation definitions' : 'How metrics are calculated & supported'}
+        <Info size={14} class="text-blue-600" />
+        <span>{showCalcDefinitions ? 'Hide Metric Definitions' : 'Metric Definitions & Formulas'}</span>
+      </button>
+      <button
+        type="button"
+        on:click={() => onSelectStudy('CA-209-301')}
+        class="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
+      >
+        <span>Open Study CA-209-301</span>
+        <ArrowRight size={14} />
       </button>
     </div>
+  </div>
 
-    {#if showCalcDefinitions}
-      <div class="mt-4 pt-3 border-t border-blue-200/80 grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+  {#if showCalcDefinitions}
+    <div class="db-card p-5 space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <div class="flex items-center gap-2">
+          <Info size={16} class="text-blue-600" />
+          <span class="text-sm font-bold text-slate-900">Metric Basis &amp; Calculation Methodology</span>
+          <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">
+            Illustrative Prototype Values
+          </span>
+        </div>
+        <button
+          type="button"
+          on:click={() => showCalcDefinitions = false}
+          class="text-xs font-semibold text-slate-500 hover:text-slate-800 cursor-pointer"
+        >
+          Close
+        </button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
         <div class="bg-white p-3 rounded-lg border border-blue-100">
           <div class="font-bold text-slate-900">1. DBL Readiness Score (72/100)</div>
           <p class="text-[11px] text-slate-600 mt-1 leading-relaxed">
@@ -427,8 +446,8 @@
           </div>
         </div>
       </div>
-    {/if}
-  </div>
+    </div>
+  {/if}
 
   <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
     

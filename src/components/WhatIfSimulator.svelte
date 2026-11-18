@@ -207,55 +207,72 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
+  <!-- PAGE HEADER                                                               -->
+  <!-- ========================================================================= -->
+  <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-1">
+    <div>
+      <h1 class="text-2xl sm:text-[26px] font-bold tracking-tight text-slate-900 font-display">
+        What-If Intervention Simulator
+      </h1>
+      <p class="text-sm text-slate-500 mt-1">
+        Toggle interventions to model non-additive critical-path overlaps and shift the Potential DBL date.
+      </p>
+    </div>
+    <div class="px-3 py-1.5 rounded-xl bg-white border border-slate-200/90 text-xs font-semibold text-slate-700 shadow-2xs shrink-0 num-tabular">
+      Simulated DBL: <span class="text-emerald-600">{potentialDblSimulated}</span>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- TOP 3 KPI CARDS (Renamed to Potential DBL Date Wording per Image 3 Blue)  -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
     
     <!-- Current potential DBL date -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-        <Calendar size={22} />
+    <div class="db-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+        <Calendar size={20} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Current potential DBL date</div>
-        <div class="text-xl font-extrabold text-slate-900 mt-0.5 num-tabular">
-          21 December 2026
+        <div class="text-xs font-semibold text-slate-500">Current Potential DBL</div>
+        <div class="text-xl font-bold text-slate-900 mt-1 num-tabular tracking-tight">
+          21 Dec 2026
         </div>
-        <div class="text-[11px] text-rose-600 font-semibold mt-0.5">
-          6 days after unchanged Target DBL (15 Dec 2026)
+        <div class="text-xs text-rose-600 font-medium mt-0.5">
+          6 days after Target (15 Dec)
         </div>
       </div>
     </div>
 
     <!-- Simulated potential DBL date -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-        <Activity size={22} />
+    <div class="db-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+        <Activity size={20} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Simulated potential DBL date</div>
-        <div class="flex items-baseline space-x-1.5 mt-0.5">
-          <span class="text-xl font-extrabold text-emerald-700 num-tabular">{potentialDblSimulated}</span>
-          <span class="text-xs font-bold text-slate-600">({remainingDelay}d after target)</span>
+        <div class="text-xs font-semibold text-slate-500">Simulated Potential DBL</div>
+        <div class="flex items-baseline gap-1.5 mt-1">
+          <span class="text-xl font-bold text-emerald-700 num-tabular tracking-tight">{potentialDblSimulated}</span>
+          <span class="text-xs font-semibold text-slate-500">({remainingDelay}d)</span>
         </div>
-        <div class="text-[11px] text-slate-500 mt-0.5">
-          Readiness: <strong>{study.overallReadinessScore}/100 &rarr; {simulatedScore}/100</strong>
+        <div class="text-xs text-slate-500 mt-0.5">
+          Readiness: <strong class="text-slate-800">{study.overallReadinessScore} &rarr; {simulatedScore}/100</strong>
         </div>
       </div>
     </div>
 
     <!-- Critical-Path Overlap Adjustment -->
-    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex items-center space-x-3.5">
-      <div class="w-11 h-11 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
-        <AlertTriangle size={22} />
+    <div class="db-card p-5 flex items-center gap-4">
+      <div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+        <AlertTriangle size={20} />
       </div>
       <div>
-        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Overlap-Adjusted Shift Basis</div>
-        <div class="text-lg font-extrabold text-slate-900 mt-0.5 num-tabular">
-          Raw {rawReduction.toFixed(1)}d &rarr; Net {delayReduction.toFixed(1)}d earlier
+        <div class="text-xs font-semibold text-slate-500">Overlap-Adjusted Shift</div>
+        <div class="text-lg font-bold text-slate-900 mt-1 num-tabular tracking-tight">
+          {rawReduction.toFixed(1)}d &rarr; {delayReduction.toFixed(1)}d earlier
         </div>
-        <div class="text-[11px] text-amber-700 font-semibold mt-0.5">
-          0.82x overlap damping applied across shared sites
+        <div class="text-xs text-amber-700 font-medium mt-0.5">
+          0.82x overlap damping applied
         </div>
       </div>
     </div>
