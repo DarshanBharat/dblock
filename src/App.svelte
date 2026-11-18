@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import dblockData from './data/dblock_data.json';
+  import { demoSubjects, demoQueries, additionalSnapshotQueries } from './data/cleanPatientDemo';
   import Header from './components/Header.svelte';
   import TrustCentreModal from './components/TrustCentreModal.svelte';
   import DataHealthModal from './components/DataHealthModal.svelte';
@@ -61,6 +62,9 @@
     dataHealth,
     governance
   } = dblockData as any;
+
+  const trackerSubjects = [...subjects, ...demoSubjects];
+  const trackerQueries = [...queriesDetail, ...additionalSnapshotQueries, ...demoQueries];
 
   // Initialize live workflow store
   initialize(actions);
@@ -129,7 +133,7 @@
   }
 
   // Reactive selection helpers
-  $: currentSubject = selectedSubjectId ? subjects.find((s: any) => s.id === selectedSubjectId) : null;
+  $: currentSubject = selectedSubjectId ? trackerSubjects.find((s: any) => s.id === selectedSubjectId) : null;
   $: currentSite = selectedSiteId ? sites.find((s: any) => s.id === selectedSiteId) : null;
 
   // Study left nav links
@@ -312,15 +316,16 @@
             {#if currentSubject}
               <SubjectDetailView
                 subject={currentSubject}
+                queries={trackerQueries.filter(query => query.subjectId === currentSubject.id)}
                 onBackToSite={handleBackToSite}
                 onSelectTab={handleSelectTab}
               />
             {:else if currentSite}
               <SiteDetailView
                 site={currentSite}
-                {subjects}
+                subjects={trackerSubjects}
                 {saeDiscrepancies}
-                {queriesDetail}
+                queriesDetail={trackerQueries}
                 {labBatches}
                 onBackToSites={handleBackToSites}
                 onSelectSubject={handleSelectSubject}

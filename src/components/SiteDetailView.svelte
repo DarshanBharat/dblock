@@ -36,39 +36,7 @@
   // Site-specific filtered lists
   $: siteSubjects = subjects.filter(s => s.siteId === site.id);
   $: siteSaes = saeDiscrepancies.filter(s => s.siteId === site.id);
-  $: siteQueries = [
-    ...queriesDetail.filter(q => q.siteId === site.id),
-    ...(site.id === '104'
-      ? [
-          {
-            id: 'QRY-104-118',
-            siteId: '104',
-            subjectId: 'SUBJ-104-021',
-            form: 'CM-02 (Concomitant Meds)',
-            field: 'CM_DOSE_UNIT',
-            queryText: 'Clarify concomitant dexamethasone prophylaxis dose unit (mg vs mL) for Cycle 3.',
-            ageDays: 7,
-            isCriticalPath: false,
-            isPrimaryEndpoint: false,
-            status: 'Open (Routine)',
-            actionRequired: 'Site coordinator data entry clarification'
-          },
-          {
-            id: 'QRY-104-124',
-            siteId: '104',
-            subjectId: 'SUBJ-104-019',
-            form: 'VS-01 (Vital Signs)',
-            field: 'SYS_BP_VAL',
-            queryText: 'Cycle 5 pre-infusion blood pressure reading missing timestamp.',
-            ageDays: 5,
-            isCriticalPath: false,
-            isPrimaryEndpoint: false,
-            status: 'Open (Routine)',
-            actionRequired: 'Verify nursing flowsheet timestamp'
-          }
-        ]
-      : [])
-  ];
+  $: siteQueries = queriesDetail.filter(q => q.siteId === site.id);
   $: filteredQueries = siteQueries.filter(q => {
     if (queryFilter === 'endpoint_critical') return q.isPrimaryEndpoint;
     if (queryFilter === 'non_critical') return !q.isPrimaryEndpoint;
@@ -77,7 +45,7 @@
   $: siteLabs = labBatches.filter(l => l.sitesAffected.includes(site.id));
 
   // Readiness and forecast impact use different denominators.
-  let trackerFilter: 'all' | 'open' | 'forms' | 'endpoint' | 'queries' | 'signoff' = 'all';
+  let trackerFilter: 'all' | 'open' | 'clean' | 'unfrozen' | 'forms' | 'endpoint' | 'queries' | 'signoff' = 'all';
 
   function isPendingForm(form: { status: string }) {
     return !['Clean', 'Verified', 'Signed', 'Complete'].includes(form.status);
@@ -92,11 +60,13 @@
     const evidence = siteQueries.filter(query => query.subjectId === subject.id);
     const openForms = forms.filter(isPendingForm);
     const openQueries = Math.max(subject.openQueries ?? 0, evidence.length);
+    const cleaning = subject.cleaning;
     const hasSafetyDiscrepancy = subject.hasSaeDiscrepancy || siteSaes.some(record => record.subjectId === subject.id);
     return {
       subject,
+      cleaning,
       openQueries,
-      endpointQueries: Math.max(subject.criticalQueries ?? 0, evidence.filter(query => query.isPrimaryEndpoint).length),
+      endpointQueries: Math.min(openQueries, Math.max(subject.criticalQueries ?? 0, evidence.filter(query => query.isPrimaryEndpoint).length)),
       pendingForms: openForms.filter((form: { name: string }) => !isSignoff(form)),
       signoff: openForms.find(isSignoff) ?? forms.find(isSignoff),
       pendingSignoff: openForms.some(isSignoff),
@@ -104,7 +74,8 @@
       formCount: forms.filter((form: { name: string }) => !isSignoff(form)).length,
       vendorItems: openForms.filter((form: { flag: string }) => form.flag === 'External Lab'),
       hasSafetyDiscrepancy,
-      hasOpenWork: openQueries > 0 || openForms.length > 0 || hasSafetyDiscrepancy
+      hasOpenWork: openQueries > 0 || openForms.length > 0 || hasSafetyDiscrepancy,
+      isClean: !!cleaning && openQueries === 0 && openForms.length === 0 && !hasSafetyDiscrepancy
     };
   });
 
@@ -112,6 +83,8 @@
     const search = subjectSearch.trim().toLowerCase();
     if (![row.subject.id, row.subject.cohort].some(value => value.toLowerCase().includes(search))) return false;
     if (trackerFilter === 'open') return row.hasOpenWork;
+    if (trackerFilter === 'clean') return row.isClean;
+    if (trackerFilter === 'unfrozen') return row.cleaning?.frozen === false;
     if (trackerFilter === 'forms') return row.pendingForms.length > 0;
     if (trackerFilter === 'endpoint') return row.endpointQueries > 0;
     if (trackerFilter === 'queries') return row.openQueries > 0;
@@ -353,7 +326,7 @@
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div>
         <h2 class="text-base font-extrabold text-slate-900">Clean Patient Tracker</h2>
-        <p class="mt-1 text-xs text-slate-500">EDC data cleaning · Demo snapshot · {siteSubjects.length} subject records for {site.code}. Clean status requires complete EDC evidence.</p>
+        <p class="mt-1 text-xs text-slate-500">EDC data cleaning · {siteSubjects.length} demo subjects at {site.code}. Synthetic records are labeled. Earlier snapshot records may have incomplete evidence.</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -370,6 +343,8 @@
         <select bind:value={trackerFilter} aria-label="Filter by cleaning task" class="rounded-md border border-slate-200 bg-white p-2 text-xs">
           <option value="all">All cleaning tasks</option>
           <option value="open">Subjects with open work</option>
+          <option value="clean">Clean subjects</option>
+          <option value="unfrozen">Awaiting freeze</option>
           <option value="forms">Open eCRF items</option>
           <option value="endpoint">Endpoint-critical queries</option>
           <option value="queries">Any open query</option>
@@ -386,9 +361,12 @@
                 <th scope="col" class="p-3">Subject</th>
                 <th scope="col" class="p-3">Cleaning status</th>
                 <th scope="col" class="p-3">Open queries</th>
-                <th scope="col" class="p-3">eCRF cleaning &amp; verification</th>
-                <th scope="col" class="p-3">PI sign-off</th>
+                <th scope="col" class="p-3">Entry</th>
+                <th scope="col" class="p-3">SDV / SDR</th>
                 <th scope="col" class="p-3">Reconciliation</th>
+                <th scope="col" class="p-3">Coding</th>
+                <th scope="col" class="p-3">PI sign-off</th>
+                <th scope="col" class="p-3">Freeze</th>
                 <th scope="col" class="p-3">Records</th>
               </tr>
             </thead>
@@ -397,44 +375,59 @@
                 <tr class="hover:bg-slate-50">
                   <th scope="row" class="p-3 font-semibold text-slate-900">
                     {row.subject.id}
-                    <span class="block max-w-48 font-normal text-slate-500">{row.subject.cohort}</span>
+                    <span class="block max-w-48 font-normal text-slate-500">{row.subject.cleaning ? 'Synthetic demo' : row.subject.cohort}</span>
                   </th>
                   <td class="p-3">
-                    <span class="inline-block rounded px-2 py-1 font-semibold {row.hasOpenWork ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700'}">
-                      {row.hasOpenWork ? 'Open cleaning items' : 'Clean status unverified'}
+                    <span class="inline-block rounded px-2 py-1 font-semibold {row.hasOpenWork ? 'bg-amber-50 text-amber-800' : row.isClean ? 'bg-emerald-50 text-emerald-800' : 'bg-slate-100 text-slate-700'}">
+                      {row.hasOpenWork ? 'Open cleaning items' : row.isClean ? 'Clean' : 'Clean status unverified'}
                     </span>
                   </td>
                   <td class="p-3">
-                    <span class="font-semibold">{row.openQueries} open</span>
+                    <span class="font-semibold whitespace-nowrap">{row.openQueries} open</span>
+                    <span class="block text-slate-500">{row.openQueries - row.endpointQueries} routine</span>
                     {#if row.endpointQueries}
                       <span class="block font-bold text-rose-700">{row.endpointQueries} endpoint-critical</span>
                     {/if}
                   </td>
                   <td class="p-3">
-                    {#if row.verifiedForms}
-                      <span class="mb-1 block text-slate-600">{row.verifiedForms} of {row.formCount} listed forms marked verified</span>
-                    {/if}
-                    {#each row.pendingForms as form}
-                      <div class="mb-1">
-                        <span class="font-semibold">{form.name}</span>
-                        <span class="block text-amber-800">{form.status}</span>
-                      </div>
+                    {#if row.cleaning}
+                      <span class="whitespace-nowrap">{row.cleaning.entered}/{row.cleaning.total} entered</span>
+                      {#if row.cleaning.entered < row.cleaning.total}
+                        <span class="block text-amber-800">{row.cleaning.total - row.cleaning.entered} missing</span>
+                      {/if}
                     {:else}
-                      <span class="text-slate-500">No open items shown</span>
-                    {/each}
+                      Status unavailable
+                    {/if}
                   </td>
-                  <td class="p-3">{row.signoff?.status ?? 'Status unavailable'}</td>
+                  <td class="p-3 whitespace-nowrap">
+                    {#if row.cleaning}
+                      <div>SDV {row.cleaning.sdv}/{row.cleaning.total}</div>
+                      <div>SDR {row.cleaning.sdr}/{row.cleaning.total}</div>
+                    {:else if row.verifiedForms}
+                      {row.verifiedForms} of {row.formCount} listed forms marked verified
+                    {:else}
+                      Status unavailable
+                    {/if}
+                  </td>
                   <td class="p-3">
-                    {#if row.hasSafetyDiscrepancy}
-                      <span class="block font-semibold text-rose-700">SAE discrepancy</span>
-                    {/if}
-                    {#each row.vendorItems as form}
-                      <span class="block text-amber-800">{form.status}</span>
-                    {/each}
-                    {#if !row.hasSafetyDiscrepancy && !row.vendorItems.length}
-                      <span class="text-slate-500">No linked discrepancy shown</span>
+                    {#if row.cleaning}
+                      <div class="whitespace-nowrap">Safety: {row.cleaning.safetyOpen} open</div>
+                      <div class="whitespace-nowrap">Vendor: {row.cleaning.vendorOpen} open</div>
+                    {:else}
+                      {#if row.hasSafetyDiscrepancy}
+                        <span class="block font-semibold text-rose-700">SAE discrepancy</span>
+                      {/if}
+                      {#each row.vendorItems as form}
+                        <span class="block text-amber-800">{form.status}</span>
+                      {/each}
+                      {#if !row.hasSafetyDiscrepancy && !row.vendorItems.length}
+                        <span class="text-slate-500">Status unavailable</span>
+                      {/if}
                     {/if}
                   </td>
+                  <td class="p-3 whitespace-nowrap">{row.cleaning ? `${row.cleaning.codingOpen} pending` : 'Status unavailable'}</td>
+                  <td class="p-3">{row.signoff?.status ?? 'Status unavailable'}</td>
+                  <td class="p-3 whitespace-nowrap">{row.cleaning ? (row.cleaning.frozen ? 'Frozen' : 'Not frozen') : 'Status unavailable'}</td>
                   <td class="p-3">
                     <button
                       type="button"

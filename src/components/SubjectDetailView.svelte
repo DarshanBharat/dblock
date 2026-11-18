@@ -17,6 +17,7 @@
   } from '@lucide/svelte';
 
   export let subject: any;
+  export let queries: { id: string; form: string; queryText: string; ageDays: number; isPrimaryEndpoint: boolean; status: string; actionRequired: string }[] = [];
   export let onBackToSite: () => void;
   export let onSelectTab: (tab: string) => void;
 
@@ -39,7 +40,7 @@
         <span>Site {subject.siteId}</span>
       </button>
       <span class="text-slate-300">/</span>
-      <span class="font-bold text-slate-900">Subject {subject.id} ({subject.initials})</span>
+      <span class="font-bold text-slate-900">Subject {subject.id}</span>
     </div>
 
     <div class="flex items-center space-x-2 text-xs">
@@ -59,12 +60,12 @@
             {subject.id}
           </span>
           <span class="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
-            {subject.riskLevel} Blocker
+            {subject.riskLevel} risk
           </span>
           <span class="text-xs text-slate-500">{subject.status}</span>
         </div>
         <h2 class="text-lg font-bold text-slate-900 mt-1">
-          {subject.initials} &middot; {subject.sex}, {subject.age} yrs &middot; Site 104
+          {subject.cleaning ? 'Synthetic demo record' : subject.initials + ' · ' + subject.sex + ', ' + subject.age + ' yrs'} &middot; Site {subject.siteId}
         </h2>
         <p class="text-xs text-slate-600">
           Enrolled in {subject.cohort}
@@ -72,12 +73,14 @@
       </div>
 
       <div class="flex items-center space-x-4 bg-slate-50 rounded-md p-3 border border-slate-200 text-center">
+        {#if subject.delayContributionDays != null}
         <div>
           <div class="text-[10px] font-semibold text-slate-500 uppercase">Delay Contribution</div>
           <div class="text-xl font-extrabold text-rose-600 num-tabular">+{subject.delayContributionDays}d</div>
           <div class="text-[10px] text-slate-500">to study DBL</div>
         </div>
         <div class="h-8 w-px bg-slate-200"></div>
+        {/if}
         <div>
           <div class="text-[10px] font-semibold text-slate-500 uppercase">Open Queries</div>
           <div class="text-xl font-extrabold text-slate-900 num-tabular">{subject.openQueries}</div>
@@ -88,7 +91,7 @@
 
     <!-- Active Blockers Summary -->
     <div class="pt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-      {#if subject.hasSaeDiscrepancy}
+      {#if subject.saeSummary}
         <div class="p-3 bg-rose-50/70 rounded-md border border-rose-200 space-y-1">
           <span class="font-bold text-rose-900 uppercase text-[10px] flex items-center">
             <ShieldAlert class="w-3.5 h-3.5 mr-1 text-rose-700" />
@@ -98,6 +101,7 @@
         </div>
       {/if}
 
+      {#if subject.recistIssues}
       <div class="p-3 bg-amber-50/70 rounded-md border border-amber-200 space-y-1">
         <span class="font-bold text-amber-900 uppercase text-[10px] flex items-center">
           <AlertTriangle class="w-3.5 h-3.5 mr-1 text-amber-700" />
@@ -105,8 +109,43 @@
         </span>
         <p class="text-amber-800 font-medium">{subject.recistIssues}</p>
       </div>
+      {/if}
     </div>
   </div>
+
+  {#if subject.cleaning}
+    {@const cleaning = subject.cleaning}
+    <section class="rounded-lg border border-slate-200 bg-white p-5">
+      <h3 class="text-sm font-bold text-slate-900">EDC cleaning and freeze</h3>
+      <dl class="mt-3 grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+        <div><dt>Entry</dt><dd class="font-bold">{cleaning.entered}/{cleaning.total} forms</dd></div>
+        <div><dt>SDV</dt><dd class="font-bold">{cleaning.sdv}/{cleaning.total} forms</dd></div>
+        <div><dt>SDR</dt><dd class="font-bold">{cleaning.sdr}/{cleaning.total} forms</dd></div>
+        <div><dt>Freeze</dt><dd class="font-bold">{cleaning.frozen ? 'Frozen' : 'Not frozen'}</dd></div>
+        <div><dt>Safety reconciliation</dt><dd class="font-bold">{cleaning.safetyOpen} open</dd></div>
+        <div><dt>Vendor reconciliation</dt><dd class="font-bold">{cleaning.vendorOpen} open</dd></div>
+        <div><dt>Medical coding</dt><dd class="font-bold">{cleaning.codingOpen} pending</dd></div>
+        <div><dt>PI sign-off</dt><dd class="font-bold">{cleaning.piSigned ? 'Signed' : 'Pending'}</dd></div>
+      </dl>
+    </section>
+  {/if}
+
+  <section class="rounded-lg border border-slate-200 bg-white p-5">
+    <h3 class="text-sm font-bold text-slate-900">Open query records ({queries.length} listed)</h3>
+    {#if queries.length}
+      <ul class="mt-2 divide-y divide-slate-100 text-xs">
+        {#each queries as query (query.id)}
+          <li class="space-y-1 py-2">
+            <div class="font-bold">{query.id} · {query.form} · {query.isPrimaryEndpoint ? 'Endpoint-critical' : 'Routine'}</div>
+            <div>{query.queryText}</div>
+            <div class="text-slate-600">{query.status} · {query.ageDays} days open · {query.actionRequired}</div>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p class="mt-2 text-xs text-slate-500">No open query records in this snapshot for this subject.</p>
+    {/if}
+  </section>
 
   <!-- ========================================================================= -->
   <!-- eCRF FORMS & FREEZE STATUS                                                -->
@@ -154,7 +193,7 @@
                 {/if}
               </td>
               <td class="py-3 px-3 text-right">
-                {#if form.status !== 'Clean' && form.status !== 'Illustrative' && resolvedForm !== form.name}
+                {#if !subject.cleaning && form.status !== 'Clean' && form.status !== 'Illustrative' && resolvedForm !== form.name}
                   <button
                     type="button"
                     on:click={() => resolvedForm = form.name}
@@ -163,7 +202,7 @@
                     Quick Align Note
                   </button>
                 {:else}
-                  <span class="text-slate-400 text-xs">Ready</span>
+                  <span class="text-slate-400 text-xs">{subject.cleaning ? 'Read only' : 'Ready'}</span>
                 {/if}
               </td>
             </tr>
@@ -173,6 +212,7 @@
     </div>
   </div>
 
+  {#if subject.timeline?.length}
   <!-- ========================================================================= -->
   <!-- TIMELINE AUDIT HISTORY                                                    -->
   <!-- ========================================================================= -->
@@ -199,4 +239,5 @@
     </div>
   </div>
 
+  {/if}
 </div>
