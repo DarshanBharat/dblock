@@ -1,5 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte';
+  import SaeReconciliationTable from './SaeReconciliationTable.svelte';
   import {
     Activity,
     AlertTriangle,
@@ -49,8 +50,10 @@
   async function inspectParameter(id: string) {
     activeParamId = id;
     await tick();
-    scoreDetails.focus({ preventScroll: true });
-    scoreDetails.scrollIntoView({ block: 'start' });
+    if (activeParamId !== id) return;
+    const target = id === 'safety_recon' ? document.getElementById('sae-reconciliation-queue') : scoreDetails;
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'start' });
   }
 
   // Selected week index for temporal scrubber (0 = W-8 ... 2 = W-4 ... 6 = W0 Current)
@@ -381,32 +384,7 @@
         { code: 'US', name: 'United States', score: 74, sites: ['104', '901', '990'] },
         { code: 'DE', name: 'Germany', score: 95, sites: ['317'] }
       ],
-      records: [
-        {
-          id: 'SAE-REC-104-01',
-          country: 'US',
-          siteId: '104',
-          subjectId: 'SUBJ-104-003',
-          changeType: 'Newly Detected Blocker',
-          item: 'Grade 3 CRS onset discordance: Rave logs 2026-10-12 vs Argus 2026-10-14',
-          criticality: 'Critical',
-          source: 'Oracle Argus Safety ↔ Medidata Rave',
-          owner: 'Dr. Sarah Lin (PV Lead)',
-          age: '12 days'
-        },
-        {
-          id: 'SAE-REC-104-02',
-          country: 'US',
-          siteId: '104',
-          subjectId: 'SUBJ-104-012',
-          changeType: 'Newly Detected Blocker',
-          item: 'Fatal Neutropenic Sepsis SUSAR closed in Argus but Form DD-01 unconfirmed in Rave EDC',
-          criticality: 'Critical',
-          source: 'Oracle Argus Safety ↔ Medidata Rave',
-          owner: 'Dr. Sarah Lin (PV Lead)',
-          age: '9 days'
-        }
-      ]
+      records: []
     }
   ];
 
@@ -770,58 +748,64 @@
         </div>
       </div>
 
-      <div class="space-y-2.5">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-            Newly Detected &amp; Resolved Blockers, Completed Actions &amp; Source Records
-          </span>
-          <span class="text-[10px] font-mono text-slate-400">Refreshed: 31 Oct 2026, 08:00 UTC</span>
-        </div>
+      {#if activeParamId !== 'safety_recon'}
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
+              Newly Detected &amp; Resolved Blockers, Completed Actions &amp; Source Records
+            </span>
+            <span class="text-[10px] font-mono text-slate-400">Refreshed: 31 Oct 2026, 08:00 UTC</span>
+          </div>
 
-        <div class="border border-slate-200 rounded-xl overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
-              <tr>
-                <th class="py-2.5 px-3">Record ID &amp; Subject</th>
-                <th class="py-2.5 px-2">Change Type &amp; Class</th>
-                <th class="py-2.5 px-3">Record Behind Change</th>
-                <th class="py-2.5 px-2">Source &amp; Owner</th>
-                <th class="py-2.5 px-2 text-right">Age / Status</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-              {#each activeParam.records as rec}
-                <tr class="hover:bg-slate-50">
-                  <td class="py-2.5 px-3 whitespace-nowrap">
-                    <div class="font-mono font-bold text-slate-900">{rec.id}</div>
-                    <div class="text-[10px] text-blue-600 font-bold">
-                      Site {rec.siteId} &middot; {rec.subjectId}
-                    </div>
-                  </td>
-                  <td class="py-2.5 px-2">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold block w-fit {rec.changeType.includes('Resolved') ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}">
-                      {rec.changeType}
-                    </span>
-                    <span class="text-[10px] text-slate-500 font-semibold mt-0.5 block">{rec.criticality}</span>
-                  </td>
-                  <td class="py-2.5 px-3 text-slate-800 leading-snug">{rec.item}</td>
-                  <td class="py-2.5 px-2 text-[11px]">
-                    <div class="font-semibold text-slate-800">{rec.source}</div>
-                    <div class="text-slate-500 text-[10px]">{rec.owner}</div>
-                  </td>
-                  <td class="py-2.5 px-2 text-right font-mono font-bold {rec.changeType.includes('Resolved') ? 'text-emerald-600' : 'text-rose-600'} whitespace-nowrap">
-                    {rec.age}
-                  </td>
+          <div class="border border-slate-200 rounded-xl overflow-hidden">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead class="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b border-slate-200">
+                <tr>
+                  <th class="py-2.5 px-3">Record ID &amp; Subject</th>
+                  <th class="py-2.5 px-2">Change Type &amp; Class</th>
+                  <th class="py-2.5 px-3">Record Behind Change</th>
+                  <th class="py-2.5 px-2">Source &amp; Owner</th>
+                  <th class="py-2.5 px-2 text-right">Age / Status</th>
                 </tr>
-              {/each}
-            </tbody>
-          </table>
+              </thead>
+              <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
+                {#each activeParam.records as rec}
+                  <tr class="hover:bg-slate-50">
+                    <td class="py-2.5 px-3 whitespace-nowrap">
+                      <div class="font-mono font-bold text-slate-900">{rec.id}</div>
+                      <div class="text-[10px] text-blue-600 font-bold">
+                        Site {rec.siteId} &middot; {rec.subjectId}
+                      </div>
+                    </td>
+                    <td class="py-2.5 px-2">
+                      <span class="px-2 py-0.5 rounded text-[10px] font-bold block w-fit {rec.changeType.includes('Resolved') ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : 'bg-rose-100 text-rose-800 border border-rose-200'}">
+                        {rec.changeType}
+                      </span>
+                      <span class="text-[10px] text-slate-500 font-semibold mt-0.5 block">{rec.criticality}</span>
+                    </td>
+                    <td class="py-2.5 px-3 text-slate-800 leading-snug">{rec.item}</td>
+                    <td class="py-2.5 px-2 text-[11px]">
+                      <div class="font-semibold text-slate-800">{rec.source}</div>
+                      <div class="text-slate-500 text-[10px]">{rec.owner}</div>
+                    </td>
+                    <td class="py-2.5 px-2 text-right font-mono font-bold {rec.changeType.includes('Resolved') ? 'text-emerald-600' : 'text-rose-600'} whitespace-nowrap">
+                      {rec.age}
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      {/if}
 
     </div>
 
   </div>
+
+  {#if activeParamId === 'safety_recon'}
+    <SaeReconciliationTable cases={saeDiscrepancies} />
+  {/if}
 
   <!-- ========================================================================= -->
   <!-- AUTOMATED VENDOR METRICS: VENDOR -> FEED -> DATASET OR TRANSFER           -->

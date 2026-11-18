@@ -1420,6 +1420,10 @@
       "raveStatus": "Serious Adverse Event, Onset: 2026-10-12, Related to IMP (Investigational Medicinal Product)",
       "argusStatus": "Severe Adverse Event, Onset: 2026-10-14, Unrelated to IMP (attributed to viral URI)",
       "discrepancyType": "Discordant Onset Date & Causality Assessment",
+      "fieldDifferences": [
+        { "field": "Onset date", "rave": "12 Oct 2026", "argus": "14 Oct 2026" },
+        { "field": "Study drug relationship", "rave": "Related to IMP", "argus": "Unrelated to IMP" }
+      ],
       "criticality": "Critical Path Blocker",
       "delayImpact": "1.2 days",
       "daysOpen": 12,
@@ -1437,6 +1441,10 @@
       "raveStatus": "Form EOS-01 notes death occurred 2026-10-21. Form DD-01 incomplete without certified hospital discharge or autopsy note.",
       "argusStatus": "Case expedited to US FDA & EMA as 7-day SUSAR. Medical narrative closed in Argus but unlinked in Rave.",
       "discrepancyType": "Missing Source Document & eCRF Reconciliation Mismatch",
+      "fieldDifferences": [
+        { "field": "Death documentation", "rave": "DD-01 incomplete pending a supporting source document", "argus": "Medical narrative closed" },
+        { "field": "Case linkage", "rave": "Argus narrative unlinked", "argus": "Expedited safety report filed" }
+      ],
       "criticality": "Critical Path Blocker",
       "delayImpact": "0.9 days",
       "daysOpen": 9,

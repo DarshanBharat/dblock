@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from 'svelte';
+  import SaeReconciliationTable from './SaeReconciliationTable.svelte';
   import {
     ArrowLeft,
     AlertTriangle,
@@ -31,6 +33,14 @@
 
   // Site evidence views
   let activeSubTab: 'subjects' | 'queries' | 'sae' | 'lab' = 'subjects';
+  async function showSafetyReconciliation() {
+    activeSubTab = 'sae';
+    await tick();
+    if (activeSubTab !== 'sae') return;
+    const queue = document.getElementById('sae-reconciliation-queue');
+    queue?.focus({ preventScroll: true });
+    queue?.scrollIntoView({ block: 'start' });
+  }
   let queryFilter: 'all' | 'endpoint_critical' | 'non_critical' = 'all';
 
   // Site-specific filtered lists
@@ -224,6 +234,10 @@
           <button
             type="button"
             on:click={() => {
+              if (cat.targetTab === 'sae') {
+                showSafetyReconciliation();
+                return;
+              }
               activeSubTab = cat.targetTab;
               trackerFilter = cat.id === 'site_signoffs' ? 'signoff' : 'all';
             }}
@@ -268,7 +282,7 @@
     </button>
     <button
       type="button"
-      on:click={() => activeSubTab = 'sae'}
+      on:click={showSafetyReconciliation}
       class="db-segmented-btn {activeSubTab === 'sae' ? 'db-segmented-btn-active' : ''}"
     >
       SAE Discrepancies ({siteSaes.length})
@@ -493,37 +507,7 @@
   <!-- SUB-TAB 3: SAE RECONCILIATION DISCREPANCIES                               -->
   <!-- ========================================================================= -->
   {:else if activeSubTab === 'sae'}
-    <div class="space-y-4">
-      {#each siteSaes as sae}
-        <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
-            <div>
-              <div class="flex items-center space-x-2">
-                <span class="font-mono text-xs font-bold bg-slate-100 px-2 py-0.5 rounded text-slate-800">{sae.id}</span>
-                <span class="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">{sae.criticality}</span>
-                <span class="text-xs text-slate-500">Subject: <strong class="text-slate-900">{sae.subjectId}</strong></span>
-              </div>
-              <h4 class="text-base font-bold text-slate-900 mt-1">{sae.eventTerm}</h4>
-            </div>
-            <div class="text-right">
-              <div class="text-xs font-bold text-rose-600">Delay Impact: +{sae.delayImpact}</div>
-              <div class="text-[11px] text-slate-500">Open for {sae.daysOpen} days &middot; Refreshed 31 Oct 08:00 UTC</div>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div class="p-3 bg-slate-50 rounded border border-slate-200 space-y-1">
-              <span class="font-bold text-slate-700 uppercase text-[10px] block">Medidata Rave EDC Record:</span>
-              <p class="text-slate-800 font-medium">{sae.raveStatus}</p>
-            </div>
-            <div class="p-3 bg-amber-50/50 rounded border border-amber-200 space-y-1">
-              <span class="font-bold text-amber-800 uppercase text-[10px] block">Oracle Argus Safety Record:</span>
-              <p class="text-slate-800 font-medium">{sae.argusStatus}</p>
-            </div>
-          </div>
-        </div>
-      {/each}
-    </div>
+    <SaeReconciliationTable cases={siteSaes} siteScoped />
 
   <!-- ========================================================================= -->
   <!-- SUB-TAB 4: EXTERNAL LAB & VENDOR TRANSFERS                                -->

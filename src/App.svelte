@@ -96,7 +96,7 @@
     if (tab === 'digital_twin' && readinessCategory && !showWeightConfig) {
       await tick();
       if (activeTab !== 'digital_twin' || selectedReadinessCategory !== readinessCategory) return;
-      const details = document.getElementById('readiness-score-details');
+      const details = document.getElementById(readinessCategory === 'safety_recon' ? 'sae-reconciliation-queue' : 'readiness-score-details');
       details?.focus({ preventScroll: true });
       details?.scrollIntoView({ block: 'start' });
       return;
