@@ -46,6 +46,12 @@
     { id: 2, title: '2 new SAE discrepancies detected', time: '45m ago', type: 'critical', desc: 'Rave EDC vs Argus Safety discordance for Subj 104-003 and 104-012.' },
     { id: 3, title: 'Readiness model refreshed', time: '2h ago', type: 'info', desc: 'Study readiness updated to 72/100 (+5 points vs last week).' }
   ];
+
+  function switchVersion(target: 'v1' | 'V2') {
+    const base = window.location.pathname.replace(/\/(v1|v2|V1|V2)(\/.*)?$/, '/');
+    const normalizedBase = base.endsWith('/') ? base : `${base}/`;
+    window.location.href = `${normalizedBase}${target}/${window.location.hash}`;
+  }
 </script>
 
 <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
@@ -69,6 +75,24 @@
           Predict. Prioritise. Accelerate DBL.
         </small>
       </div>
+    </div>
+
+    <!-- Version Switcher (v1 = 2026-11-08, V2 = Latest) -->
+    <div class="hidden sm:inline-flex items-center rounded-lg bg-slate-100 p-0.5 border border-slate-200 shrink-0" role="group" aria-label="Version switcher">
+      <button
+        type="button"
+        on:click={() => switchVersion('v1')}
+        class="px-2 py-0.5 text-[11px] font-semibold rounded-md text-slate-600 hover:text-slate-900 hover:bg-white/70 transition-colors cursor-pointer"
+        title="Switch to v1 (Nov 8 snapshot)"
+      >
+        v1
+      </button>
+      <span
+        class="px-2 py-0.5 text-[11px] font-bold rounded-md bg-white text-blue-700 shadow-2xs"
+        title="Currently viewing V2 (Latest)"
+      >
+        V2
+      </span>
     </div>
 
     <!-- Center: Horizontal Navigation Tabs (matching all screenshots) -->
