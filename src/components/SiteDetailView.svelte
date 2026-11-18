@@ -29,14 +29,13 @@
   export let onSelectSubject: (subjectId: string) => void;
   export let onSelectTab: (tab: string) => void;
 
-  // Sub-tab state for Site page (Matches Seema's study-level drill-down + Clean-Patient Subject Tracker + Vendor Evidence)
-  let activeSubTab: 'subjects' | 'queries' | 'sae' | 'lab' | 'overview' = 'subjects';
+  // Site evidence views
+  let activeSubTab: 'subjects' | 'queries' | 'sae' | 'lab' = 'subjects';
   let queryFilter: 'all' | 'endpoint_critical' | 'non_critical' = 'all';
 
   // Site-specific filtered lists
   $: siteSubjects = subjects.filter(s => s.siteId === site.id);
   $: siteSaes = saeDiscrepancies.filter(s => s.siteId === site.id);
-  // Include all outstanding queries (both endpoint-critical and non-critical) per Image 10 Blue requirement
   $: siteQueries = [
     ...queriesDetail.filter(q => q.siteId === site.id),
     ...(site.id === '104'
@@ -77,10 +76,48 @@
   });
   $: siteLabs = labBatches.filter(l => l.sitesAffected.includes(site.id));
 
-  // Study-level readiness parameters applied to this site (Image 9 Blue requirement)
+  // Readiness and forecast impact use different denominators.
+  let trackerFilter: 'all' | 'forms' | 'endpoint' | 'queries' | 'signoff' = 'all';
+
+  function isPendingForm(form: { status: string }) {
+    return !['Clean', 'Verified', 'Signed', 'Complete'].includes(form.status);
+  }
+
+  function isSignoff(form: { name: string }) {
+    return /sign[- ]?off|signature/i.test(form.name);
+  }
+
+  $: trackerRows = siteSubjects.map(subject => {
+    const forms = subject.forms ?? [];
+    const evidence = siteQueries.filter(query => query.subjectId === subject.id);
+    const openForms = forms.filter(isPendingForm);
+    return {
+      subject,
+      openQueries: Math.max(subject.openQueries ?? 0, evidence.length),
+      endpointQueries: Math.max(subject.criticalQueries ?? 0, evidence.filter(query => query.isPrimaryEndpoint).length),
+      pendingForms: openForms.filter((form: { name: string }) => !isSignoff(form)),
+      signoff: openForms.find(isSignoff) ?? forms.find(isSignoff),
+      pendingSignoff: openForms.some(isSignoff),
+      verifiedForms: forms.filter((form: { status: string }) => form.status === 'Verified').length,
+      formCount: forms.filter((form: { name: string }) => !isSignoff(form)).length,
+      vendorItems: openForms.filter((form: { flag: string }) => form.flag === 'External Lab'),
+      hasSafetyDiscrepancy: subject.hasSaeDiscrepancy || siteSaes.some(record => record.subjectId === subject.id)
+    };
+  });
+
+  $: filteredSiteSubjects = trackerRows.filter(row => {
+    const search = subjectSearch.trim().toLowerCase();
+    if (![row.subject.id, row.subject.cohort].some(value => value.toLowerCase().includes(search))) return false;
+    if (trackerFilter === 'forms') return row.pendingForms.length > 0;
+    if (trackerFilter === 'endpoint') return row.endpointQueries > 0;
+    if (trackerFilter === 'queries') return row.openQueries > 0;
+    if (trackerFilter === 'signoff') return !!row.pendingSignoff;
+    return true;
+  }).sort((a, b) => b.endpointQueries - a.endpointQueries || b.openQueries - a.openQueries);
   $: siteSeemaCategories = [
     {
       id: 'edc_cleaning',
+      impact: null,
       label: 'EDC data cleaning (Entry & SDV/SDR)',
       pct: site.id === '104' ? 84 : 91,
       targetTab: 'subjects' as const,
@@ -88,6 +125,8 @@
     },
     {
       id: 'query_resolution',
+      impact: site.breakdown.ageingQueries,
+      driver: 'Ageing queries',
       label: 'Query resolution (All & Endpoint-Critical)',
       pct: site.id === '104' ? 68 : 74,
       targetTab: 'queries' as const,
@@ -95,6 +134,8 @@
     },
     {
       id: 'external_recon',
+      impact: site.breakdown.labTransferDelay,
+      driver: 'Laboratory transfer',
       label: 'External data reconciliation (Vendor)',
       pct: site.id === '104' ? 52 : 86,
       targetTab: 'lab' as const,
@@ -102,6 +143,7 @@
     },
     {
       id: 'medical_coding',
+      impact: null,
       label: 'Medical coding (MedDRA & WHODrug)',
       pct: site.id === '104' ? 88 : 92,
       targetTab: 'subjects' as const,
@@ -109,6 +151,8 @@
     },
     {
       id: 'site_signoffs',
+      impact: site.breakdown.signOffStatus,
+      driver: 'PI sign-off',
       label: 'Site sign-offs (PI e-Signatures)',
       pct: site.id === '104' ? 75 : 89,
       targetTab: 'subjects' as const,
@@ -116,6 +160,8 @@
     },
     {
       id: 'safety_recon',
+      impact: site.breakdown.safetyReconciliation,
+      driver: 'Safety reconciliation',
       label: 'Safety reconciliation (Rave vs Argus)',
       pct: site.id === '104' ? 55 : 100,
       targetTab: 'sae' as const,
@@ -123,13 +169,7 @@
     }
   ];
 
-  // Subject search
   let subjectSearch = '';
-  $: filteredSiteSubjects = siteSubjects.filter(s =>
-    s.id.toLowerCase().includes(subjectSearch.toLowerCase()) ||
-    s.initials.toLowerCase().includes(subjectSearch.toLowerCase()) ||
-    s.cohort.toLowerCase().includes(subjectSearch.toLowerCase())
-  );
 </script>
 
 <div class="space-y-6">
@@ -183,10 +223,10 @@
         </div>
 
         <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">
-          {site.name} &ndash; Site &amp; Subject Clean-Patient Tracker
+          {site.name}
         </h1>
         <p class="text-xs text-slate-600">
-          Every site drill-down parameter below matches the study-level Readiness categories. Click any parameter card or tab to inspect subject- and record-level evidence.
+          Select a readiness category to review the supporting records.
         </p>
       </div>
 
@@ -213,94 +253,42 @@
 
     </div>
 
-    <!-- Aligned Factor Contributions (35% / 30% / 22% / 13% with Derivation per Image 14 Blue) -->
-    <div>
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs mb-3">
-        <div>
-          <span class="font-bold text-slate-900">Why at Risk? &ndash; Aligned Factor Contributions (35% / 30% / 22% / 13%)</span>
-          <span class="text-slate-500 ml-1">&middot; Quantified contribution to Site {site.id}'s {site.forecastImpactDays}-day potential DBL impact</span>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div class="p-3 bg-rose-50/50 rounded-lg border border-rose-200">
-          <div class="flex items-center justify-between text-xs mb-1">
-            <span class="font-bold text-slate-900">Safety Reconciliation</span>
-            <span class="font-extrabold text-rose-700">{site.breakdown.safetyReconciliation}%</span>
-          </div>
-          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-            <div class="h-full bg-rose-600" style="width: {site.breakdown.safetyReconciliation}%"></div>
-          </div>
-          <div class="mt-1.5 text-[11px] text-slate-600">2 SAE freeze blockers (2.1d / 6.0d)</div>
-        </div>
-
-        <div class="p-3 bg-amber-50/50 rounded-lg border border-amber-200">
-          <div class="flex items-center justify-between text-xs mb-1">
-            <span class="font-bold text-slate-900">Laboratory Transfer</span>
-            <span class="font-extrabold text-amber-700">{site.breakdown.labTransferDelay}%</span>
-          </div>
-          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-            <div class="h-full bg-amber-600" style="width: {site.breakdown.labTransferDelay}%"></div>
-          </div>
-          <div class="mt-1.5 text-[11px] text-slate-600">ctDNA batch #LXB-8921 overdue 4d (1.8d / 6.0d)</div>
-        </div>
-
-        <div class="p-3 bg-orange-50/50 rounded-lg border border-orange-200">
-          <div class="flex items-center justify-between text-xs mb-1">
-            <span class="font-bold text-slate-900">Ageing Queries</span>
-            <span class="font-extrabold text-orange-700">{site.breakdown.ageingQueries}%</span>
-          </div>
-          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-            <div class="h-full bg-orange-600" style="width: {site.breakdown.ageingQueries}%"></div>
-          </div>
-          <div class="mt-1.5 text-[11px] text-slate-600">14 queries &gt;14d, 5 endpoint-crit (1.3d / 6.0d)</div>
-        </div>
-
-        <div class="p-3 bg-blue-50/50 rounded-lg border border-blue-200">
-          <div class="flex items-center justify-between text-xs mb-1">
-            <span class="font-bold text-slate-900">Sign-off Status</span>
-            <span class="font-extrabold text-blue-700">{site.breakdown.signOffStatus}%</span>
-          </div>
-          <div class="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-            <div class="h-full bg-blue-600" style="width: {site.breakdown.signOffStatus}%"></div>
-          </div>
-          <div class="mt-1.5 text-[11px] text-slate-600">12 PI signatures pending (0.8d / 6.0d)</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ======================================================================= -->
-    <!-- SITE DRILL-DOWN PARAMETERS MATCHING SEEMA'S STUDY-LEVEL CATEGORIES      -->
-    <!-- (Image 9 Blue Requirement: Click any category to drill down)            -->
-    <!-- ======================================================================= -->
-    <div class="pt-4 border-t border-slate-100">
-      <div class="flex items-center justify-between mb-2.5">
-        <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-          Site Readiness by Category (Matches Study-Level Drill-Down Parameters &ndash; Click to Inspect)
-        </span>
-      </div>
+    <section aria-labelledby="site-readiness-heading">
+      <h2 id="site-readiness-heading" class="text-sm font-extrabold text-slate-900">Site readiness &amp; lock risk</h2>
+      <p class="mt-1 mb-3 text-xs text-slate-500">Readiness shows progress within each category. Risk share shows each modeled driver's contribution to the {site.forecastImpactDays}-day forecast impact.</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
         {#each siteSeemaCategories as cat}
           <button
             type="button"
-            on:click={() => activeSubTab = cat.targetTab}
+            on:click={() => {
+              activeSubTab = cat.targetTab;
+              trackerFilter = cat.id === 'site_signoffs' ? 'signoff' : 'all';
+            }}
             class="p-3 rounded-xl border border-slate-200 hover:border-blue-400 bg-slate-50/60 hover:bg-blue-50/40 text-left transition-all cursor-pointer"
           >
             <div class="flex items-center justify-between font-bold text-slate-900">
               <span>{cat.label}</span>
-              <span class="font-extrabold {cat.pct < 70 ? 'text-rose-600' : cat.pct < 85 ? 'text-amber-600' : 'text-emerald-700'}">{cat.pct}%</span>
+              <span class="font-extrabold {cat.pct < 70 ? 'text-rose-600' : cat.pct < 85 ? 'text-amber-600' : 'text-emerald-700'}">{cat.pct}% ready</span>
             </div>
             <div class="w-full bg-slate-200 rounded-full h-1.5 my-1.5">
               <div class="h-full rounded-full {cat.pct < 70 ? 'bg-rose-500' : cat.pct < 85 ? 'bg-amber-500' : 'bg-emerald-500'}" style="width: {cat.pct}%"></div>
             </div>
-            <div class="text-[10px] text-slate-500 flex items-center justify-between">
+            {#if cat.impact != null}
+              <div class="mb-1 text-[11px] font-semibold text-amber-800">
+                {cat.driver} · {cat.impact}% risk share · {(site.forecastImpactDays * cat.impact / 100).toFixed(1)}d
+              </div>
+            {/if}
+            <div class="text-[10px] text-slate-500 flex items-center justify-between gap-2">
               <span>{cat.summary}</span>
               <span class="text-blue-600 font-bold">Inspect &rarr;</span>
             </div>
           </button>
         {/each}
       </div>
-    </div>
+      {#if site.breakdown.other > 0}
+        <p class="mt-2 text-xs text-slate-500">Other modeled drivers account for {site.breakdown.other}% of forecast impact.</p>
+      {/if}
+    </section>
   </div>
 
   <!-- ========================================================================= -->
@@ -310,12 +298,12 @@
     <nav class="flex space-x-5 text-xs font-bold overflow-x-auto">
       <button
         type="button"
-        on:click={() => activeSubTab = 'subjects'}
+        on:click={() => { activeSubTab = 'subjects'; trackerFilter = 'all'; }}
         class="py-3 border-b-2 transition-colors inline-flex items-center space-x-1.5 cursor-pointer {
           activeSubTab === 'subjects' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
         }"
       >
-        <span>Level 3: Subject Health View (Clean-Patient Tracker)</span>
+        <span>Clinical Patient Tracker</span>
         <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">{siteSubjects.length}</span>
       </button>
 
@@ -359,120 +347,102 @@
   <!-- ========================================================================= -->
   {#if activeSubTab === 'subjects'}
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h3 class="text-sm font-extrabold text-slate-900">
-            Level 3: Subject Health View (Clean-Patient Tracker) at {site.code}
-          </h3>
-          <p class="text-xs text-slate-500">
-            Shows subject cleanliness across Missing Pages, Queries (All vs Endpoint-Critical), SDV/SDR, PI Signature, SAE, Coding, and Vendor Items. Click any subject to inspect Level 4 eCRF records.
-          </p>
-        </div>
+      <div>
+        <h2 class="text-base font-extrabold text-slate-900">EDC data cleaning</h2>
+        <p class="mt-1 text-xs text-slate-500">Demo snapshot · {siteSubjects.length} subject records available for {site.code}. Select a subject to inspect eCRF evidence.</p>
+      </div>
 
+      <div class="flex flex-wrap items-center gap-2">
         <div class="relative">
           <Search class="w-3.5 h-3.5 text-slate-600 absolute left-2.5 top-2.5" />
           <input
-            type="text"
-            placeholder="Search subject ID or cohort..."
+            type="search"
+            aria-label="Search by subject ID or cohort"
+            placeholder="Subject ID or cohort"
             bind:value={subjectSearch}
-            class="pl-8 pr-3 py-1.5 text-xs bg-white border border-slate-200 rounded-md focus:outline-hidden focus:border-blue-500 w-52"
+            class="pl-8 pr-3 py-2 text-xs bg-white border border-slate-200 rounded-md w-52"
           />
         </div>
+        <select bind:value={trackerFilter} aria-label="Filter by cleaning task" class="rounded-md border border-slate-200 bg-white p-2 text-xs">
+          <option value="all">All cleaning tasks</option>
+          <option value="forms">Open eCRF items</option>
+          <option value="endpoint">Endpoint-critical queries</option>
+          <option value="queries">Any open query</option>
+          <option value="signoff">Pending PI sign-off</option>
+        </select>
+        <span class="text-xs text-slate-500" aria-live="polite">{filteredSiteSubjects.length} of {siteSubjects.length} subjects</span>
       </div>
 
-      <div class="overflow-x-auto">
-        <table class="min-w-full text-xs text-left divide-y divide-slate-200">
-          <thead class="bg-slate-50 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-            <tr>
-              <th class="py-2.5 px-3">Subject ID</th>
-              <th class="py-2.5 px-2 text-center">Queries (All / Endpoint-Crit)</th>
-              <th class="py-2.5 px-2 text-center">Missing Page / SDV</th>
-              <th class="py-2.5 px-2 text-center">PI Signature</th>
-              <th class="py-2.5 px-2 text-center">SAE Recon</th>
-              <th class="py-2.5 px-2 text-center">Coding / Vendor</th>
-              <th class="py-2.5 px-2 text-center">Clean Status</th>
-              <th class="py-2.5 px-3 text-right">Level 4 Record View</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100 font-medium">
-            {#each filteredSiteSubjects as subj}
-              <tr class="hover:bg-slate-50 transition-colors {subj.riskLevel === 'Critical' ? 'bg-rose-50/20' : ''}">
-                <td class="py-3 px-3">
-                  <div class="font-bold text-slate-900">{subj.id} ({subj.initials})</div>
-                  <div class="text-[10px] text-slate-500">{subj.cohort} &middot; {subj.status}</div>
-                </td>
-                <!-- Queries (All outstanding vs Endpoint-Critical flagged separately) -->
-                <td class="py-3 px-2 text-center">
-                  <span class="font-bold text-slate-900">{subj.openQueries} open</span>
-                  {#if subj.criticalQueries > 0}
-                    <span class="text-[10px] text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200 font-bold block mt-0.5">
-                      {subj.criticalQueries} endpoint-critical
-                    </span>
-                  {:else}
-                    <span class="text-[10px] text-slate-500 block mt-0.5">
-                      0 endpoint-critical ({subj.openQueries} routine)
-                    </span>
-                  {/if}
-                </td>
-                <!-- Missing Page / SDV -->
-                <td class="py-3 px-2 text-center">
-                  {#if subj.id === 'SUBJ-104-012'}
-                    <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold">Form DD-01 Missing</span>
-                  {:else if subj.criticalQueries > 0}
-                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">SDV Pending</span>
-                  {:else}
-                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">100% Verified</span>
-                  {/if}
-                </td>
-                <!-- PI Signature -->
-                <td class="py-3 px-2 text-center">
-                  {#if subj.riskLevel === 'Critical' || subj.riskLevel === 'High'}
-                    <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">Pending PI Sign</span>
-                  {:else}
-                    <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[10px] font-bold">Signed</span>
-                  {/if}
-                </td>
-                <!-- SAE Recon -->
-                <td class="py-3 px-2 text-center">
-                  {#if subj.hasSaeDiscrepancy}
-                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
-                      SAE Discrepant
-                    </span>
-                  {:else}
-                    <span class="text-emerald-700 font-bold text-[10px]">Clean</span>
-                  {/if}
-                </td>
-                <!-- Coding / Vendor -->
-                <td class="py-3 px-2 text-center">
-                  {#if subj.id === 'SUBJ-104-019'}
-                    <span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 text-[10px] font-bold">Lab Batch #LXB-8921</span>
-                  {:else}
-                    <span class="text-emerald-700 font-bold text-[10px]">Reconciled</span>
-                  {/if}
-                </td>
-                <!-- Clean Status -->
-                <td class="py-3 px-2 text-center">
-                  <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold {
-                    subj.riskLevel === 'Critical' ? 'bg-rose-50 text-rose-700 border border-rose-200' : subj.riskLevel === 'High' ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                  }">
-                    {subj.riskLevel === 'Low' ? 'Non-Critical Only' : `${subj.riskLevel} Blocker`}
-                  </span>
-                </td>
-                <td class="py-3 px-3 text-right">
-                  <button
-                    type="button"
-                    on:click={() => onSelectSubject(subj.id)}
-                    class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200 cursor-pointer"
-                  >
-                    <span>Inspect Subject</span>
-                    <ChevronRight class="w-3 h-3 ml-0.5" />
-                  </button>
-                </td>
+      {#if filteredSiteSubjects.length}
+        <div class="overflow-x-auto">
+          <table class="min-w-full text-xs text-left divide-y divide-slate-200">
+            <thead class="bg-slate-50 text-slate-600 font-bold">
+              <tr>
+                <th scope="col" class="p-3">Subject</th>
+                <th scope="col" class="p-3">Open queries</th>
+                <th scope="col" class="p-3">eCRF cleaning &amp; verification</th>
+                <th scope="col" class="p-3">PI sign-off</th>
+                <th scope="col" class="p-3">Reconciliation</th>
+                <th scope="col" class="p-3">Records</th>
               </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody class="divide-y divide-slate-100 align-top">
+              {#each filteredSiteSubjects as row (row.subject.id)}
+                <tr class="hover:bg-slate-50">
+                  <th scope="row" class="p-3 font-semibold text-slate-900">
+                    {row.subject.id}
+                    <span class="block max-w-48 font-normal text-slate-500">{row.subject.cohort}</span>
+                  </th>
+                  <td class="p-3">
+                    <span class="font-semibold">{row.openQueries} open</span>
+                    {#if row.endpointQueries}
+                      <span class="block font-bold text-rose-700">{row.endpointQueries} endpoint-critical</span>
+                    {/if}
+                  </td>
+                  <td class="p-3">
+                    {#if row.verifiedForms}
+                      <span class="mb-1 block text-slate-600">{row.verifiedForms} of {row.formCount} listed forms marked verified</span>
+                    {/if}
+                    {#each row.pendingForms as form}
+                      <div class="mb-1">
+                        <span class="font-semibold">{form.name}</span>
+                        <span class="block text-amber-800">{form.status}</span>
+                      </div>
+                    {:else}
+                      <span class="text-slate-500">No open items shown</span>
+                    {/each}
+                  </td>
+                  <td class="p-3">{row.signoff?.status ?? 'Status unavailable'}</td>
+                  <td class="p-3">
+                    {#if row.hasSafetyDiscrepancy}
+                      <span class="block font-semibold text-rose-700">SAE discrepancy</span>
+                    {/if}
+                    {#each row.vendorItems as form}
+                      <span class="block text-amber-800">{form.status}</span>
+                    {/each}
+                    {#if !row.hasSafetyDiscrepancy && !row.vendorItems.length}
+                      <span class="text-slate-500">No linked discrepancy shown</span>
+                    {/if}
+                  </td>
+                  <td class="p-3">
+                    <button
+                      type="button"
+                      on:click={() => onSelectSubject(row.subject.id)}
+                      class="inline-flex items-center whitespace-nowrap rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5 font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                    >
+                      Inspect eCRF <ChevronRight class="ml-0.5 size-3" />
+                    </button>
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+      {:else}
+        <p class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
+          {siteSubjects.length ? 'No subjects match the current search and filter.' : 'No subject records are available for this site in the demo snapshot.'}
+        </p>
+      {/if}
     </div>
 
   <!-- ========================================================================= -->
