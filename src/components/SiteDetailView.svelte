@@ -77,7 +77,7 @@
   $: siteLabs = labBatches.filter(l => l.sitesAffected.includes(site.id));
 
   // Readiness and forecast impact use different denominators.
-  let trackerFilter: 'all' | 'forms' | 'endpoint' | 'queries' | 'signoff' = 'all';
+  let trackerFilter: 'all' | 'open' | 'forms' | 'endpoint' | 'queries' | 'signoff' = 'all';
 
   function isPendingForm(form: { status: string }) {
     return !['Clean', 'Verified', 'Signed', 'Complete'].includes(form.status);
@@ -91,9 +91,11 @@
     const forms = subject.forms ?? [];
     const evidence = siteQueries.filter(query => query.subjectId === subject.id);
     const openForms = forms.filter(isPendingForm);
+    const openQueries = Math.max(subject.openQueries ?? 0, evidence.length);
+    const hasSafetyDiscrepancy = subject.hasSaeDiscrepancy || siteSaes.some(record => record.subjectId === subject.id);
     return {
       subject,
-      openQueries: Math.max(subject.openQueries ?? 0, evidence.length),
+      openQueries,
       endpointQueries: Math.max(subject.criticalQueries ?? 0, evidence.filter(query => query.isPrimaryEndpoint).length),
       pendingForms: openForms.filter((form: { name: string }) => !isSignoff(form)),
       signoff: openForms.find(isSignoff) ?? forms.find(isSignoff),
@@ -101,13 +103,15 @@
       verifiedForms: forms.filter((form: { status: string }) => form.status === 'Verified').length,
       formCount: forms.filter((form: { name: string }) => !isSignoff(form)).length,
       vendorItems: openForms.filter((form: { flag: string }) => form.flag === 'External Lab'),
-      hasSafetyDiscrepancy: subject.hasSaeDiscrepancy || siteSaes.some(record => record.subjectId === subject.id)
+      hasSafetyDiscrepancy,
+      hasOpenWork: openQueries > 0 || openForms.length > 0 || hasSafetyDiscrepancy
     };
   });
 
   $: filteredSiteSubjects = trackerRows.filter(row => {
     const search = subjectSearch.trim().toLowerCase();
     if (![row.subject.id, row.subject.cohort].some(value => value.toLowerCase().includes(search))) return false;
+    if (trackerFilter === 'open') return row.hasOpenWork;
     if (trackerFilter === 'forms') return row.pendingForms.length > 0;
     if (trackerFilter === 'endpoint') return row.endpointQueries > 0;
     if (trackerFilter === 'queries') return row.openQueries > 0;
@@ -303,7 +307,7 @@
           activeSubTab === 'subjects' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
         }"
       >
-        <span>Clinical Patient Tracker</span>
+        <span>Clean Patient Tracker</span>
         <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-blue-100 text-blue-800">{siteSubjects.length}</span>
       </button>
 
@@ -348,8 +352,8 @@
   {#if activeSubTab === 'subjects'}
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div>
-        <h2 class="text-base font-extrabold text-slate-900">EDC data cleaning</h2>
-        <p class="mt-1 text-xs text-slate-500">Demo snapshot · {siteSubjects.length} subject records available for {site.code}. Select a subject to inspect eCRF evidence.</p>
+        <h2 class="text-base font-extrabold text-slate-900">Clean Patient Tracker</h2>
+        <p class="mt-1 text-xs text-slate-500">EDC data cleaning · Demo snapshot · {siteSubjects.length} subject records for {site.code}. Clean status requires complete EDC evidence.</p>
       </div>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -365,6 +369,7 @@
         </div>
         <select bind:value={trackerFilter} aria-label="Filter by cleaning task" class="rounded-md border border-slate-200 bg-white p-2 text-xs">
           <option value="all">All cleaning tasks</option>
+          <option value="open">Subjects with open work</option>
           <option value="forms">Open eCRF items</option>
           <option value="endpoint">Endpoint-critical queries</option>
           <option value="queries">Any open query</option>
@@ -379,6 +384,7 @@
             <thead class="bg-slate-50 text-slate-600 font-bold">
               <tr>
                 <th scope="col" class="p-3">Subject</th>
+                <th scope="col" class="p-3">Cleaning status</th>
                 <th scope="col" class="p-3">Open queries</th>
                 <th scope="col" class="p-3">eCRF cleaning &amp; verification</th>
                 <th scope="col" class="p-3">PI sign-off</th>
@@ -393,6 +399,11 @@
                     {row.subject.id}
                     <span class="block max-w-48 font-normal text-slate-500">{row.subject.cohort}</span>
                   </th>
+                  <td class="p-3">
+                    <span class="inline-block rounded px-2 py-1 font-semibold {row.hasOpenWork ? 'bg-amber-50 text-amber-800' : 'bg-slate-100 text-slate-700'}">
+                      {row.hasOpenWork ? 'Open cleaning items' : 'Clean status unverified'}
+                    </span>
+                  </td>
                   <td class="p-3">
                     <span class="font-semibold">{row.openQueries} open</span>
                     {#if row.endpointQueries}
