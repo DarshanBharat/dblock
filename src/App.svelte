@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import dblockData from './data/dblock_data.json';
   import { demoSubjects, demoQueries, additionalSnapshotQueries, supplementSnapshotSubject } from './data/cleanPatientDemo';
   import Header from './components/Header.svelte';
@@ -82,18 +82,24 @@
     return () => window.removeEventListener('hashchange', applyHash);
   });
 
-  function handleSelectTab(tab: string, readinessCategory?: string, showWeightConfig?: boolean) {
+  async function handleSelectTab(tab: string, readinessCategory?: string, showWeightConfig?: boolean) {
     activeTab = tab;
-    if (readinessCategory !== undefined) {
-      selectedReadinessCategory = readinessCategory;
-    }
-    if (showWeightConfig !== undefined) {
-      openWeightConfigOnLoad = showWeightConfig;
+    if (tab === 'digital_twin') {
+      selectedReadinessCategory = readinessCategory ?? null;
+      openWeightConfigOnLoad = showWeightConfig ?? false;
     }
     try { window.location.hash = tab; } catch (e) {}
     if (tab === 'risk_matrix') {
       selectedSiteId = null;
       selectedSubjectId = null;
+    }
+    if (tab === 'digital_twin' && readinessCategory && !showWeightConfig) {
+      await tick();
+      if (activeTab !== 'digital_twin' || selectedReadinessCategory !== readinessCategory) return;
+      const details = document.getElementById('readiness-score-details');
+      details?.focus({ preventScroll: true });
+      details?.scrollIntoView({ block: 'start' });
+      return;
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }

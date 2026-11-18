@@ -202,7 +202,6 @@
     ? leadingDelayDrivers
     : leadingDelayDrivers.filter(d => d.roles.includes(activeRole));
 
-  const weeks = ['W-4', 'W-3', 'W-2', 'W-1', 'Current (W0)'];
 </script>
 
 <div class="space-y-6">
@@ -364,173 +363,71 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MIDDLE ROW: DOMAIN READINESS & 4-WEEK TRAJECTORY                          -->
-  <!-- ========================================================================= -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-    
-    <!-- Left 7 Cols: Readiness by Domain -->
-    <div class="lg:col-span-7 db-card p-6 flex flex-col justify-between">
-      <div>
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
-          <div>
-            <h3 class="text-base font-semibold text-slate-900">Readiness by Clinical Domain</h3>
-            <p class="text-xs text-slate-500 mt-0.5">
-              Select any domain to inspect form-level completion and open query records.
-            </p>
-          </div>
+  <!-- Domain readiness -->
+  <div class="db-card p-6 flex flex-col justify-between">
+    <div>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+        <div>
+          <h3 class="text-base font-semibold text-slate-900">Readiness by Clinical Domain</h3>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Select any domain to inspect form-level completion and open query records.
+          </p>
+        </div>
 
+        <button
+          type="button"
+          on:click={() => onSelectTab('digital_twin', 'edc_cleaning', true)}
+          class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <Sliders size={13} />
+          <span>Configure Weights</span>
+        </button>
+      </div>
+
+      <div class="space-y-2.5 mt-4">
+        {#each filteredCategoryBars as cat}
           <button
             type="button"
-            on:click={() => onSelectTab('digital_twin', 'edc_cleaning', true)}
-            class="shrink-0 px-3 py-1.5 rounded-xl bg-slate-100/80 hover:bg-slate-200/70 text-slate-700 font-medium text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+            on:click={() => onSelectTab('digital_twin', cat.id, false)}
+            class="w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
           >
-            <Sliders size={13} />
-            <span>Configure Weights</span>
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
+                {cat.label}
+              </span>
+              <span class="font-semibold num-tabular {cat.pct < 70 ? 'text-rose-600' : cat.pct < 80 ? 'text-amber-600' : 'text-slate-900'}">
+                {cat.pct}%
+              </span>
+            </div>
+            <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
+              <div
+                class="h-full rounded-full transition-all duration-500 {cat.pct < 70 ? 'bg-rose-500' : cat.pct < 80 ? 'bg-amber-500' : 'bg-emerald-500'}"
+                style="width: {cat.pct}%"
+              ></div>
+            </div>
+            <div class="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
+              <span>{cat.summary}</span>
+              <ChevronRight size={13} class="text-slate-300 group-hover:text-slate-600 shrink-0" />
+            </div>
           </button>
-        </div>
-
-        <div class="space-y-2.5 mt-4">
-          {#each filteredCategoryBars as cat}
-            <button
-              type="button"
-              on:click={() => onSelectTab('digital_twin', cat.id, false)}
-              class="w-full text-left p-3 rounded-xl hover:bg-slate-50 transition-colors group cursor-pointer"
-            >
-              <div class="flex items-center justify-between text-xs">
-                <span class="font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
-                  {cat.label}
-                </span>
-                <span class="font-semibold num-tabular {cat.pct < 70 ? 'text-rose-600' : cat.pct < 80 ? 'text-amber-600' : 'text-slate-900'}">
-                  {cat.pct}%
-                </span>
-              </div>
-              <div class="w-full bg-slate-100 rounded-full h-1.5 mt-2 overflow-hidden">
-                <div
-                  class="h-full rounded-full transition-all duration-500 {cat.pct < 70 ? 'bg-rose-500' : cat.pct < 80 ? 'bg-amber-500' : 'bg-emerald-500'}"
-                  style="width: {cat.pct}%"
-                ></div>
-              </div>
-              <div class="text-xs text-slate-500 mt-1.5 flex items-center justify-between">
-                <span>{cat.summary}</span>
-                <ChevronRight size={13} class="text-slate-300 group-hover:text-slate-600 shrink-0" />
-              </div>
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="mt-5 pt-4 border-t border-slate-100 grid grid-cols-3 gap-4 text-xs">
-        <div>
-          <span class="text-[11px] text-slate-400 block">LSLV Cut-Off</span>
-          <strong class="text-sm font-semibold text-slate-900 num-tabular">30 Nov 2026</strong>
-        </div>
-        <div>
-          <span class="text-[11px] text-slate-400 block">Target DBL</span>
-          <strong class="text-sm font-semibold text-slate-900 num-tabular">15 Dec 2026</strong>
-        </div>
-        <div>
-          <span class="text-[11px] text-slate-400 block">Forecast DBL</span>
-          <strong class="text-sm font-semibold text-rose-600 num-tabular">21 Dec 2026 (+6d)</strong>
-        </div>
+        {/each}
       </div>
     </div>
 
-    <!-- Right 5 Cols: 4-Week Readiness & Variance Trajectory -->
-    <div class="lg:col-span-5 db-card p-6 flex flex-col justify-between space-y-4">
+    <div class="mt-5 pt-4 border-t border-slate-100 grid grid-cols-3 gap-4 text-xs">
       <div>
-        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
-          <div>
-            <h3 class="text-base font-semibold text-slate-900">Velocity &amp; Schedule Trajectory</h3>
-            <p class="text-xs text-slate-500 mt-0.5">Weekly readiness progression vs 15 Dec lock target</p>
-          </div>
-          <div class="flex items-center gap-3 text-[11px] font-medium">
-            <span class="flex items-center gap-1.5 text-slate-700">
-              <span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>
-              <span>Readiness</span>
-            </span>
-            <span class="flex items-center gap-1.5 text-slate-700">
-              <span class="w-2 h-2 rounded-full bg-rose-500 inline-block"></span>
-              <span>Slip (Days)</span>
-            </span>
-          </div>
-        </div>
-
-        <div class="relative w-full h-44 pt-4">
-          <svg class="w-full h-full overflow-visible" viewBox="0 0 280 120">
-            <line x1="24" y1="15" x2="265" y2="15" stroke="#f1f5f9" />
-            <line x1="24" y1="50" x2="265" y2="50" stroke="#f1f5f9" />
-            <line x1="24" y1="85" x2="265" y2="85" stroke="#f1f5f9" />
-            <line x1="24" y1="110" x2="265" y2="110" stroke="#e2e8f0" />
-
-            <text x="2" y="18" font-size="8" fill="#94a3b8">100%</text>
-            <text x="2" y="53" font-size="8" fill="#94a3b8">75%</text>
-            <text x="2" y="88" font-size="8" fill="#94a3b8">50%</text>
-
-            <text x="268" y="18" font-size="8" fill="#94a3b8">+12d</text>
-            <text x="268" y="53" font-size="8" fill="#94a3b8">+8d</text>
-            <text x="268" y="88" font-size="8" fill="#94a3b8">+4d</text>
-
-            <polyline
-              fill="none"
-              stroke="#2563eb"
-              stroke-width="2.2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              points="38,58 92,53 146,48 200,45 254,43"
-            />
-            <polyline
-              fill="none"
-              stroke="#f43f5e"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-dasharray="3 3"
-              points="38,65 92,78 146,85 200,92 254,76"
-            />
-
-            {#each [58, 53, 48, 45, 43] as y, i}
-              <circle cx={38 + i * 54} cy={y} r={i === 4 ? 3.8 : 2.8} class="fill-blue-600 stroke-white stroke-2" />
-            {/each}
-            {#each [65, 78, 85, 92, 76] as y, i}
-              <circle cx={38 + i * 54} cy={y} r={i === 4 ? 3.8 : 2.8} class="fill-rose-500 stroke-white stroke-2" />
-            {/each}
-
-            <text x="240" y="35" font-size="9" font-weight="600" fill="#1e293b">72%</text>
-            <text x="242" y="69" font-size="9" font-weight="600" fill="#e11d48">+6d</text>
-          </svg>
-        </div>
-
-        <div class="flex justify-between px-4 text-[11px] text-slate-400 font-medium num-tabular">
-          {#each weeks as w}
-            <span>{w}</span>
-          {/each}
-        </div>
+        <span class="text-[11px] text-slate-400 block">LSLV Cut-Off</span>
+        <strong class="text-sm font-semibold text-slate-900 num-tabular">30 Nov 2026</strong>
       </div>
-
-      <!-- Sequential Hard Gate Summary -->
-      <div class="pt-4 border-t border-slate-100 space-y-2.5 text-xs">
-        <div class="text-xs font-semibold text-slate-800">Critical-Path Gate Sequence</div>
-        <div class="space-y-1.5">
-          <div class="flex items-center justify-between py-1.5 px-3 rounded-lg bg-slate-50/80">
-            <span class="text-slate-600">1. LSLV Clinical Cut-Off</span>
-            <span class="font-mono font-medium text-emerald-700 num-tabular">30 Nov · On Track</span>
-          </div>
-          <div class="flex items-center justify-between py-1.5 px-3 rounded-lg bg-slate-50/80">
-            <span class="text-slate-600">2. Vendor Data Transfer Lock</span>
-            <span class="font-mono font-medium text-rose-600 num-tabular">05 Dec · 1 Batch Overdue</span>
-          </div>
-          <div class="flex items-center justify-between py-1.5 px-3 rounded-lg bg-slate-50/80">
-            <span class="text-slate-600">3. Pharmacovigilance Safety Freeze</span>
-            <span class="font-mono font-medium text-rose-600 num-tabular">08 Dec · 2 SAE Open</span>
-          </div>
-          <div class="flex items-center justify-between py-1.5 px-3 rounded-lg bg-slate-50/80">
-            <span class="text-slate-600">4. PI 21 CFR Part 11 Sign-off &amp; DBL</span>
-            <span class="font-mono font-semibold text-slate-900 num-tabular">15 Dec Target → 21 Dec</span>
-          </div>
-        </div>
+      <div>
+        <span class="text-[11px] text-slate-400 block">Target DBL</span>
+        <strong class="text-sm font-semibold text-slate-900 num-tabular">15 Dec 2026</strong>
+      </div>
+      <div>
+        <span class="text-[11px] text-slate-400 block">Forecast DBL</span>
+        <strong class="text-sm font-semibold text-rose-600 num-tabular">21 Dec 2026 (+6d)</strong>
       </div>
     </div>
-
   </div>
 
   <!-- ========================================================================= -->

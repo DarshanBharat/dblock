@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import {
     Activity,
     AlertTriangle,
@@ -33,19 +34,23 @@
   export let onSelectTab: (tab: string) => void;
   export let onSelectSite: (siteId: string) => void;
 
-  let activeParamId = selectedReadinessCategory || 'edc_cleaning';
-  $: if (selectedReadinessCategory) {
-    activeParamId = selectedReadinessCategory;
-  }
+  const roleParameters: Record<string, string> = {
+    safety: 'safety_recon',
+    vendor: 'external_recon',
+    cra_site: 'site_signoffs',
+    cdm: 'query_resolution'
+  };
 
-  $: if (activeRole === 'safety') {
-    activeParamId = 'safety_recon';
-  } else if (activeRole === 'vendor') {
-    activeParamId = 'external_recon';
-  } else if (activeRole === 'cra_site') {
-    activeParamId = 'site_signoffs';
-  } else if (activeRole === 'cdm') {
-    activeParamId = 'query_resolution';
+  let activeParamId = 'edc_cleaning';
+  $: activeParamId = selectedReadinessCategory ?? roleParameters[activeRole] ?? 'edc_cleaning';
+
+  let scoreDetails: HTMLDivElement;
+
+  async function inspectParameter(id: string) {
+    activeParamId = id;
+    await tick();
+    scoreDetails.focus({ preventScroll: true });
+    scoreDetails.scrollIntoView({ block: 'start' });
   }
 
   // Selected week index for temporal scrubber (0 = W-8 ... 2 = W-4 ... 6 = W0 Current)
@@ -685,7 +690,8 @@
         {#each readinessParameters as param}
           <button
             type="button"
-            on:click={() => activeParamId = param.id}
+            on:click={() => inspectParameter(param.id)}
+            aria-pressed={activeParamId === param.id}
             class="w-full text-left p-3.5 rounded-xl border transition-all cursor-pointer {activeParamId === param.id ? 'bg-blue-50/50 border-blue-500 ring-1 ring-blue-200' : 'bg-white border-slate-200/80 hover:border-slate-300'}"
           >
             <div class="flex items-center justify-between text-xs font-semibold text-slate-900">
@@ -716,7 +722,7 @@
 
     <div class="lg:col-span-7 db-card p-6 space-y-5">
       
-      <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
+      <div id="readiness-score-details" bind:this={scoreDetails} tabindex="-1" role="region" aria-labelledby="readiness-score-title" class="scroll-mt-32 p-4 rounded-xl bg-slate-50 border border-slate-200/80 space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">
             {activeParam.shortLabel} &middot; {activeParam.weeklyDelta}
@@ -725,7 +731,7 @@
             {activeParam.pct}% Score
           </span>
         </div>
-        <h3 class="text-base font-bold text-slate-900">{activeParam.label}</h3>
+        <h3 id="readiness-score-title" class="text-base font-bold text-slate-900">{activeParam.label}</h3>
         <div class="p-2.5 rounded-lg bg-white border border-slate-200/70 text-xs font-mono text-slate-800">
           {activeParam.formula}
         </div>
