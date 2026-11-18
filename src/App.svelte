@@ -3,7 +3,6 @@
   import dblockData from './data/dblock_data.json';
   import { demoSubjects, demoQueries, additionalSnapshotQueries, supplementSnapshotSubject } from './data/cleanPatientDemo';
   import Header from './components/Header.svelte';
-  import TrustCentreModal from './components/TrustCentreModal.svelte';
   import DataHealthModal from './components/DataHealthModal.svelte';
   import PortfolioView from './components/PortfolioView.svelte';
   import ExecutiveCommandCentre from './components/ExecutiveCommandCentre.svelte';
@@ -38,7 +37,6 @@
   let openWeightConfigOnLoad = false;
 
   // Modals state
-  let showTrustCentre = false;
   let showDataHealth = false;
 
   // Selected Study ID (default: CA-209-301)
@@ -59,8 +57,7 @@
     interventions,
     forecastScenarios,
     closedLoopOutcomes,
-    dataHealth,
-    governance
+    dataHealth
   } = dblockData as any;
 
   const trackerSubjects = [...subjects.map(supplementSnapshotSubject), ...demoSubjects];
@@ -204,12 +201,8 @@
   
   <!-- Unified Top Header Bar -->
   <Header
-    {study}
     {activeTab}
     onSelectTab={handleSelectTab}
-    onOpenTrustCentre={() => showTrustCentre = true}
-    onOpenDataHealth={() => showDataHealth = true}
-    onResetDemo={() => resetDemo(actions)}
   />
 
   <!-- Main View Container -->
@@ -479,13 +472,6 @@
         </button>
         <span>&middot;</span>
         <button
-          on:click={() => showTrustCentre = true}
-          class="hover:underline font-medium text-slate-600"
-        >
-          Trust Centre: How DBLock AI reached this recommendation
-        </button>
-        <span>&middot;</span>
-        <button
           on:click={() => showDataHealth = true}
           class="hover:underline font-medium text-slate-600"
         >
@@ -498,13 +484,6 @@
       </div>
     </div>
   </footer>
-
-  <!-- Trust Centre Modal -->
-  <TrustCentreModal
-    show={showTrustCentre}
-    onClose={() => showTrustCentre = false}
-    {governance}
-  />
 
   <!-- Data Health Modal -->
   <DataHealthModal

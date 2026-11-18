@@ -1,33 +1,18 @@
 <script lang="ts">
+  import tcsLogo from '../assets/tcs-logo.svg';
   import {
-    Database,
     Search,
-    Bell,
-    ShieldCheck,
-    Activity,
-    Layers,
     LayoutDashboard,
     MapPin,
     CheckSquare,
     CheckCircle2,
     Sliders,
-    TrendingUp,
-    FolderKanban,
-    ChevronDown,
-    X,
-    ExternalLink,
-    AlertTriangle,
-    RotateCcw
+    FolderKanban
   } from '@lucide/svelte';
 
-  export let study: any;
   export let activeTab: string;
   export let onSelectTab: (tab: string) => void;
-  export let onOpenTrustCentre: () => void;
-  export let onOpenDataHealth: () => void;
-  export let onResetDemo: () => void;
 
-  let showNotifications = false;
   let showSearchInput = false;
   let searchHeader = '';
 
@@ -38,12 +23,6 @@
     { id: 'digital_twin', label: 'Readiness', icon: CheckSquare },
     { id: 'action_workbench', label: 'Actions', icon: CheckCircle2 },
     { id: 'simulator', label: 'Forecast & Sim', icon: Sliders, matchIds: ['simulator', 'forecast_scenarios'] }
-  ];
-
-  const notifications = [
-    { id: 1, title: 'Overdue LabCorp ctDNA feed', time: '10m ago', type: 'critical', desc: 'Batch #LXB-8921 checksum failure reported at Site 104.' },
-    { id: 2, title: '2 new SAE discrepancies detected', time: '45m ago', type: 'critical', desc: 'Rave EDC vs Argus Safety discordance for Subj 104-003 and 104-012.' },
-    { id: 3, title: 'Readiness model refreshed', time: '2h ago', type: 'info', desc: 'Study readiness updated to 72/100 (+5 points vs last week).' }
   ];
 
   const quickLinks = [
@@ -80,9 +59,7 @@
         class="flex items-center gap-2.5 cursor-pointer text-left group"
         on:click={() => onSelectTab('portfolio')}
       >
-        <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs group-hover:bg-blue-700 transition-colors">
-          <Database size={17} class="stroke-[2.2]" />
-        </div>
+        <img src={tcsLogo} alt="Tata Consultancy Services" width="104" height="35" class="w-[88px] sm:w-[104px] h-auto rounded-md bg-slate-950" />
         <div>
           <strong class="text-[15px] font-bold tracking-tight text-slate-900 leading-none block font-display">
             DBLock <span class="text-blue-600">AI</span>
@@ -131,33 +108,11 @@
     <!-- Right: Global Utilities & Profile -->
     <div class="flex items-center gap-2 shrink-0">
 
-      <!-- Trust Centre -->
-      <button
-        type="button"
-        on:click={onOpenTrustCentre}
-        class="hidden lg:inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
-        title="Trust Centre: How DBLock AI reached this recommendation"
-      >
-        <ShieldCheck size={14} class="text-blue-600" />
-        <span>Trust Centre</span>
-      </button>
-
-      <!-- Data Feed Health Pill -->
-      <button
-        type="button"
-        on:click={onOpenDataHealth}
-        class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 hover:bg-amber-100/80 transition-colors cursor-pointer"
-        title="LabCorp Central Lab feed is 4 days overdue"
-      >
-        <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-        <span>1 Feed Alert</span>
-      </button>
-
       <!-- Quick Jump Search -->
       <div class="relative">
         <button
           type="button"
-          on:click={() => { showSearchInput = !showSearchInput; showNotifications = false; }}
+          on:click={() => showSearchInput = !showSearchInput}
           class="p-2 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
           aria-label="Quick search"
         >
@@ -183,50 +138,6 @@
                   <div class="text-[11px] text-slate-500">{ql.sub}</div>
                 </button>
               {/each}
-            </div>
-          </div>
-        {/if}
-      </div>
-
-      <!-- Notifications -->
-      <div class="relative">
-        <button
-          type="button"
-          on:click={() => { showNotifications = !showNotifications; showSearchInput = false; }}
-          class="relative p-2 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-          aria-label="Notifications"
-        >
-          <Bell size={16} />
-          <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>
-        </button>
-
-        {#if showNotifications}
-          <div class="absolute right-0 top-11 w-80 bg-white border border-slate-200 rounded-xl shadow-xl p-3 z-50 space-y-2.5">
-            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-              <span class="text-xs font-bold text-slate-900">Clinical Alerts</span>
-              <span class="text-[10px] text-blue-700 font-semibold bg-blue-50 px-2 py-0.5 rounded-full">3 New</span>
-            </div>
-
-            <div class="space-y-1.5 max-h-72 overflow-y-auto text-xs">
-              {#each notifications as notif}
-                <div class="p-2.5 rounded-lg bg-slate-50/80 hover:bg-blue-50/50 transition-colors border border-slate-100">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-semibold text-slate-900">{notif.title}</span>
-                    <span class="text-[10px] text-slate-400 shrink-0">{notif.time}</span>
-                  </div>
-                  <p class="text-[11px] text-slate-600 mt-0.5 leading-snug">{notif.desc}</p>
-                </div>
-              {/each}
-            </div>
-
-            <div class="pt-2 border-t border-slate-100 text-center">
-              <button
-                type="button"
-                on:click={() => { showNotifications = false; onSelectTab('action_workbench'); }}
-                class="text-xs text-blue-600 font-semibold hover:underline cursor-pointer"
-              >
-                Review in Action Workbench &rarr;
-              </button>
             </div>
           </div>
         {/if}
