@@ -33,13 +33,13 @@
 
   // Site evidence views
   let activeSubTab: 'subjects' | 'queries' | 'sae' | 'lab' = 'subjects';
-  async function showSafetyReconciliation() {
-    activeSubTab = 'sae';
+  async function jumpToEvidence(tab: 'subjects' | 'sae') {
+    activeSubTab = tab;
     await tick();
-    if (activeSubTab !== 'sae') return;
-    const queue = document.getElementById('sae-reconciliation-queue');
-    queue?.focus({ preventScroll: true });
-    queue?.scrollIntoView({ block: 'start' });
+    if (activeSubTab !== tab) return;
+    const panel = document.getElementById(tab === 'subjects' ? 'site-clean-patient-tracker' : 'sae-reconciliation-queue');
+    panel?.focus({ preventScroll: true });
+    panel?.scrollIntoView({ block: 'start' });
   }
   let queryFilter: 'all' | 'endpoint_critical' | 'non_critical' = 'all';
 
@@ -234,12 +234,12 @@
           <button
             type="button"
             on:click={() => {
-              if (cat.targetTab === 'sae') {
-                showSafetyReconciliation();
-                return;
-              }
-              activeSubTab = cat.targetTab;
               trackerFilter = cat.id === 'site_signoffs' ? 'signoff' : 'all';
+              if (cat.targetTab === 'subjects' || cat.targetTab === 'sae') {
+                jumpToEvidence(cat.targetTab);
+              } else {
+                activeSubTab = cat.targetTab;
+              }
             }}
             class="p-3.5 rounded-xl border border-slate-200/80 hover:border-blue-400 bg-slate-50/50 hover:bg-blue-50/30 text-left transition-all cursor-pointer"
           >
@@ -282,7 +282,7 @@
     </button>
     <button
       type="button"
-      on:click={showSafetyReconciliation}
+      on:click={() => jumpToEvidence('sae')}
       class="db-segmented-btn {activeSubTab === 'sae' ? 'db-segmented-btn-active' : ''}"
     >
       SAE Discrepancies ({siteSaes.length})
@@ -297,10 +297,10 @@
   </div>
 
   {#if activeSubTab === 'subjects'}
-    <div class="db-card p-5 space-y-4">
+    <div id="site-clean-patient-tracker" role="region" aria-labelledby="site-clean-patient-heading" tabindex="-1" class="db-card scroll-mt-32 p-5 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 class="text-base font-bold text-slate-900">Subject Casebook Cleaning Status</h2>
+          <h2 id="site-clean-patient-heading" class="text-base font-bold text-slate-900">Clean Patient Tracker</h2>
           <p class="text-xs text-slate-500">{site.code} &middot; {siteSubjects.length} tracked subjects in 30 Nov Cut-Off</p>
         </div>
 
