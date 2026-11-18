@@ -26,6 +26,7 @@
   export let saeDiscrepancies: any[] = [];
   export let labBatches: any[] = [];
   export let queriesDetail: any[] = [];
+  export let activeRole: string = 'all';
   export let onSelectTab: (tab: string, readinessCategory?: string, showWeightConfig?: boolean) => void;
   export let onSelectSite: (id: string) => void;
 
@@ -42,6 +43,7 @@
       label: 'EDC data cleaning',
       pct: 92,
       color: 'emerald',
+      roles: ['all', 'my_queue', 'cra_site', 'cdm'],
       summary: '2,944 of 3,200 expected eCRF forms entered & verified across 220 subjects'
     },
     {
@@ -49,6 +51,7 @@
       label: 'Query resolution',
       pct: 85,
       color: 'emerald',
+      roles: ['all', 'my_queue', 'cra_site', 'cdm'],
       summary: '385 of 453 total queries closed; 68 open (14 endpoint-critical >14d)'
     },
     {
@@ -56,6 +59,7 @@
       label: 'External data reconciliation',
       pct: 65,
       color: 'amber',
+      roles: ['all', 'my_queue', 'vendor'],
       summary: 'LabCorp ctDNA batch #LXB-8921 (48 samples) overdue 4d; BioClinica & eCOA 88% reconciled'
     },
     {
@@ -63,6 +67,7 @@
       label: 'Medical coding',
       pct: 90,
       color: 'emerald',
+      roles: ['all', 'cdm'],
       summary: '1,890 of 2,100 MedDRA 27.0 & WHODrug terms coded; 12 terms pending manual review'
     },
     {
@@ -70,6 +75,7 @@
       label: 'Site sign-offs',
       pct: 75,
       color: 'amber',
+      roles: ['all', 'my_queue', 'cra_site'],
       summary: '165 of 220 subject casebooks signed by PI; 18 overdue at Sites 104 & 405'
     },
     {
@@ -77,6 +83,7 @@
       label: 'Safety reconciliation',
       pct: 80,
       color: 'emerald',
+      roles: ['all', 'my_queue', 'safety'],
       summary: '82 of 84 SAE cases reconciled between Rave & Argus; 2 critical discrepancies at Site 104'
     }
   ];
@@ -123,6 +130,7 @@
       weight: 35,
       impact: '35% (~2.1d)',
       status: 'Critical',
+      roles: ['all', 'my_queue', 'safety', 'cra_site'],
       summary: '2 unresolved SAE discrepancies at Site 104 blocking pharmacovigilance safety freeze.',
       affectedEntity: 'Site 104 (Boston Medical Center) & Oracle Argus Safety',
       siteId: '104',
@@ -137,6 +145,7 @@
       weight: 30,
       impact: '30% (~1.8d)',
       status: 'Critical',
+      roles: ['all', 'my_queue', 'vendor'],
       summary: 'LabCorp ctDNA Batch #LXB-8921 (48 samples) SHA-256 checksum failure awaiting QA re-export.',
       affectedEntity: 'Vendor: LabCorp Bioanalytical Geneva (Affects Sites 104 & 317)',
       siteId: '104',
@@ -151,6 +160,7 @@
       weight: 22,
       impact: '22% (~1.3d)',
       status: 'High',
+      roles: ['all', 'my_queue', 'cdm', 'cra_site'],
       summary: '68 total outstanding queries across study; 14 aged >14d (5 RECIST endpoint-critical at Sites 104 & 317).',
       affectedEntity: 'Site 104 (Boston) & Site 317 (Charité Berlin)',
       siteId: '317',
@@ -165,6 +175,7 @@
       weight: 13,
       impact: '13% (~0.8d)',
       status: 'Moderate',
+      roles: ['all', 'cra_site'],
       summary: '18 completed subject casebooks awaiting Principal Investigator electronic signatures.',
       affectedEntity: 'Site 405 (Seoul National Univ.) & Site 104 (Boston)',
       siteId: '405',
@@ -174,6 +185,14 @@
       ]
     }
   ];
+
+  $: filteredCategoryBars = activeRole === 'all'
+    ? readinessByCategoryBars
+    : readinessByCategoryBars.filter(c => c.roles.includes(activeRole));
+
+  $: filteredDelayDrivers = activeRole === 'all'
+    ? leadingDelayDrivers
+    : leadingDelayDrivers.filter(d => d.roles.includes(activeRole));
 
   // Sparkline/Trend points for the dual-axis chart
   const weeks = ['Week -4', 'Week -3', 'Week -2', 'Week -1', 'Current'];
@@ -368,7 +387,7 @@
 
         <!-- 6 Clickable Bars matching Image 6: 92%, 85%, 65%, 90%, 75%, 80% -->
         <div class="space-y-3 mt-4">
-          {#each readinessByCategoryBars as cat}
+          {#each filteredCategoryBars as cat}
             <button
               type="button"
               on:click={() => onSelectTab('digital_twin', cat.id, false)}
@@ -542,7 +561,7 @@
         </div>
 
         <div class="space-y-3 mt-4">
-          {#each leadingDelayDrivers as driver}
+          {#each filteredDelayDrivers as driver}
             <div class="rounded-xl border transition-all {expandedDriverId === driver.id ? 'border-blue-300 bg-blue-50/20 shadow-2xs' : 'border-slate-200 bg-white'}">
               <button
                 type="button"

@@ -35,6 +35,7 @@
   export let onSelectSite: (id: string) => void;
   export let onSelectSubject: (subjectId: string, siteId: string) => void = () => {};
   export let onSelectTab: (tab: string) => void;
+  export let activeRole: string = 'all';
 
   // View mode: 'map' | 'chart' | 'table' | 'vendors'
   let viewMode = 'map';
@@ -47,6 +48,19 @@
   let criticalityFilter = 'all';
   let searchQuery = '';
   let showRiskBasisInfo = false;
+
+  // Sync global Workstream/Role filter (#2) to site driver filter
+  $: if (activeRole === 'safety') {
+    driverFilter = 'safety';
+  } else if (activeRole === 'vendor') {
+    driverFilter = 'lab';
+  } else if (activeRole === 'cdm') {
+    driverFilter = 'queries';
+  } else if (activeRole === 'cra_site') {
+    driverFilter = 'signoff';
+  } else if (activeRole === 'all' || activeRole === 'my_queue') {
+    driverFilter = 'all';
+  }
 
   // Automated Multi-Vendor View state (Image 11 & 12)
   let selectedVendorId = 'VND-LABCORP';

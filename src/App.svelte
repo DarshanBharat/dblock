@@ -136,57 +136,56 @@
   $: currentSubject = selectedSubjectId ? trackerSubjects.find((s: any) => s.id === selectedSubjectId) : null;
   $: currentSite = selectedSiteId ? sites.find((s: any) => s.id === selectedSiteId) : null;
 
-  // Study left nav links
-  const studyNavLinks = [
-    { id: 'command_centre', label: 'Overview', icon: LayoutDashboard },
-    { id: 'risk_matrix', label: 'Sites & Risks', icon: MapPin },
-    { id: 'digital_twin', label: 'Readiness', icon: CheckSquare },
-    { id: 'action_workbench', label: 'Actions', icon: CheckCircle2 },
-    { id: 'simulator', label: 'Scenarios', icon: Sliders },
-    { id: 'forecast_scenarios', label: 'Forecast', icon: TrendingUp }
-  ];
+  // Role / Workstream operational filter (#2)
+  let activeRole: 'all' | 'my_queue' | 'cra_site' | 'cdm' | 'safety' | 'vendor' = 'all';
+
+  const roleQueues = [
+    { id: 'all', label: 'All Workstreams', count: 8, desc: 'Full study view across all 6 data domains' },
+    { id: 'my_queue', label: 'My Queue (Sarah)', count: 4, desc: 'Critical path decisions awaiting Study Data Lead sign-off' },
+    { id: 'cra_site', label: 'CRA / Site Monitoring', count: 3, desc: 'SDV backlog, eCRF entry & 18 pending PI signatures (Sites 104, 317, 405)' },
+    { id: 'cdm', label: 'CDM / Queries & Coding', count: 3, desc: '14 critical queries >14d & 12 uncoded MedDRA/WHODrug terms' },
+    { id: 'safety', label: 'Safety / PV (SAE)', count: 2, desc: '2 Rave-vs-Argus SAE discrepancies at Site 104 blocking freeze' },
+    { id: 'vendor', label: 'External Vendors', count: 2, desc: 'LabCorp ctDNA #LXB-8921 checksum failure & Eurofins QA batch' }
+  ] as const;
+
+  $: activeRoleObj = roleQueues.find(r => r.id === activeRole) || roleQueues[0];
 
   function getAiInsightText(tab: string) {
     switch (tab) {
       case 'command_centre':
         return {
-          text: 'Your study is 72% ready for DBL (158/220 clean subjects). Focusing on 3 critical actions could bring Potential DBL 4–6 days closer to the 15 Dec target.',
-          actionLabel: 'View recommended actions',
+          text: 'Study CA-209-301 is 72% ready (158/220 clean subjects). Resolving 3 critical blockers can shift Potential DBL 4–6 days closer to the 15 Dec target.',
+          actionLabel: 'Open Action Workbench',
           targetTab: 'action_workbench'
         };
       case 'risk_matrix':
         return {
-          text: 'Site 104 has fewer open items (19) than Site 208 (41), but a greater potential DBL impact (5–7d) due to SAE reconciliation (35%) and lab transfer delays (30%).',
-          actionLabel: 'See details',
+          text: 'Site 104 has fewer open items (19) than Site 208 (41), but a 5–7d DBL impact due to 2 SAE discrepancies and LabCorp ctDNA batch #LXB-8921.',
+          actionLabel: 'Inspect Site 104',
           targetTab: 'risk_matrix'
         };
       case 'digital_twin':
         return {
-          text: 'Readiness is calculated across 5 weighted components (EDC 30%, External 25%, Site 20%, CDM 15%, Cross-functional 10%). Click any category to inspect subject & record derivation.',
-          actionLabel: 'Prioritise key actions',
+          text: 'External data reconciliation (65%) and Site sign-offs (75%) are the lowest-scoring readiness components.',
+          actionLabel: 'Prioritise actions',
           targetTab: 'action_workbench'
         };
       case 'action_workbench':
         return {
-          text: 'Addressing the top 3 recommended actions could reduce the potential DBL delay by 4–6 days.',
-          actionLabel: 'Run scenario in Simulator',
+          text: 'Accepting the top 3 critical recommendations saves a combined ~4.8 days (after 0.82x overlap damping).',
+          actionLabel: 'Simulate DBL shift',
           targetTab: 'simulator'
         };
       case 'simulator':
-        return {
-          text: 'Resolving SAE discrepancies and expediting lab data transfer could bring the potential DBL date 4–6 days earlier, with moderate confidence.',
-          actionLabel: 'Confirm in Action Workbench',
-          targetTab: 'action_workbench'
-        };
       case 'forecast_scenarios':
         return {
-          text: 'Closed-loop learning captures that vendor SLA escalation protocol saved +0.2 days more than baseline estimation.',
-          actionLabel: 'Explore scenarios',
-          targetTab: 'simulator'
+          text: 'Executing SAE reconciliation + LabCorp re-export increases 15 Dec target-meeting likelihood from 28% to 74%.',
+          actionLabel: 'Confirm in Actions',
+          targetTab: 'action_workbench'
         };
       default:
         return {
-          text: 'DBLock AI continuously calculates explainable DBL readiness signals.',
+          text: 'DBLock AI continuously tracks record-level readiness across EDC, Safety, Lab, eCOA, and Coding.',
           actionLabel: 'Open Overview',
           targetTab: 'command_centre'
         };
@@ -209,7 +208,7 @@
   />
 
   <!-- Main View Container -->
-  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
     
     {#if activeTab === 'portfolio'}
       <!-- Screen 1: Full Portfolio View (Entry Point before opening Study CA-209-301) -->
@@ -224,85 +223,129 @@
         onSelectSite={handleSelectSite}
       />
     {:else}
-      <!-- Study Workspace Layout: Left Sidebar (240px) + Study Main View -->
-      <div class="flex flex-col lg:flex-row gap-6 items-start">
-        
-        <!-- =================================================================== -->
-        <!-- LEFT STUDY CONTEXT SIDEBAR                                          -->
-        <!-- =================================================================== -->
-        <aside class="lg:w-60 shrink-0 hidden lg:flex flex-col space-y-4 sticky top-20">
+      <!-- Full-Width Operational Study Workspace (No duplicate left nav!) -->
+      <div class="space-y-5">
+
+        <!-- ================================================================= -->
+        <!-- STUDY CONTEXT + ROLE / WORKSTREAM FILTER BAR (#2 & #5)            -->
+        <!-- ================================================================= -->
+        <div class="db-card p-3.5 sm:px-5 sm:py-3.5 flex flex-col gap-3">
           
-          <!-- Study Switcher Card -->
-          <div class="db-card p-4">
-            <div class="flex items-center justify-between text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              <span>Active Study</span>
+          <!-- Top Row: Active Study Switcher + Hard Gate Countdown Strip + AI Insight Pill -->
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-3 flex-wrap">
               <button
                 type="button"
                 on:click={() => handleSelectTab('portfolio')}
-                class="text-blue-600 hover:text-blue-700 font-semibold capitalize cursor-pointer text-[11px]"
+                class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-xs font-bold text-slate-900 transition-colors cursor-pointer"
+                title="Switch study in Portfolio"
               >
-                All studies
+                <span class="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Study</span>
+                <span class="font-mono text-blue-700">{study.protocol}</span>
+                <ChevronDown size={13} class="text-slate-400" />
               </button>
+
+              <div class="hidden sm:flex items-center gap-2 text-xs text-slate-600">
+                <span class="font-medium text-slate-700">{study.therapeuticArea} &middot; Phase III</span>
+                <span class="text-slate-300">|</span>
+                <span class="num-tabular">LSLV: <strong class="text-slate-800">30 Nov</strong></span>
+                <span class="text-slate-300">&rarr;</span>
+                <span class="num-tabular">Target DBL: <strong class="text-slate-900">15 Dec</strong></span>
+                <span class="text-slate-300">&rarr;</span>
+                <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200/70 font-semibold num-tabular text-[11px]">
+                  Potential DBL: 21 Dec (+6d)
+                </span>
+              </div>
             </div>
 
-            <!-- Current Protocol Selector -->
-            <button
-              type="button"
-              on:click={() => handleSelectTab('portfolio')}
-              class="w-full mt-2.5 px-3 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl text-left flex items-center justify-between text-xs font-bold text-slate-900 transition-colors cursor-pointer"
-            >
-              <span class="font-mono">{study.protocol}</span>
-              <ChevronDown size={14} class="text-slate-400" />
-            </button>
-
-            <div class="text-[11px] text-slate-500 mt-2.5 font-medium">
-              {study.therapeuticArea} &middot; Phase III &middot; Global
-            </div>
-          </div>
-
-          <!-- Left Vertical Navigation Links -->
-          <div class="db-card p-2 space-y-0.5">
-            {#each studyNavLinks as nav}
-              {@const Icon = nav.icon}
+            <!-- Compact Inline AI Insight + Action Link -->
+            <div class="flex items-center gap-2 text-xs bg-blue-50/70 border border-blue-200/60 px-3 py-1.5 rounded-xl max-w-xl">
+              <Sparkles size={13} class="text-blue-600 shrink-0" />
+              <span class="text-slate-700 truncate">{currentAiInsight.text}</span>
               <button
                 type="button"
-                on:click={() => handleSelectTab(nav.id)}
-                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all text-left cursor-pointer {activeTab === nav.id ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}"
+                on:click={() => handleSelectTab(currentAiInsight.targetTab)}
+                class="font-semibold text-blue-600 hover:text-blue-800 hover:underline shrink-0 inline-flex items-center gap-0.5 cursor-pointer"
               >
-                <Icon size={15} class={activeTab === nav.id ? 'text-blue-600' : 'text-slate-400'} />
-                <span>{nav.label}</span>
+                <span>{currentAiInsight.actionLabel}</span>
+                <ArrowRight size={11} />
               </button>
-            {/each}
-          </div>
-
-          <!-- Left AI Insight Card -->
-          <div class="db-card p-4 space-y-2.5 border-l-4 border-l-blue-600">
-            <div class="flex items-center gap-1.5 text-slate-900 font-semibold text-xs">
-              <Sparkles size={14} class="text-blue-600" />
-              <span>AI Insight</span>
             </div>
-            <p class="text-xs text-slate-600 leading-relaxed">
-              {currentAiInsight.text}
-            </p>
-            <button
-              type="button"
-              on:click={() => handleSelectTab(currentAiInsight.targetTab)}
-              class="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 pt-0.5 cursor-pointer"
-            >
-              <span>{currentAiInsight.actionLabel}</span>
-              <ArrowRight size={12} />
-            </button>
           </div>
 
-        </aside>
+          <!-- Bottom Row: Role / Workstream Filter Pills (#2) -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+            <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1 shrink-0">
+                Workstream:
+              </span>
+              {#each roleQueues as rq}
+                <button
+                  type="button"
+                  on:click={() => activeRole = rq.id}
+                  class="px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 {activeRole === rq.id ? 'bg-slate-900 text-white shadow-2xs' : 'bg-slate-100/90 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'}"
+                >
+                  <span>{rq.label}</span>
+                  <span class="px-1.5 py-0.2 rounded-full text-[10px] num-tabular {activeRole === rq.id ? 'bg-white/20 text-white' : 'bg-white text-slate-600'}">
+                    {rq.count}
+                  </span>
+                </button>
+              {/each}
+            </div>
 
-        <!-- =================================================================== -->
-        <!-- STUDY MAIN CONTENT VIEW                                             -->
-        <!-- =================================================================== -->
-        <div class="flex-1 min-w-0 w-full">
+            {#if activeRole !== 'all'}
+              <div class="flex items-center justify-between sm:justify-end gap-2 text-xs text-blue-700 bg-blue-50/80 px-2.5 py-1 rounded-lg border border-blue-200/60 shrink-0">
+                <span class="font-medium">{activeRoleObj.desc}</span>
+                <button
+                  type="button"
+                  on:click={() => activeRole = 'all'}
+                  class="text-[11px] font-bold underline hover:text-blue-900 cursor-pointer ml-1"
+                >
+                  Reset
+                </button>
+              </div>
+            {/if}
+          </div>
+
+        </div>
+
+        <!-- ================================================================= -->
+        <!-- UNIFIED FORECAST & SIMULATION MODE SWITCHER (#5)                  -->
+        <!-- ================================================================= -->
+        {#if activeTab === 'simulator' || activeTab === 'forecast_scenarios'}
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white rounded-xl border border-slate-200/90 px-4 py-2.5 shadow-2xs">
+            <div class="flex items-center gap-2 text-xs text-slate-600">
+              <Sliders size={14} class="text-blue-600" />
+              <span class="font-semibold text-slate-900">Forecast &amp; Simulation Workspace</span>
+              <span class="hidden md:inline text-slate-400">&mdash; Test interventions or compare Best / Most Likely / At-Risk trajectories</span>
+            </div>
+            <div class="inline-flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200/80 self-start sm:self-auto">
+              <button
+                type="button"
+                on:click={() => handleSelectTab('simulator')}
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {activeTab === 'simulator' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+              >
+                <Sliders size={13} />
+                <span>What-If Intervention Simulator</span>
+              </button>
+              <button
+                type="button"
+                on:click={() => handleSelectTab('forecast_scenarios')}
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer {activeTab === 'forecast_scenarios' ? 'bg-white text-blue-700 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+              >
+                <TrendingUp size={13} />
+                <span>Forecast Scenarios &amp; Target Likelihood</span>
+              </button>
+            </div>
+          </div>
+        {/if}
+
+        <!-- ================================================================= -->
+        <!-- STUDY MAIN CONTENT VIEW (Full Width)                              -->
+        <!-- ================================================================= -->
+        <div class="min-w-0 w-full">
           
           {#if activeTab === 'command_centre'}
-            <!-- Screen 2: Study Command Centre / Overview -->
             <ExecutiveCommandCentre
               {study}
               {actions}
@@ -312,6 +355,7 @@
               {saeDiscrepancies}
               {labBatches}
               {queriesDetail}
+              {activeRole}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
@@ -336,7 +380,6 @@
                 onSelectTab={handleSelectTab}
               />
             {:else}
-              <!-- Screen 3 & 4: Predictive Risk Heatmap, Real Map & Evidence Drawer -->
               <PredictiveRiskHeatmap
                 {sites}
                 {subjects}
@@ -344,6 +387,7 @@
                 {saeDiscrepancies}
                 {labBatches}
                 {queriesDetail}
+                {activeRole}
                 onSelectSite={handleSelectSite}
                 onSelectSubject={(subjId, siteId) => {
                   selectedSiteId = siteId;
@@ -355,7 +399,6 @@
             {/if}
 
           {:else if activeTab === 'digital_twin'}
-            <!-- Screen 5: Readiness Tab with Traceability, 5-Component Weightage & 4-Level Drill-Down -->
             <ReadinessDigitalTwin
               {study}
               {dimensions}
@@ -367,28 +410,28 @@
               {queriesDetail}
               {selectedReadinessCategory}
               {openWeightConfigOnLoad}
+              {activeRole}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
 
           {:else if activeTab === 'action_workbench'}
-            <!-- Screen 6: Action Decision Workbench with 12 Actions & Detail Drawer -->
             <ActionWorkbench
               {sites}
+              {activeRole}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
 
           {:else if activeTab === 'simulator'}
-            <!-- Screen 7: What-If Intervention Simulator with 3 Columns -->
             <WhatIfSimulator
               {interventions}
               {study}
+              {activeRole}
               onSelectTab={handleSelectTab}
             />
 
           {:else if activeTab === 'forecast_scenarios'}
-            <!-- Screen 8: Forecast & Action-to-Outcome Closed-Loop Learning -->
             <ForecastScenarios
               {study}
               {forecastScenarios}

@@ -20,6 +20,7 @@
 
   export let interventions: any[];
   export let study: any;
+  export let activeRole: string = 'all';
   export let onSelectTab: (tab: string) => void;
 
   let categoryFilter = 'all';
@@ -172,6 +173,18 @@
   }
 
   $: selectedItems = interventions.filter(i => $workflow.selected.includes(i.id));
+
+  $: if (activeRole === 'safety') {
+    categoryFilter = 'reconciliation';
+  } else if (activeRole === 'vendor') {
+    categoryFilter = 'operational';
+  } else if (activeRole === 'cdm') {
+    categoryFilter = 'datamgmt';
+  } else if (activeRole === 'cra_site') {
+    categoryFilter = 'site';
+  } else if (activeRole === 'all' || activeRole === 'my_queue') {
+    categoryFilter = 'all';
+  }
 
   $: filteredInterventions = interventions.filter(i => {
     if (categoryFilter === 'operational' && i.category !== 'Operational') return false;

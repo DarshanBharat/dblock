@@ -29,12 +29,23 @@
   export let queriesDetail: any[] = [];
   export let selectedReadinessCategory: string | null = null;
   export let openWeightConfigOnLoad: boolean = false;
+  export let activeRole: string = 'all';
   export let onSelectTab: (tab: string) => void;
   export let onSelectSite: (siteId: string) => void;
 
   let activeParamId = selectedReadinessCategory || 'edc_cleaning';
   $: if (selectedReadinessCategory) {
     activeParamId = selectedReadinessCategory;
+  }
+
+  $: if (activeRole === 'safety') {
+    activeParamId = 'safety_recon';
+  } else if (activeRole === 'vendor') {
+    activeParamId = 'external_recon';
+  } else if (activeRole === 'cra_site') {
+    activeParamId = 'site_signoffs';
+  } else if (activeRole === 'cdm') {
+    activeParamId = 'query_resolution';
   }
 
   // Selected week index for temporal scrubber (0 = W-8 ... 2 = W-4 ... 6 = W0 Current)

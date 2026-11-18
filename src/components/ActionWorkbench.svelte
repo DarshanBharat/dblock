@@ -33,6 +33,7 @@
 
   export let onSelectTab: (tab: string) => void;
   export let sites: any[] = [];
+  export let activeRole: string = 'all';
   export let onSelectSite: ((id: string) => void) | undefined = undefined;
 
   // Focused default view mode: 'table' (does not repeat geographic risk map from Sites & Risks unless toggled)
@@ -153,6 +154,12 @@
 
   // Reactive filtering
   $: filteredActions = $workflow.actions.filter(a => {
+    if (activeRole === 'my_queue' && a.priority !== 'Critical' && !a.owner.toLowerCase().includes('sarah')) return false;
+    if (activeRole === 'safety' && a.domain !== 'Safety reconciliation') return false;
+    if (activeRole === 'vendor' && a.domain !== 'External laboratory') return false;
+    if (activeRole === 'cdm' && a.domain !== 'EDC / Queries' && a.domain !== 'Medical coding') return false;
+    if (activeRole === 'cra_site' && a.domain !== 'Site sign-offs' && !a.owner.toLowerCase().includes('cra') && !a.owner.toLowerCase().includes('campbell')) return false;
+
     if (priorityFilter === 'critical' && a.priority !== 'Critical') return false;
     if (priorityFilter === 'high' && a.priority !== 'High') return false;
     if (priorityFilter === 'medium' && a.priority !== 'Medium') return false;
@@ -406,7 +413,19 @@
                 </span>
               </td>
               <td class="py-3.5 px-3 text-right">
-                <span class="text-blue-600 font-bold text-[11px] group-hover:underline">Decide &rarr;</span>
+                <div class="inline-flex items-center justify-end gap-2">
+                  {#if action.status !== 'Accepted'}
+                    <button
+                      type="button"
+                      on:click|stopPropagation={() => acceptRecommendation(action)}
+                      class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-[11px] shadow-2xs transition-colors cursor-pointer"
+                      title="1-click approve recommendation"
+                    >
+                      Approve
+                    </button>
+                  {/if}
+                  <span class="text-blue-600 font-bold text-[11px] group-hover:underline">Details &rarr;</span>
+                </div>
               </td>
             </tr>
           {/each}

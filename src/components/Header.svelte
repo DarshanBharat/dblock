@@ -37,8 +37,7 @@
     { id: 'risk_matrix', label: 'Sites & Risks', icon: MapPin },
     { id: 'digital_twin', label: 'Readiness', icon: CheckSquare },
     { id: 'action_workbench', label: 'Actions', icon: CheckCircle2 },
-    { id: 'simulator', label: 'Scenarios', icon: Sliders },
-    { id: 'forecast_scenarios', label: 'Forecast', icon: TrendingUp }
+    { id: 'simulator', label: 'Forecast & Sim', icon: Sliders, matchIds: ['simulator', 'forecast_scenarios'] }
   ];
 
   const notifications = [
@@ -117,12 +116,13 @@
     <nav class="hidden md:flex items-center gap-1 overflow-x-auto h-full" aria-label="Main navigation">
       {#each navItems as item}
         {@const Icon = item.icon}
+        {@const isActive = item.matchIds ? item.matchIds.includes(activeTab) : activeTab === item.id}
         <button
           type="button"
           on:click={() => onSelectTab(item.id)}
-          class="relative h-full px-3 flex items-center gap-1.5 text-[13px] font-semibold transition-colors cursor-pointer border-b-2 whitespace-nowrap {activeTab === item.id ? 'text-blue-600 border-blue-600' : 'text-slate-600 border-transparent hover:text-slate-900 hover:border-slate-300'}"
+          class="relative h-full px-3 flex items-center gap-1.5 text-[13px] font-semibold transition-colors cursor-pointer border-b-2 whitespace-nowrap {isActive ? 'text-blue-600 border-blue-600' : 'text-slate-600 border-transparent hover:text-slate-900 hover:border-slate-300'}"
         >
-          <Icon size={14} class={activeTab === item.id ? 'text-blue-600 stroke-[2.3]' : 'text-slate-400'} />
+          <Icon size={14} class={isActive ? 'text-blue-600 stroke-[2.3]' : 'text-slate-400'} />
           <span>{item.label}</span>
         </button>
       {/each}
