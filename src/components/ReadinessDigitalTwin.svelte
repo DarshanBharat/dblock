@@ -32,7 +32,6 @@
   export let onSelectTab: (tab: string) => void;
   export let onSelectSite: (siteId: string) => void;
 
-  // Active parameter selected for Level 2 -> Level 3 -> Level 4 derivation drill-down
   let activeParamId = selectedReadinessCategory || 'edc_cleaning';
   $: if (selectedReadinessCategory) {
     activeParamId = selectedReadinessCategory;
@@ -513,7 +512,6 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- LEVEL 1 & FORECAST MOVEMENT: WEEKLY SCRUBBER (Week -4 to Current Week)    -->
   <!-- Selected week -> parameter change -> forecast movement -> records         -->
   <!-- ========================================================================= -->
   <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
@@ -522,7 +520,7 @@
         <div class="flex items-center justify-between mb-2">
           <div>
             <span class="text-xs font-extrabold text-slate-900 uppercase tracking-wide">
-              Level 1: Study Readiness Over Time (Week -8 / Week -4 to Current Week W0)
+              Study Readiness Over Time (Week -8 / Week -4 to Current Week W0)
             </span>
             <p class="text-[11px] text-slate-500">
               Click any week to inspect parameter changes since the previous week, forecast date movement, and contributing records.
@@ -647,9 +645,6 @@
 
   <!-- ========================================================================= -->
   <!-- SECTION B: 4-LEVEL READINESS PARAMETER DERIVATION DRILL-DOWN              -->
-  <!-- Level 2: Selected week -> readiness parameter -> change since prev week   -->
-  <!-- Level 3: Parameter -> site -> subject                                     -->
-  <!-- Level 4 (record): newly detected & resolved blockers, completed actions   -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
@@ -657,7 +652,7 @@
     <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div>
         <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-          Level 2: Selected Week ({currentSnapshot.weekCode}) &rarr; Readiness Parameter &rarr; Weekly &Delta;
+          Selected Week ({currentSnapshot.weekCode}) &rarr; Readiness Parameter &rarr; Weekly &Delta;
         </span>
         <h3 class="text-sm font-extrabold text-slate-900 mt-0.5">
           Consolidated Parameters (Click to inspect derivation)
@@ -700,14 +695,12 @@
       </div>
     </div>
 
-    <!-- Right 7 Cols: Derivation Details + Level 3 (Parameter -> Site -> Subject) + Level 4 (Record behind each change) -->
     <div class="lg:col-span-7 bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-5">
       
-      <!-- Level 2 Mathematical Derivation Box -->
       <div class="p-4 rounded-xl bg-blue-50/70 border border-blue-200 space-y-2">
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-            Level 2 Derivation &middot; {activeParam.seemaParam} ({activeParam.weeklyDelta})
+            Derivation &middot; {activeParam.seemaParam} ({activeParam.weeklyDelta})
           </span>
           <span class="px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-600 text-white">
             {activeParam.pct}% Derived Score
@@ -722,11 +715,10 @@
         </p>
       </div>
 
-      <!-- Level 3: Parameter -> Country -> Site -> Subject -->
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-            Level 3 Drill-Down: Parameter &rarr; Country &rarr; Site &rarr; Subject
+            Parameter &rarr; Country &rarr; Site &rarr; Subject
           </span>
           <span class="text-[11px] text-slate-500">Click any site pill to open full site clean-patient tracker</span>
         </div>
@@ -754,11 +746,10 @@
         </div>
       </div>
 
-      <!-- Level 4 (Record): Newly detected and resolved blockers, completed actions, and the record behind each change -->
       <div class="space-y-2.5">
         <div class="flex items-center justify-between">
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-            Level 4 (Record): Newly Detected &amp; Resolved Blockers, Completed Actions &amp; Source Records
+            Newly Detected &amp; Resolved Blockers, Completed Actions &amp; Source Records
           </span>
           <span class="text-[10px] font-mono text-slate-400">Refreshed: 31 Oct 2026, 08:00 UTC</span>
         </div>

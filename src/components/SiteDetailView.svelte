@@ -152,7 +152,6 @@
 <div class="space-y-6">
 
   <!-- ========================================================================= -->
-  <!-- BREADCRUMB & BACK NAVIGATION (Level 1 Study -> Country -> Level 2 Site)   -->
   <!-- ========================================================================= -->
   <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
     <div class="flex items-center space-x-2 text-xs flex-wrap">
@@ -269,7 +268,6 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SITE SUB-NAVIGATION TABS (Level 3 Subject Health & Level 4 Record Views)  -->
   <!-- ========================================================================= -->
   <div class="border-b border-slate-200 bg-white px-4 rounded-t-xl">
     <nav class="flex space-x-5 text-xs font-bold overflow-x-auto">
@@ -291,7 +289,7 @@
           activeSubTab === 'queries' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
         }"
       >
-        <span>Level 4: All Outstanding Queries (Endpoint-Critical Flagged)</span>
+        <span>All Outstanding Queries (Endpoint-Critical Flagged)</span>
         <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-bold">{siteQueries.length}</span>
       </button>
 
@@ -302,7 +300,7 @@
           activeSubTab === 'sae' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
         }"
       >
-        <span>Level 4: SAE Discrepancies</span>
+        <span>SAE Discrepancies</span>
         <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-700 font-bold">{siteSaes.length}</span>
       </button>
 
@@ -313,14 +311,13 @@
           activeSubTab === 'lab' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'
         }"
       >
-        <span>Level 4: External Vendor Transfers</span>
+        <span>External Vendor Transfers</span>
         <span class="px-1.5 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-700 font-bold">{siteLabs.length}</span>
       </button>
     </nav>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SUB-TAB 1: LEVEL 3 SUBJECT HEALTH VIEW (CLEAN-PATIENT TRACKER) (Img 12)   -->
   <!-- ========================================================================= -->
   {#if activeSubTab === 'subjects'}
     <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">

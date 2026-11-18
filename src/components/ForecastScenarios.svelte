@@ -17,7 +17,6 @@
   export let closedLoopOutcomes: any[];
   export let onSelectTab: (tab: string) => void;
 
-  // Active scenario selected for Level 1 -> Level 2 -> Level 3 drill-down
   let selectedScenarioKey: 'best_case' | 'most_likely' | 'at_risk' = 'most_likely';
 
   const scenariosCatalog = {
@@ -155,19 +154,14 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LEVEL 1, 2 & 3 SCENARIO DRILL-DOWN:                                       -->
-  <!-- Level 1: Target date vs potential DBL date (Best case, Most likely, Risk) -->
-  <!-- Level 2: Scenario -> assumptions -> delay drivers                         -->
-  <!-- Level 3: Driver -> sites or vendors -> individual items                   -->
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- Left 6 Cols: Level 1 Visual Timeline & Scenario Selector -->
     <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div class="flex items-center justify-between">
         <div>
           <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-            Level 1: Target Date vs. Potential DBL Date Scenarios
+            Target Date vs. Potential DBL Date Scenarios
           </span>
           <h2 class="text-sm font-bold text-slate-900">
             Select a Scenario (Flags Earlier Completion or Possible Delay)
@@ -253,11 +247,10 @@
       </div>
     </div>
 
-    <!-- Right 6 Cols: Level 2 (Scenario -> Assumptions -> Delay Drivers) & Level 3 (Driver -> Sites/Vendors -> Individual Items) -->
     <div class="lg:col-span-6 bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-4">
       <div>
         <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-          Levels 2 &amp; 3: Scenario &rarr; Assumptions &rarr; Delay Drivers &rarr; Sites/Vendors &rarr; Items
+          Scenario &rarr; Assumptions &rarr; Delay Drivers &rarr; Sites/Vendors &rarr; Items
         </span>
         <div class="flex items-center justify-between mt-1">
           <h2 class="text-base font-extrabold text-slate-900">{activeScenario.name}</h2>
@@ -267,19 +260,17 @@
         </div>
       </div>
 
-      <!-- Level 2: Scenario Assumptions & Target Likelihood -->
       <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5 text-xs">
         <div class="flex items-center justify-between">
-          <strong class="text-slate-900 uppercase text-[10px] tracking-wider">Level 2: Scenario Assumptions</strong>
+          <strong class="text-slate-900 uppercase text-[10px] tracking-wider">Scenario Assumptions</strong>
           <span class="text-[11px] font-bold text-blue-700">{activeScenario.targetMeetingLikelihood}</span>
         </div>
         <p class="text-slate-700 leading-relaxed">{activeScenario.assumptions}</p>
       </div>
 
-      <!-- Level 3: Driver -> Sites or Vendors -> Individual Items -->
       <div class="space-y-2.5">
         <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-          Level 3: Delay Driver &rarr; Affected Sites or Vendors &rarr; Individual Open Items
+          Delay Driver &rarr; Affected Sites or Vendors &rarr; Individual Open Items
         </div>
         {#each activeScenario.drivers as drv}
           <div class="p-3 rounded-xl border border-slate-200 bg-white space-y-1 text-xs">
@@ -296,7 +287,6 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LEVEL 4 (RECORD): INTERVENTION -> AFFECTED RECORDS -> ACTUAL OUTCOME VS   -->
   <!-- EXPECTED IMPACT -> LEARNING CAPTURED (Image 5 Blue Requirement)           -->
   <!-- ========================================================================= -->
   <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden space-y-4 p-5">
@@ -304,7 +294,7 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="px-2 py-0.5 rounded bg-blue-100 text-blue-800 font-extrabold text-[10px] uppercase tracking-wider">
-            Level 4 (Record): Closed-Loop Learning
+            Closed-Loop Learning
           </span>
           <span class="text-xs text-slate-500">Intervention &rarr; Affected Records &rarr; Actual Outcome vs. Expected Impact &rarr; Learning Captured</span>
         </div>

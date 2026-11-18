@@ -22,7 +22,6 @@
   export let study: any;
   export let onSelectTab: (tab: string) => void;
 
-  // Level 1: Intervention category filter ('all' | 'operational' | 'reconciliation' | 'site' | 'datamgmt')
   let categoryFilter = 'all';
   let interventionStateView = 'after';
 
@@ -268,11 +267,10 @@
   <!-- ========================================================================= -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
     
-    <!-- COLUMN 1: LEVEL 1 INTERVENTION CATEGORY & SELECTION (5 COLS) -->
     <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
       <div>
         <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-          Level 1: Intervention Category Filter
+          Intervention Category Filter
         </span>
         <h2 class="text-sm font-bold text-slate-900">1. Select interventions to simulate</h2>
         <p class="text-[11px] text-slate-500 mt-0.5">
@@ -280,7 +278,6 @@
         </p>
       </div>
 
-      <!-- Level 1 Category Filter Tabs -->
       <div class="flex items-center space-x-3 border-b border-slate-200 pb-2 text-xs font-semibold text-slate-600 overflow-x-auto">
         <button
           type="button"
@@ -347,7 +344,7 @@
               </div>
               <div class="text-[11px] text-slate-500 mt-0.5 flex items-center justify-between">
                 <span>{item.itemsCount}</span>
-                <span class="text-[10px] text-blue-600 font-semibold">Inspect Levels 1–4 &darr;</span>
+                <span class="text-[10px] text-blue-600 font-semibold">Inspect intervention &darr;</span>
               </div>
             </div>
           </div>
@@ -537,9 +534,6 @@
 
   <!-- ========================================================================= -->
   <!-- 4-LEVEL INTERVENTION DRILL-DOWN PANEL (Image 3 Blue Requirement)          -->
-  <!-- Level 1: Category -> Level 2: Intervention assumptions & overlaps ->      -->
-  <!-- Level 3: Affected sites, subjects or vendor transfers ->                  -->
-  <!-- Level 4 (record): Items resolved, with before & after readiness & DBL     -->
   <!-- ========================================================================= -->
   <div class="bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-4">
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
@@ -550,7 +544,7 @@
             4-Level Intervention Traceability Drill-Down: {activeDrill.id} &ndash; {activeDrill.title}
           </h3>
           <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-            Level 1 Category: {activeDrill.category}
+            Category: {activeDrill.category}
           </span>
         </div>
         <p class="text-[11px] text-slate-500 mt-0.5">
@@ -560,10 +554,9 @@
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-      <!-- Level 2: Assumptions & Overlaps with other selected interventions -->
       <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
         <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-          Level 2: Category &rarr; Specific Intervention &rarr; Assumptions &amp; Overlaps
+          Category &rarr; Specific Intervention &rarr; Assumptions &amp; Overlaps
         </div>
         <div>
           <strong class="text-slate-900 block">Operational Assumptions:</strong>
@@ -574,10 +567,9 @@
         </div>
       </div>
 
-      <!-- Level 3: Affected Sites, Subjects or Vendor Transfers -->
       <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
         <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-          Level 3: Intervention &rarr; Affected Sites, Subjects or Vendor Transfers
+          Intervention &rarr; Affected Sites, Subjects or Vendor Transfers
         </div>
         <div class="p-3 bg-white rounded-lg border border-slate-200 space-y-1.5">
           <div class="font-bold text-slate-900">{activeDrill.affectedEntities}</div>
@@ -588,10 +580,9 @@
       </div>
     </div>
 
-    <!-- Level 4 (Record): Items resolved by the intervention, with before and after readiness and potential DBL date -->
     <div class="space-y-2">
       <div class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
-        Level 4 (Record): Items Resolved by Intervention, with Before &amp; After Readiness and Potential DBL Date
+        Items Resolved by Intervention, with Before &amp; After Readiness and Potential DBL Date
       </div>
       <div class="border border-slate-200 rounded-xl overflow-hidden">
         <table class="w-full text-left border-collapse text-xs">

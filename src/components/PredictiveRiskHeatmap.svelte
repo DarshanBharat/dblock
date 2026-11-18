@@ -38,9 +38,7 @@
 
   // View mode: 'map' | 'chart' | 'table' | 'vendors'
   let viewMode = 'map';
-  // Ranking criteria per Image 12 Level 2: impact | probability | critical_path | volume | weekly_change
   let viewByMetric = 'impact';
-  // Global filter drill-down Level 1: Study -> Country -> Site (Image 10 & 12)
   let selectedCountry = 'all';
   let selectedSiteId = 'all';
   let riskTierFilter = 'all';
@@ -349,7 +347,6 @@
     ];
   }
 
-  // Distinct countries for Level 1 Study -> Country filter
   $: countriesList = Array.from(new Set(sites.map(s => s.country))).sort();
 
   // Sites available in Site filter dropdown (scoped by selectedCountry)
@@ -418,7 +415,6 @@
     return true;
   });
 
-  // Sort sites (Level 2 ranking: impact, probability, critical_path, volume, weekly_change)
   $: sortedSites = [...filteredSites].sort((a, b) => {
     if (viewByMetric === 'impact') {
       return b.maxDelayDays - a.maxDelayDays;
@@ -559,7 +555,6 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- GLOBAL FILTER DRILL-DOWN BAR: LEVEL 1 (STUDY -> COUNTRY -> SITE) (Img 10) -->
   <!-- ========================================================================= -->
   <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
     <div class="flex items-center space-x-2 text-xs flex-wrap gap-y-1">
@@ -1087,7 +1082,6 @@
           </button>
         </div>
 
-        <!-- Level 1 Summary Row in Drawer (Unexplained Risk-Probability Figure Removed per Image 13 & 14) -->
         <div class="grid grid-cols-3 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-center">
           <div class="p-2.5 bg-white rounded-lg border border-slate-200/80">
             <span class="text-[10px] text-slate-400 uppercase font-bold block">Site Readiness</span>
@@ -1106,26 +1100,25 @@
           </div>
         </div>
 
-        <!-- Drawer Tabs (Simplified: Why at risk? | Supporting evidence (Levels 3–4) | Vendor drill-down) -->
         <!-- Recommended-actions section removed from drawer per Image 14 Blue instruction -->
         <div class="flex border-b border-slate-200 px-6 text-xs font-bold text-slate-600 bg-white">
           <button
             on:click={() => drawerTab = 'why'}
             class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'why' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent hover:text-slate-900'}"
           >
-            1. Why at risk? (35/30/22/13 Aligned)
+            Why at risk?
           </button>
           <button
             on:click={() => drawerTab = 'evidence'}
             class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'evidence' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent hover:text-slate-900'}"
           >
-            2. Supporting Evidence (Levels 3–4)
+            Supporting Evidence
           </button>
           <button
             on:click={() => drawerTab = 'vendors'}
             class="py-3 px-3 border-b-2 transition-colors cursor-pointer {drawerTab === 'vendors' ? 'border-blue-600 text-blue-600 font-extrabold' : 'border-transparent hover:text-slate-900'}"
           >
-            3. Vendor Drill-Down Evidence
+            Vendor Evidence
           </button>
         </div>
 
@@ -1133,10 +1126,9 @@
         <div class="p-6 space-y-6 flex-1 text-xs text-slate-700">
           
           {#if drawerTab === 'why'}
-            <!-- Level 1 & Level 2: Risk Summary & Aligned Factor Contributions (35/30/22/13) with Derivations -->
             <div class="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-blue-950 space-y-1">
               <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                Level 1: Selected Site Risk Summary &amp; Reason the Site Matters
+                Selected Site Risk Summary &amp; Reason the Site Matters
               </div>
               <p class="leading-relaxed">
                 <strong>Site {activeSite.id} ({activeSite.name})</strong> has <strong>{activeSite.openItems} open items</strong> and is on the study critical path with a potential DBL impact of <strong>{activeSite.forecastImpactDays} days</strong>. Below are the aligned factor contributions and how each percentage is derived.
@@ -1146,7 +1138,7 @@
             <div>
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
-                  Level 2: Contributing Factors &amp; How Each Contribution is Derived
+                  Contributing Factors &amp; How Each Contribution is Derived
                 </h3>
                 <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
                   Aligned: 35% / 30% / 22% / 13%
@@ -1198,12 +1190,11 @@
             </div>
 
           {:else if drawerTab === 'evidence'}
-            <!-- Level 3 (Factor -> Supporting Evidence) & Level 4 (Source Record ID, Extract Date, Rule Applied, Last Refresh) -->
             <div class="space-y-4">
               <div class="flex items-center justify-between">
                 <div>
                   <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">
-                    Levels 3 &amp; 4: Factor &rarr; Supporting Evidence &rarr; Source Record
+                    Factor &rarr; Supporting Evidence &rarr; Source Record
                   </span>
                   <h3 class="text-sm font-bold text-slate-900">
                     Traceable Source Records for Site {activeSite.id}

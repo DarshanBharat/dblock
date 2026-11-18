@@ -941,10 +941,6 @@
 
       <!-- ===================================================================== -->
       <!-- 4-LEVEL PORTFOLIO DRILL-DOWN EXPLORER (Image 4 Blue Spec)             -->
-      <!-- Level 1: Portfolio -> Therapeutic area -> searchable Study ID         -->
-      <!-- Level 2: Study card -> milestone (LSLV, DBL) -> critical blockers     -->
-      <!-- Level 3: Blocker -> affected country -> site -> subject               -->
-      <!-- Level 4 (record): query, SAE, lab transfer or sign-off item           -->
       <!-- ===================================================================== -->
       {#if showDrillDownExplorer}
         <div class="bg-white rounded-xl border-2 border-blue-200 p-5 shadow-xs space-y-4">
@@ -956,7 +952,7 @@
                   Interactive 4-Level Portfolio Traceability Drill-Down
                 </h3>
                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-                  Level 1 &rarr; Level 2 &rarr; Level 3 &rarr; Level 4 (Source Record)
+                  Study milestones, blockers, and source records
                 </span>
               </div>
               <p class="text-[11px] text-slate-500 mt-0.5">
@@ -973,10 +969,9 @@
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-            <!-- LEVEL 1 -->
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
               <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                Level 1: Portfolio &rarr; TA &rarr; Study ID
+                Portfolio &rarr; TA &rarr; Study ID
               </div>
               <div class="p-2.5 bg-white rounded-lg border border-slate-200 space-y-1">
                 <div class="text-[10px] text-slate-400 font-semibold">Therapeutic Area</div>
@@ -987,10 +982,9 @@
               </div>
             </div>
 
-            <!-- LEVEL 2 -->
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
               <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                Level 2: Study Card &rarr; Milestone &rarr; Blockers
+                Study Card &rarr; Milestone &rarr; Blockers
               </div>
               <div class="text-[11px] font-semibold text-slate-700">
                 Milestone: <strong class="text-slate-900">DBL (Target: 15 Dec | Potential: 21 Dec)</strong>
@@ -1011,10 +1005,9 @@
               </div>
             </div>
 
-            <!-- LEVEL 3 -->
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
               <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                Level 3: Blocker &rarr; Country &rarr; Site &rarr; Subject
+                Blocker &rarr; Country &rarr; Site &rarr; Subject
               </div>
               <div class="p-2.5 bg-white rounded-lg border border-slate-200 space-y-1.5">
                 <div>
@@ -1048,10 +1041,9 @@
               </div>
             </div>
 
-            <!-- LEVEL 4 (RECORD) -->
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
               <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-                Level 4 (Record): Source, ID, Age &amp; Refresh
+                Source, ID, Age &amp; Refresh
               </div>
               <div class="space-y-2">
                 {#each activeBlocker.records as rec}

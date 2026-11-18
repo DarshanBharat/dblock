@@ -15,7 +15,6 @@
     }, 800);
   }
 
-  // Level 1 -> Level 2 -> Level 3 -> Level 4 + Impact on Forecast Confidence (Image 7 Blue)
   const automatedFeedsAndVendors = [
     {
       id: 'FEED-LAB',
@@ -173,7 +172,7 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-emerald-500/30 text-emerald-200 border border-emerald-400/30">
-                Levels 1–4 Automated Multi-Vendor Feed Drill-Down
+                Automated Multi-Vendor Feed Drill-Down
               </span>
               <span class="text-xs text-slate-300">Zero Manual Cleanliness Inputs</span>
             </div>
@@ -194,10 +193,9 @@
       <!-- Modal Body -->
       <div class="p-6 overflow-y-auto space-y-5 text-xs text-slate-700">
         
-        <!-- LEVEL 1 & LEVEL 2: Feed Status (EDC, Safety, Central Lab, eCOA, Imaging) -> Each Vendor Shown Separately -->
         <div class="space-y-2">
           <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-            Level 1 &amp; Level 2: Feed Status (EDC, Safety, Central Lab, eCOA, Imaging) &rarr; Vendor (Shown Separately) &rarr; Dataset or Transfer
+            Feed Status (EDC, Safety, Central Lab, eCOA, Imaging) &rarr; Vendor (Shown Separately) &rarr; Dataset or Transfer
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
@@ -222,11 +220,10 @@
           </div>
         </div>
 
-        <!-- LEVEL 3 & IMPACT: Dataset -> Missing or Stale Variables, Data-Quality Warnings & Effect on Forecast Confidence -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
             <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-              Level 3: Dataset &rarr; Missing/Stale Variables &amp; Data-Quality Warnings
+              Dataset &rarr; Missing/Stale Variables &amp; Data-Quality Warnings
             </div>
             <div class="font-bold text-slate-900">{activeFeed.vendorName} &middot; {activeFeed.datasetOrTransfer}</div>
             <div class="text-[11px] text-slate-700">
@@ -248,10 +245,9 @@
           </div>
         </div>
 
-        <!-- LEVEL 4 (RECORD): Individual Late Transfer or Failed Load with Expected vs. Received Date, Record Count & Last Successful Refresh -->
         <div class="space-y-2">
           <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-            Level 4 (Record): Individual Late Transfer or Failed Load (Expected vs. Received Date, Record Count &amp; Last Successful Refresh)
+            Individual Late Transfer or Failed Load (Expected vs. Received Date, Record Count &amp; Last Successful Refresh)
           </div>
           <div class="border border-slate-200 rounded-xl overflow-hidden">
             <table class="min-w-full divide-y divide-slate-200 text-xs">

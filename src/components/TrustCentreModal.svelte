@@ -23,7 +23,6 @@
     document.body.removeChild(link);
   }
 
-  // Level 4 Audit Records (source records, human reviewer, decision and rejection reason, action history)
   const level4GovernanceRecords = [
     {
       recordId: 'SAE-REC-104-01 / ACT-001',
@@ -73,7 +72,7 @@
           <div>
             <div class="flex items-center space-x-2">
               <span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-blue-500/30 text-blue-200 border border-blue-400/30">
-                Levels 1–4 Prediction Traceability
+                Prediction Traceability
               </span>
               <span class="text-xs text-blue-300">21 CFR Part 11 Compliant</span>
             </div>
@@ -107,10 +106,9 @@
           </div>
         </div>
 
-        <!-- LEVEL 1: Prediction ID -> Model or Rule Version -->
         <div class="space-y-2">
           <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-            Level 1: Prediction ID &rarr; Model or Rule Version
+            Prediction ID &rarr; Model or Rule Version
           </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
@@ -131,19 +129,18 @@
           </div>
         </div>
 
-        <!-- LEVEL 2 & LEVEL 3: Prediction -> Factors Used & Weights -> Source Systems & Refresh Times -->
         <div class="space-y-2">
           <div class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-            Level 2 &amp; Level 3: Prediction &rarr; Factors Used &amp; Weights &rarr; Source Systems &amp; Refresh Times
+            Prediction &rarr; Factors Used &amp; Weights &rarr; Source Systems &amp; Refresh Times
           </div>
           <div class="border border-slate-200 rounded-xl overflow-hidden">
             <table class="min-w-full divide-y divide-slate-200 text-xs">
               <thead class="bg-slate-50 text-slate-500 uppercase font-bold text-[10px]">
                 <tr>
-                  <th class="px-4 py-2.5 text-left">Level 2: Factor Used</th>
+                  <th class="px-4 py-2.5 text-left">Factor Used</th>
                   <th class="px-3 py-2.5 text-right">Factor Weight</th>
                   <th class="px-3 py-2.5 text-right">Potential DBL Shift</th>
-                  <th class="px-4 py-2.5 text-left">Level 3: Source Systems</th>
+                  <th class="px-4 py-2.5 text-left">Source Systems</th>
                   <th class="px-3 py-2.5 text-right">Last Refresh Time</th>
                 </tr>
               </thead>
@@ -181,11 +178,10 @@
           </div>
         </div>
 
-        <!-- LEVEL 4 (RECORD): Source records, human reviewer, decision and rejection reason, action history, audit export -->
         <div class="space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-blue-700">
-              Level 4 (Record): Source Records, Human Reviewer, Decision &amp; Rejection Reason, Action History
+              Source Records, Human Reviewer, Decision &amp; Rejection Reason, Action History
             </span>
             <button
               on:click={exportAuditTrail}
