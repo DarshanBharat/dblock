@@ -20,6 +20,7 @@
   import ActionsSimulationV3 from './components/ActionsSimulationV3.svelte';
   import PortfolioViewV3 from './components/PortfolioViewV3.svelte';
   import SiteInterventionV3 from './components/SiteInterventionV3.svelte';
+  import AiAssistantCopilot from './components/AiAssistantCopilot.svelte';
 
   import { workflow, initialize, resetDemo } from './lib/workflow';
   import {
@@ -31,7 +32,8 @@
     TrendingUp,
     Sparkles,
     ArrowRight,
-    RotateCcw
+    RotateCcw,
+    Database
   } from '@lucide/svelte';
 
   // Active top-level tab
@@ -43,8 +45,9 @@
   let selectedDomainId: string = 'edc';
   let selectedCountryFilter: string = 'all';
 
-  // Modals state
+  // Modals / Copilot state
   let showDataHealth = false;
+  let showCopilot = false;
 
   // Selected Study ID (default: CA-209-301)
   let currentStudyId = 'CA-209-301';
@@ -215,27 +218,56 @@
             </span>
           </div>
 
-          <nav class="flex flex-wrap items-center gap-1" aria-label="Study investigation flow">
-            {#each [
-              { id: 'command_centre', step: '1. Overview' },
-              { id: 'clinical_domains', step: '2. Domains' },
-              { id: 'sites_countries', step: '3. Sites' },
-              { id: 'subjects', step: '4. Subjects' },
-              { id: 'actions_sim', step: '5. Actions & Sim' },
-            ] as flowStep, i}
-              {#if i > 0}
-                <ArrowRight size={11} class="text-slate-300 hidden sm:inline" />
-              {/if}
+          <div class="flex flex-wrap items-center gap-2">
+            <nav class="flex flex-wrap items-center gap-1" aria-label="Study investigation flow">
+              {#each [
+                { id: 'command_centre', step: '1. Overview' },
+                { id: 'clinical_domains', step: '2. Domains' },
+                { id: 'sites_countries', step: '3. Sites' },
+                { id: 'subjects', step: '4. Subjects' },
+                { id: 'actions_sim', step: '5. Actions & Sim' },
+              ] as flowStep, i}
+                {#if i > 0}
+                  <ArrowRight size={11} class="text-slate-300 hidden sm:inline" />
+                {/if}
+                <button
+                  type="button"
+                  on:click={() => handleSelectTab(flowStep.id)}
+                  class="px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer {activeTab === flowStep.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}"
+                >
+                  {flowStep.step}
+                </button>
+              {/each}
+            </nav>
+
+            <div class="hidden md:flex items-center gap-1.5 pl-2 border-l border-slate-200">
               <button
                 type="button"
-                on:click={() => handleSelectTab(flowStep.id)}
-                class="px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer {activeTab === flowStep.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}"
+                on:click={() => (showDataHealth = true)}
+                class="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-amber-200 bg-amber-50/80 text-amber-800 hover:bg-amber-100 font-semibold cursor-pointer"
+                title="View EDC, Argus, LabCorp & eCOA connector health"
               >
-                {flowStep.step}
+                <Database size={11} /> Data Health
               </button>
-            {/each}
-          </nav>
+              <button
+                type="button"
+                on:click={() => (showCopilot = !showCopilot)}
+                class="inline-flex items-center gap-1 px-2 py-1 rounded-md border font-semibold cursor-pointer transition-colors {showCopilot ? 'bg-indigo-600 text-white border-indigo-600' : 'border-indigo-200 bg-indigo-50/70 text-indigo-700 hover:bg-indigo-100'}"
+                title="Toggle AI DBLock Copilot"
+              >
+                <Sparkles size={11} /> AI Copilot
+              </button>
+            </div>
+          </div>
         </div>
+
+        {#if showCopilot}
+          <AiAssistantCopilot
+            {study}
+            onSelectSite={handleSelectSite}
+            onSelectTab={handleSelectTab}
+          />
+        {/if}
 
         <!-- ================================================================= -->
         <!-- STUDY MAIN CONTENT VIEW (Full Width)                              -->
