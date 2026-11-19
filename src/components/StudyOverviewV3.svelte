@@ -17,12 +17,46 @@
     V3_OVERVIEW_INSIGHTS,
     V3_DOMAINS,
     V3_COUNTRY_SUMMARY,
-    V3_ACTIONS
+    V3_ACTIONS,
+    V3_SITES
   } from '../data/v3Data';
+  import dblockData from '../data/dblock_data.json';
+  import RealWorldMap from './RealWorldMap.svelte';
 
   export let onSelectTab: (tab: string) => void;
   export let onSelectDomain: (domainId: string) => void;
   export let onSelectCountry: (country: string) => void = () => onSelectTab('sites_countries');
+
+  const v2SitesById = new Map<string, any>(((dblockData as any).sites || []).map((s: any) => [String(s.id), s]));
+  const countryCoords: Record<string, { lat: number; lng: number; code: string }> = {
+    'United States': { lat: 42.36, lng: -71.06, code: 'US' },
+    'Germany': { lat: 52.52, lng: 13.4, code: 'DE' },
+    'South Korea': { lat: 37.56, lng: 126.97, code: 'KR' },
+    'France': { lat: 48.85, lng: 2.35, code: 'FR' },
+    'Japan': { lat: 35.68, lng: 139.69, code: 'JP' },
+    'United Kingdom': { lat: 51.5, lng: -0.12, code: 'UK' },
+  };
+
+  const mappedSitesForMap = V3_SITES.map((s, idx) => {
+    const v2 = v2SitesById.get(s.id);
+    const fallback = countryCoords[s.country] || { lat: 40 + idx, lng: 0, code: 'US' };
+    const openItems = Math.max(4, Math.round((100 - s.readiness) * 0.9) + s.hardGateBlockers * 3);
+    return {
+      id: s.id,
+      code: `Site ${s.id}`,
+      name: s.name,
+      city: v2?.city || s.name.split('–')[1]?.trim() || s.country,
+      country: s.country,
+      countryCode: v2?.countryCode || fallback.code,
+      lat: v2?.lat ?? fallback.lat + (idx % 3) * 0.6,
+      lng: v2?.lng ?? fallback.lng + (idx % 3) * 0.6,
+      openItems,
+      forecastImpactDays: s.dblImpactDays > 0 ? `+${s.dblImpactDays}d` : '0d',
+      riskLevel: s.riskLevel === 'High risk' ? 'Critical' : s.riskLevel === 'At risk' ? 'High' : 'Low',
+      riskProbability: Math.min(95, Math.max(10, 100 - s.readiness + s.hardGateBlockers * 6)),
+      keyRiskDrivers: s.primaryDriver,
+    };
+  });
 
   // Readiness Weightage Configurator State
   let showWeightConfig = false;
@@ -518,7 +552,66 @@
     </div>
   </div>
 
-  <!-- Row 3: Readiness by Clinical Domain + Countries and Sites -->
+  <!-- Row 3: Countries and Sites (Map on the Left + Table on the Right) -->
+  <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-sm font-bold text-slate-900">Countries and Sites</h2>
+        <p class="text-[11px] text-slate-400">Interactive global site readiness map alongside country-level DBL impact</p>
+      </div>
+      <button
+        type="button"
+        on:click={() => onSelectTab('sites_countries')}
+        class="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
+      >
+        View All 18 Sites <ChevronRight size={13} />
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+      <!-- Map on the Left -->
+      <div class="lg:col-span-6 h-[290px] rounded-lg overflow-hidden border border-slate-200">
+        <RealWorldMap
+          sites={mappedSitesForMap}
+          onSelectSite={(site) => onSelectCountry(site.country)}
+        />
+      </div>
+
+      <!-- Table on the Right -->
+      <div class="lg:col-span-6 overflow-x-auto flex flex-col justify-center">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
+              <th class="pb-2 font-medium">Country</th>
+              <th class="pb-2 font-medium text-right">Sites</th>
+              <th class="pb-2 font-medium text-right">Readiness</th>
+              <th class="pb-2 font-medium text-right">High-Risk Sites</th>
+              <th class="pb-2 font-medium text-right">DBL Impact</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {#each V3_COUNTRY_SUMMARY as c}
+              <tr class="hover:bg-blue-50/40 cursor-pointer" on:click={() => onSelectCountry(c.country)}>
+                <td class="py-2.5 font-medium text-slate-800">{c.flag} {c.country}</td>
+                <td class="py-2.5 text-right text-slate-600">{c.sites}</td>
+                <td class="py-2.5 text-right font-bold {c.readiness < 70 ? 'text-rose-600' : c.readiness < 80 ? 'text-amber-600' : 'text-emerald-600'}">
+                  {c.readiness}%
+                </td>
+                <td class="py-2.5 text-right">
+                  <span class="font-semibold {c.highRiskSites > 0 ? 'text-rose-600' : 'text-slate-500'}">{c.highRiskSites}</span>
+                </td>
+                <td class="py-2.5 text-right font-semibold {c.forecastDays > 0 ? 'text-rose-600' : 'text-slate-500'}">
+                  {c.forecastDays > 0 ? `+${c.forecastDays}d` : '0d'}
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Readiness by Clinical Domain + Top Risks and Next Best Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
     <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
       <div class="flex items-center justify-between mb-3">
@@ -573,97 +666,53 @@
 
     <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
       <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-bold text-slate-900">Countries and Sites</h2>
+        <h2 class="text-sm font-bold text-slate-900">Top Risks and Next Best Actions</h2>
         <button
           type="button"
-          on:click={() => onSelectTab('sites_countries')}
+          on:click={() => onSelectTab('actions_sim')}
           class="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
         >
-          View Site Heatmap <ChevronRight size={13} />
+          View All Actions <ChevronRight size={13} />
         </button>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
             <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-              <th class="pb-2 font-medium">Country</th>
-              <th class="pb-2 font-medium text-right">Sites</th>
-              <th class="pb-2 font-medium text-right">Readiness</th>
-              <th class="pb-2 font-medium text-right">High-Risk Sites</th>
-              <th class="pb-2 font-medium text-right">DBL Impact</th>
+              <th class="pb-2 font-medium">Risk / Issue</th>
+              <th class="pb-2 font-medium">Impact on DBL</th>
+              <th class="pb-2 font-medium">Owner</th>
+              <th class="pb-2 font-medium">Target Date</th>
+              <th class="pb-2 font-medium">Status</th>
+              <th class="pb-2 font-medium text-right">Action</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            {#each V3_COUNTRY_SUMMARY as c}
-              <tr class="hover:bg-blue-50/40 cursor-pointer" on:click={() => onSelectCountry(c.country)}>
-                <td class="py-2.5 font-medium text-slate-800">{c.flag} {c.country}</td>
-                <td class="py-2.5 text-right text-slate-600">{c.sites}</td>
-                <td class="py-2.5 text-right font-bold {c.readiness < 70 ? 'text-rose-600' : c.readiness < 80 ? 'text-amber-600' : 'text-emerald-600'}">
-                  {c.readiness}%
+            {#each V3_ACTIONS.slice(0, 6) as act}
+              <tr class="hover:bg-slate-50/70">
+                <td class="py-2.5 font-medium text-slate-800">{act.title}</td>
+                <td class="py-2.5 font-semibold text-rose-600 whitespace-nowrap">+{Math.abs(act.estDblImpactDays)} days</td>
+                <td class="py-2.5 text-slate-600">{act.owner}</td>
+                <td class="py-2.5 text-slate-600 whitespace-nowrap">{act.dueDate}</td>
+                <td class="py-2.5">
+                  <span class="px-2 py-0.5 rounded-md text-[11px] font-medium {act.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}">
+                    {act.status}
+                  </span>
                 </td>
                 <td class="py-2.5 text-right">
-                  <span class="font-semibold {c.highRiskSites > 0 ? 'text-rose-600' : 'text-slate-500'}">{c.highRiskSites}</span>
-                </td>
-                <td class="py-2.5 text-right font-semibold {c.forecastDays > 0 ? 'text-rose-600' : 'text-slate-500'}">
-                  {c.forecastDays > 0 ? `+${c.forecastDays}d` : '0d'}
+                  <button
+                    type="button"
+                    on:click={() => onSelectTab('actions_sim')}
+                    class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
+                  >
+                    {act.actionLabel}
+                  </button>
                 </td>
               </tr>
             {/each}
           </tbody>
         </table>
       </div>
-    </div>
-  </div>
-
-  <!-- Row 4: Top Risks and Next Best Actions -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-    <div class="flex items-center justify-between mb-3">
-      <h2 class="text-sm font-bold text-slate-900">Top Risks and Next Best Actions</h2>
-      <button
-        type="button"
-        on:click={() => onSelectTab('actions_sim')}
-        class="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
-      >
-        View All Actions <ChevronRight size={13} />
-      </button>
-    </div>
-    <div class="overflow-x-auto">
-      <table class="w-full text-xs">
-        <thead>
-          <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-            <th class="pb-2 font-medium">Risk / Issue</th>
-            <th class="pb-2 font-medium">Impact on DBL</th>
-            <th class="pb-2 font-medium">Owner</th>
-            <th class="pb-2 font-medium">Target Date</th>
-            <th class="pb-2 font-medium">Status</th>
-            <th class="pb-2 font-medium text-right">Action</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {#each V3_ACTIONS.slice(0, 4) as act}
-            <tr class="hover:bg-slate-50/70">
-              <td class="py-2.5 font-medium text-slate-800">{act.title}</td>
-              <td class="py-2.5 font-semibold text-rose-600">+{Math.abs(act.estDblImpactDays)} days</td>
-              <td class="py-2.5 text-slate-600">{act.owner}</td>
-              <td class="py-2.5 text-slate-600">{act.dueDate}</td>
-              <td class="py-2.5">
-                <span class="px-2 py-0.5 rounded-md text-[11px] font-medium {act.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'}">
-                  {act.status}
-                </span>
-              </td>
-              <td class="py-2.5 text-right">
-                <button
-                  type="button"
-                  on:click={() => onSelectTab('actions_sim')}
-                  class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer"
-                >
-                  {act.actionLabel}
-                </button>
-              </td>
-            </tr>
-          {/each}
-        </tbody>
-      </table>
     </div>
   </div>
 </div>
