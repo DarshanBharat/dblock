@@ -91,6 +91,15 @@
     domainWeights = { ...DEFAULT_WEIGHTS };
   }
 
+  function openWeightConfigurator() {
+    showWeightConfig = !showWeightConfig;
+    if (showWeightConfig) {
+      setTimeout(() => {
+        document.getElementById('clinical-domain-readiness')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 40);
+    }
+  }
+
   function applyPreset(preset: 'balanced' | 'safety_ext' | 'edc_query') {
     if (preset === 'balanced') {
       domainWeights = { ...DEFAULT_WEIGHTS };
@@ -187,7 +196,7 @@
         <div class="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            on:click={() => (showWeightConfig = !showWeightConfig)}
+            on:click={openWeightConfigurator}
             class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors {showWeightConfig || isCustomWeights ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}"
           >
             <SlidersHorizontal size={13} />
@@ -275,7 +284,7 @@
       <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
         <button
           type="button"
-          on:click={() => (showWeightConfig = !showWeightConfig)}
+          on:click={openWeightConfigurator}
           class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-blue-600 cursor-pointer"
         >
           <SlidersHorizontal size={11} /> Weights
@@ -389,91 +398,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Collapsible Readiness Score Weightage Configurator -->
-  {#if showWeightConfig}
-    <div class="bg-white rounded-xl border border-blue-200 shadow-xs p-5 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
-        <div>
-          <div class="flex items-center gap-2">
-            <SlidersHorizontal size={15} class="text-blue-600" />
-            <h2 class="text-sm font-bold text-slate-900">Readiness Score Weightage Configurator</h2>
-            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
-              Total Weight: {totalWeight}%
-            </span>
-          </div>
-          <p class="text-xs text-slate-500 mt-0.5">
-            Adjust domain weightages to model study-specific lock priorities. Overall Study Readiness recalculates live (<span class="font-bold text-slate-800">{computedReadiness}%</span>).
-          </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            on:click={() => applyPreset('balanced')}
-            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 cursor-pointer"
-          >
-            Balanced (Default)
-          </button>
-          <button
-            type="button"
-            on:click={() => applyPreset('safety_ext')}
-            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 cursor-pointer"
-          >
-            Safety &amp; External Heavy
-          </button>
-          <button
-            type="button"
-            on:click={() => applyPreset('edc_query')}
-            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 cursor-pointer"
-          >
-            EDC &amp; Query Heavy
-          </button>
-          {#if totalWeight !== 100}
-            <button
-              type="button"
-              on:click={normalizeWeights}
-              class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold cursor-pointer"
-            >
-              Normalize to 100%
-            </button>
-          {/if}
-          <button
-            type="button"
-            on:click={resetWeights}
-            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
-          >
-            <RotateCcw size={11} /> Reset
-          </button>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        {#each V3_DOMAINS as dom}
-          {@const w = domainWeights[dom.id] ?? 0}
-          <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 p-3 space-y-2">
-            <div class="flex items-center justify-between gap-2 text-xs">
-              <span class="font-semibold text-slate-800 truncate">{dom.name}</span>
-              <span class="font-mono font-bold text-blue-700 shrink-0">{w}%</span>
-            </div>
-            <input
-              type="range"
-              min="0"
-              max="50"
-              step="1"
-              bind:value={domainWeights[dom.id]}
-              class="w-full accent-blue-600 cursor-pointer"
-              aria-label="{dom.name} weightage"
-            />
-            <div class="flex items-center justify-between text-[10px] text-slate-500">
-              <span>Domain score: <strong class="text-slate-700">{dom.readiness}%</strong></span>
-              <span>Contrib: <strong class="text-slate-700">{totalWeight > 0 ? Math.round((dom.readiness * w) / totalWeight) : 0} pts</strong></span>
-            </div>
-          </div>
-        {/each}
-      </div>
-    </div>
-  {/if}
 
   <!-- Row 2: Readiness Trend & Forecast + Key Insights -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -613,32 +537,96 @@
 
   <!-- Row 4: Readiness by Clinical Domain + Top Risks and Next Best Actions -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-      <div class="flex items-center justify-between mb-3">
-        <h2 class="text-sm font-bold text-slate-900">Readiness by Clinical Domain</h2>
-        <span class="text-[11px] text-slate-400">Click any domain to drill down</span>
+    <div id="clinical-domain-readiness" class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-bold text-slate-900">Readiness by Clinical Domain</h2>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+              Composite: {computedReadiness}% · {totalWeight}% wt
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">Click any domain to drill down, or tune domain weights</p>
+        </div>
+        <button
+          type="button"
+          on:click={() => (showWeightConfig = !showWeightConfig)}
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold cursor-pointer transition-colors {showWeightConfig ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'}"
+        >
+          <SlidersHorizontal size={12} />
+          <span>{showWeightConfig ? 'Done Configuring' : 'Configure Weights'}</span>
+        </button>
       </div>
+
+      {#if showWeightConfig}
+        <div class="rounded-lg border border-blue-200/80 bg-blue-50/40 p-2.5 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <span class="font-semibold text-slate-600 mr-1">Presets:</span>
+            <button
+              type="button"
+              on:click={() => applyPreset('balanced')}
+              class="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 cursor-pointer"
+            >
+              Balanced
+            </button>
+            <button
+              type="button"
+              on:click={() => applyPreset('safety_ext')}
+              class="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 cursor-pointer"
+            >
+              Safety &amp; External
+            </button>
+            <button
+              type="button"
+              on:click={() => applyPreset('edc_query')}
+              class="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 cursor-pointer"
+            >
+              EDC &amp; Query
+            </button>
+          </div>
+          <div class="flex items-center gap-1.5">
+            {#if totalWeight !== 100}
+              <button
+                type="button"
+                on:click={normalizeWeights}
+                class="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer"
+              >
+                Normalize 100%
+              </button>
+            {/if}
+            <button
+              type="button"
+              on:click={resetWeights}
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-slate-200 bg-white text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
+            >
+              <RotateCcw size={10} /> Reset
+            </button>
+          </div>
+        </div>
+      {/if}
+
       <div class="overflow-x-auto">
         <table class="w-full text-xs">
           <thead>
             <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
               <th class="pb-2 font-medium">Domain</th>
               <th class="pb-2 font-medium text-right">Readiness</th>
-              <th class="pb-2 font-medium text-right">Expected</th>
-              <th class="pb-2 font-medium text-right">Variance</th>
+              <th class="pb-2 font-medium text-right">Var</th>
+              <th class="pb-2 font-medium text-right {showWeightConfig ? 'min-w-[125px]' : ''}">Weight</th>
               <th class="pb-2 font-medium text-right">Status</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
             {#each V3_DOMAINS as dom}
+              {@const w = domainWeights[dom.id] ?? 0}
               <tr
                 class="hover:bg-blue-50/50 transition-colors cursor-pointer"
                 on:click={() => onSelectDomain(dom.id)}
               >
                 <td class="py-2.5 font-medium text-slate-800">{dom.name}</td>
                 <td class="py-2.5 text-right">
-                  <div class="inline-flex items-center gap-2">
-                    <div class="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                  <div class="inline-flex items-center gap-1.5">
+                    <div class="w-14 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
                       <div
                         class="h-full rounded-full {dom.status === 'On track' ? 'bg-emerald-500' : dom.status === 'High risk' ? 'bg-rose-500' : 'bg-amber-500'}"
                         style="width: {dom.readiness}%"
@@ -647,9 +635,26 @@
                     <span class="font-bold text-slate-900">{dom.readiness}%</span>
                   </div>
                 </td>
-                <td class="py-2.5 text-right text-slate-500">{dom.expected}%</td>
                 <td class="py-2.5 text-right font-semibold {dom.variance <= -10 ? 'text-rose-600' : dom.variance < 0 ? 'text-amber-600' : 'text-emerald-600'}">
                   {dom.variance}%
+                </td>
+                <td class="py-2.5 text-right" on:click|stopPropagation>
+                  {#if showWeightConfig}
+                    <div class="flex items-center justify-end gap-1.5">
+                      <input
+                        type="range"
+                        min="0"
+                        max="50"
+                        step="1"
+                        bind:value={domainWeights[dom.id]}
+                        class="w-16 accent-blue-600 cursor-pointer"
+                        aria-label="{dom.name} weightage"
+                      />
+                      <span class="font-mono font-bold text-blue-700 w-7 text-right">{w}%</span>
+                    </div>
+                  {:else}
+                    <span class="font-mono font-semibold text-slate-600">{w}%</span>
+                  {/if}
                 </td>
                 <td class="py-2.5 text-right">
                   <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border {badgeClass(dom.status)}">

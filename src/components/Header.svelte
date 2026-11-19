@@ -40,7 +40,7 @@
         class="flex items-center gap-2.5 cursor-pointer text-left group"
         on:click={() => onSelectTab('portfolio')}
       >
-        <img src={tcsLogo} alt="Tata Consultancy Services" width="104" height="35" class="w-[88px] max-[380px]:w-[64px] sm:w-[104px] h-auto rounded-md bg-slate-950" />
+        <img src={tcsLogo} alt="Tata Consultancy Services" width="104" height="35" class="w-[88px] max-[380px]:w-[64px] sm:w-[104px] h-auto rounded-md bg-white" />
         <div>
           <strong class="text-[15px] font-bold tracking-tight text-slate-900 leading-none block font-display">
             DBLock <span class="text-blue-600">AI</span>
