@@ -10,25 +10,16 @@
   let ownerFilter = 'all';
   let domainFilter = 'all';
 
-  let actionItems = V3_ACTIONS.map((a) => ({ ...a }));
   let scenarios: SimulationScenarioInput[] = V3_SIMULATION_SCENARIOS.map((s) => ({ ...s }));
   let ignoreNonCritical = false;
   let includeContingency = false;
-  let velocityBoostDays = 0;
-
-  $: effectiveScenarios = [
-    ...scenarios,
-    ...(velocityBoostDays > 0
-      ? [{ id: 'sim-vel', label: 'CRA & Vendor Velocity Boost', daysSaved: velocityBoostDays, readinessGainPts: velocityBoostDays * 2, probGainPts: velocityBoostDays * 3, enabled: true }]
-      : []),
-  ];
 
   $: simOutput = runDblSimulation({
     targetDblIso: V3_STUDY_META.targetDblIso,
     baselinePredictedDblIso: V3_STUDY_META.predictedDblIso,
     baselineProbPct: V3_STUDY_META.probMeetingDbl,
     baselineReadinessPct: V3_STUDY_META.overallReadiness,
-    scenarios: effectiveScenarios,
+    scenarios,
     includeContingency,
     ignoreNonCritical,
   });
@@ -37,25 +28,12 @@
     scenarios = [...scenarios];
   }
 
-  function cycleActionStatus(id: string) {
-    const order = ['Open', 'In Progress', 'Resolved'] as const;
-    actionItems = actionItems.map((a) => {
-      if (a.id !== id) return a;
-      const idx = order.indexOf(a.status as any);
-      const next = idx === -1 ? 'In Progress' : order[(idx + 1) % order.length];
-      return { ...a, status: next as any };
-    });
-  }
-
-  $: filteredActions = actionItems.filter((a) => {
+  $: filteredActions = V3_ACTIONS.filter((a) => {
     const matchStatus = statusFilter === 'all' || a.status === statusFilter;
     const matchOwner = ownerFilter === 'all' || a.owner === ownerFilter;
     const matchDomain = domainFilter === 'all' || a.domain === domainFilter;
     return matchStatus && matchOwner && matchDomain;
   });
-
-  $: resolvedCount = actionItems.filter((a) => (a.status as string) === 'Resolved').length;
-  $: overdueCount = actionItems.filter((a) => a.status === 'Overdue').length;
 
   const owners = Array.from(new Set(V3_ACTIONS.map((a) => a.owner)));
   const domains = Array.from(new Set(V3_ACTIONS.map((a) => a.domain)));
@@ -234,14 +212,9 @@
                   {a.estDblImpactDays < 0 ? `${a.estDblImpactDays}d` : '0d'}
                 </td>
                 <td class="py-2">
-                  <button
-                    type="button"
-                    on:click|stopPropagation={() => cycleActionStatus(a.id)}
-                    title="Click to cycle status (Open → In Progress → Resolved)"
-                    class="px-1.5 py-0.5 rounded text-[10px] font-semibold cursor-pointer border transition-colors {(a.status as string) === 'Resolved' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : a.status === 'Overdue' ? 'bg-rose-50 text-rose-700 border-rose-200' : a.status === 'In Progress' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-blue-50 text-blue-700 border-blue-200'}"
-                  >
+                  <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold {a.status === 'Overdue' ? 'bg-rose-50 text-rose-700' : a.status === 'In Progress' ? 'bg-amber-50 text-amber-700' : 'bg-blue-50 text-blue-700'}">
                     {a.status}
-                  </button>
+                  </span>
                 </td>
               </tr>
             {/each}
@@ -254,7 +227,7 @@
     <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
       <div>
         <h2 class="text-sm font-bold text-slate-900">What-If Simulation</h2>
-        <p class="text-[11px] text-slate-500 mt-0.5">See how closing key actions &amp; velocity boosts shift P50/P80/P90 DBL.</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">See how closing key actions improves the P80 predicted DBL date.</p>
       </div>
 
       <div class="space-y-2 text-xs">
@@ -265,20 +238,6 @@
             <span>{sc.label} <span class="text-emerald-600 font-semibold">(-{sc.daysSaved}d)</span></span>
           </label>
         {/each}
-        <div class="pt-1.5 border-t border-slate-100">
-          <div class="flex items-center justify-between text-[11px] text-slate-700 mb-1">
-            <span class="font-semibold">CRA &amp; Vendor Velocity Boost</span>
-            <span class="font-mono font-bold text-blue-600">+{velocityBoostDays}d</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="3"
-            step="1"
-            bind:value={velocityBoostDays}
-            class="w-full accent-blue-600 cursor-pointer"
-          />
-        </div>
         <label class="flex items-start gap-2 cursor-pointer text-slate-600 pt-1 border-t border-slate-100">
           <input type="checkbox" bind:checked={ignoreNonCritical} class="mt-0.5 rounded border-slate-300 text-blue-600" />
           <span>Ignore non-critical items</span>
@@ -299,7 +258,7 @@
 
       <!-- Simulation Result -->
       <div class="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
-        <div class="text-xs font-bold text-slate-900">Monte Carlo Simulation Result</div>
+        <div class="text-xs font-bold text-slate-900">Simulation Result</div>
         <div class="flex items-baseline justify-between">
           <div>
             <div class="text-[10px] text-slate-500">Predicted DBL Date (P80)</div>
@@ -308,20 +267,6 @@
           <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
             -{simOutput.daysRecovered} days
           </span>
-        </div>
-        <div class="grid grid-cols-3 gap-1.5 text-center pt-1.5 border-t border-emerald-200/60">
-          <div class="bg-white/80 rounded p-1.5 border border-emerald-100">
-            <div class="text-[9px] font-bold text-slate-400">P50 (Median)</div>
-            <div class="text-[11px] font-bold text-slate-800">{formatShortDate(simOutput.p50Date)}</div>
-          </div>
-          <div class="bg-white rounded p-1.5 border border-emerald-300">
-            <div class="text-[9px] font-bold text-emerald-700">P80 (Commit)</div>
-            <div class="text-[11px] font-bold text-emerald-800">{formatShortDate(simOutput.p80Date)}</div>
-          </div>
-          <div class="bg-white/80 rounded p-1.5 border border-emerald-100">
-            <div class="text-[9px] font-bold text-slate-400">P90 (Tail)</div>
-            <div class="text-[11px] font-bold text-slate-800">{formatShortDate(simOutput.p90Date)}</div>
-          </div>
         </div>
         <div class="flex items-center justify-between text-xs pt-1 border-t border-emerald-200/60">
           <span class="text-slate-600">Probability of Meeting Target DBL</span>
