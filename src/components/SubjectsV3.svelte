@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ArrowLeft, Search, RotateCcw, ChevronRight } from '@lucide/svelte';
-  import { V3_STUDY_META, V3_SUBJECT_ROWS, V3_COUNTRY_SUMMARY } from '../data/v3Data';
+  import { ArrowLeft, Search, RotateCcw, ChevronRight, ChevronLeft, SlidersHorizontal } from '@lucide/svelte';
+  import { V3_STUDY_META, V3_SUBJECT_ROWS, V3_COUNTRY_SUMMARY, V3_SITES } from '../data/v3Data';
   import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
 
   export let onSelectTab: (tab: string) => void;
@@ -8,6 +8,9 @@
   let countryFilter = 'all';
   let siteFilter = 'all';
   let readinessFilter = 'all';
+  let subjectStatusFilter = 'all';
+  let criticalityFilter = 'all';
+  let sortBy: 'readiness_asc' | 'days_open' | 'subject_id' = 'readiness_asc';
   let quickFilter: 'all' | 'lock_pop' | 'hard_blocked' | 'endpoint' | 'sae' = 'all';
   let searchQuery = '';
   let currentPage = 1;
@@ -21,22 +24,58 @@
       !q ||
       s.id.toLowerCase().includes(q) ||
       s.siteId.toLowerCase().includes(q) ||
-      s.country.toLowerCase().includes(q);
+      s.country.toLowerCase().includes(q) ||
+      s.owner.toLowerCase().includes(q) ||
+      s.keyOpenItems.toLowerCase().includes(q);
     const matchCountry = countryFilter === 'all' || s.country === countryFilter;
     const matchSite = siteFilter === 'all' || s.siteId === siteFilter;
     const matchReadiness = readinessFilter === 'all' || s.classification === readinessFilter;
+    const matchStatus = subjectStatusFilter === 'all' || s.status === subjectStatusFilter;
+    const matchCriticality = criticalityFilter === 'all' || s.criticality === criticalityFilter;
     const matchQuick =
       quickFilter === 'all' ||
       (quickFilter === 'lock_pop' && s.lockPopulation) ||
       (quickFilter === 'hard_blocked' && s.classification === 'Hard Blocked') ||
       (quickFilter === 'endpoint' && s.hasEndpointIssue) ||
       (quickFilter === 'sae' && s.hasSae);
-    return matchSearch && matchCountry && matchSite && matchReadiness && matchQuick;
+    return matchSearch && matchCountry && matchSite && matchReadiness && matchStatus && matchCriticality && matchQuick;
+  }).sort((a, b) => {
+    if (sortBy === 'days_open') return b.daysOpen - a.daysOpen || a.readiness - b.readiness;
+    if (sortBy === 'subject_id') return a.id.localeCompare(b.id);
+    return a.readiness - b.readiness || b.daysOpen - a.daysOpen;
   });
 
   $: totalPages = Math.max(1, Math.ceil(filteredSubjects.length / pageSize));
   $: if (currentPage > totalPages) currentPage = 1;
   $: pagedSubjects = filteredSubjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  $: activeFilterCount =
+    (countryFilter !== 'all' ? 1 : 0) +
+    (siteFilter !== 'all' ? 1 : 0) +
+    (readinessFilter !== 'all' ? 1 : 0) +
+    (subjectStatusFilter !== 'all' ? 1 : 0) +
+    (criticalityFilter !== 'all' ? 1 : 0) +
+    (quickFilter !== 'all' ? 1 : 0) +
+    (searchQuery.trim() ? 1 : 0);
+
+  $: visiblePageNumbers = (() => {
+    const pages: number[] = [];
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+    for (let p = Math.max(1, end - 4); p <= end; p++) pages.push(p);
+    return pages;
+  })();
+
+  function resetAllFilters() {
+    countryFilter = 'all';
+    siteFilter = 'all';
+    readinessFilter = 'all';
+    subjectStatusFilter = 'all';
+    criticalityFilter = 'all';
+    quickFilter = 'all';
+    searchQuery = '';
+    sortBy = 'readiness_asc';
+    currentPage = 1;
+  }
 
   // Donut data matching page 37 (220 subjects: 158 Lock Ready, 32 Conditionally Ready, 20 Action Required, 10 Hard Blocked)
   const subjectDonut = [
@@ -161,47 +200,91 @@
 
   <!-- Filters + Main Grid -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-    <aside class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3.5">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Filters</h2>
+    <aside class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-1.5">
+          <SlidersHorizontal size={13} class="text-slate-500" />
+          <h2 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Filters</h2>
+          {#if activeFilterCount > 0}
+            <span class="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">{activeFilterCount}</span>
+          {/if}
+        </div>
         <button
           type="button"
-          on:click={() => { countryFilter = 'all'; readinessFilter = 'all'; quickFilter = 'all'; searchQuery = ''; }}
+          on:click={resetAllFilters}
           class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
         >
           <RotateCcw size={11} /> Reset
         </button>
       </div>
+
       <div>
-        <label for="sub-country" class="block text-[11px] font-medium text-slate-500 mb-1">Country</label>
-        <select id="sub-country" bind:value={countryFilter} class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white">
-          <option value="all">All Countries</option>
-          {#each V3_COUNTRY_SUMMARY as c}
-            <option value={c.country}>{c.country}</option>
-          {/each}
-        </select>
-      </div>
-      <div>
-        <label for="sub-class" class="block text-[11px] font-medium text-slate-500 mb-1">Subject Readiness</label>
-        <select id="sub-class" bind:value={readinessFilter} class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white">
-          <option value="all">All Classifications</option>
-          <option value="Hard Blocked">Hard Blocked</option>
-          <option value="Action Required">Action Required</option>
-          <option value="Conditionally Ready">Conditionally Ready</option>
-          <option value="Lock Ready">Lock Ready</option>
-        </select>
-      </div>
-      <div>
-        <label for="sub-search" class="block text-[11px] font-medium text-slate-500 mb-1">Search Subject ID</label>
+        <label for="sub-search" class="block text-[11px] font-semibold text-slate-600 mb-1">Search Subject / Site / Driver</label>
         <div class="relative">
           <Search size={12} class="absolute left-2.5 top-2.5 text-slate-400" />
           <input
             id="sub-search"
             type="text"
             bind:value={searchQuery}
+            on:input={() => (currentPage = 1)}
             placeholder="e.g. CA209-301-104-012"
             class="w-full pl-7 pr-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-blue-500"
           />
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 gap-2.5">
+        <div>
+          <label for="sub-country" class="block text-[11px] font-semibold text-slate-600 mb-1">Country</label>
+          <select id="sub-country" bind:value={countryFilter} on:change={() => (currentPage = 1)} class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white">
+            <option value="all">All Countries ({V3_COUNTRY_SUMMARY.length})</option>
+            {#each V3_COUNTRY_SUMMARY as c}
+              <option value={c.country}>{c.flag} {c.country}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div>
+          <label for="sub-site" class="block text-[11px] font-semibold text-slate-600 mb-1">Site ID</label>
+          <select id="sub-site" bind:value={siteFilter} on:change={() => (currentPage = 1)} class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white">
+            <option value="all">All Sites ({V3_SITES.length})</option>
+            {#each V3_SITES as st}
+              <option value={st.id}>Site {st.id} · {st.country}</option>
+            {/each}
+          </select>
+        </div>
+
+        <div>
+          <label for="sub-class" class="block text-[11px] font-semibold text-slate-600 mb-1">Subject Classification</label>
+          <select id="sub-class" bind:value={readinessFilter} on:change={() => (currentPage = 1)} class="w-full text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white">
+            <option value="all">All Classifications</option>
+            <option value="Hard Blocked">Hard Blocked</option>
+            <option value="Action Required">Action Required</option>
+            <option value="Conditionally Ready">Conditionally Ready</option>
+            <option value="Lock Ready">Lock Ready</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="sub-status" class="block text-[11px] font-semibold text-slate-600 mb-1">Status</label>
+            <select id="sub-status" bind:value={subjectStatusFilter} on:change={() => (currentPage = 1)} class="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+              <option value="all">All</option>
+              <option value="Completed">Completed</option>
+              <option value="Ongoing">Ongoing</option>
+              <option value="Discontinued">Discontinued</option>
+            </select>
+          </div>
+          <div>
+            <label for="sub-crit" class="block text-[11px] font-semibold text-slate-600 mb-1">Criticality</label>
+            <select id="sub-crit" bind:value={criticalityFilter} on:change={() => (currentPage = 1)} class="w-full text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white">
+              <option value="all">All</option>
+              <option value="Critical">Critical</option>
+              <option value="High">High</option>
+              <option value="Medium">Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -216,7 +299,7 @@
         ] as qf}
           <button
             type="button"
-            on:click={() => (quickFilter = qf.id as any)}
+            on:click={() => { quickFilter = qf.id as any; currentPage = 1; }}
             class="w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer {quickFilter === qf.id ? 'bg-blue-50 border-blue-300 text-blue-800 font-semibold' : 'bg-white border-slate-200/70 text-slate-700 hover:bg-slate-50'}"
           >
             {qf.label}
@@ -340,8 +423,14 @@
             {/if}
           </div>
           <div class="flex items-center gap-2 text-[11px] text-slate-500">
-            <span>Showing {pagedSubjects.length} of {filteredSubjects.length} subjects</span>
-            <select bind:value={pageSize} on:change={() => (currentPage = 1)} class="border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs">
+            <label for="sub-sort" class="text-slate-500">Sort:</label>
+            <select id="sub-sort" bind:value={sortBy} on:change={() => (currentPage = 1)} class="border border-slate-200 rounded-lg px-2 py-1 bg-white text-xs text-slate-700">
+              <option value="readiness_asc">Readiness (Low → High)</option>
+              <option value="days_open">Days Open (High → Low)</option>
+              <option value="subject_id">Subject ID</option>
+            </select>
+            <select bind:value={pageSize} on:change={() => (currentPage = 1)} class="border border-slate-200 rounded-lg px-2 py-1 bg-white text-xs text-slate-700">
+              <option value={10}>10 / page</option>
               <option value={25}>25 / page</option>
               <option value={50}>50 / page</option>
               <option value={220}>All (220)</option>
@@ -388,33 +477,48 @@
                     </span>
                   </td>
                 </tr>
+              {:else}
+                <tr>
+                  <td colspan="9" class="py-8 text-center text-xs text-slate-400">
+                    No subjects match the current filters.
+                  </td>
+                </tr>
               {/each}
             </tbody>
           </table>
         </div>
-        {#if totalPages > 1}
-          <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs">
-            <span class="text-slate-500">Page {currentPage} of {totalPages}</span>
-            <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 pt-3 mt-3 border-t border-slate-100 text-xs">
+          <span class="text-slate-500">
+            Showing {filteredSubjects.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}–{Math.min(currentPage * pageSize, filteredSubjects.length)} of {filteredSubjects.length} subjects · Page {currentPage} of {totalPages}
+          </span>
+          <div class="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              on:click={() => (currentPage = Math.max(1, currentPage - 1))}
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <ChevronLeft size={13} /> Previous
+            </button>
+            {#each visiblePageNumbers as p}
               <button
                 type="button"
-                disabled={currentPage === 1}
-                on:click={() => (currentPage = Math.max(1, currentPage - 1))}
-                class="px-2.5 py-1 rounded border border-slate-200 bg-white text-slate-700 disabled:opacity-40 cursor-pointer"
+                on:click={() => (currentPage = p)}
+                class="w-7 h-7 rounded-md text-xs font-semibold border cursor-pointer {currentPage === p ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
               >
-                Previous
+                {p}
               </button>
-              <button
-                type="button"
-                disabled={currentPage === totalPages}
-                on:click={() => (currentPage = Math.min(totalPages, currentPage + 1))}
-                class="px-2.5 py-1 rounded border border-slate-200 bg-white text-slate-700 disabled:opacity-40 cursor-pointer"
-              >
-                Next
-              </button>
-            </div>
+            {/each}
+            <button
+              type="button"
+              disabled={currentPage === totalPages}
+              on:click={() => (currentPage = Math.min(totalPages, currentPage + 1))}
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              Next <ChevronRight size={13} />
+            </button>
           </div>
-        {/if}
+        </div>
       </div>
     </div>
   </div>

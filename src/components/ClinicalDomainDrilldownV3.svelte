@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronRight, Search, Info, SlidersHorizontal, RotateCcw } from '@lucide/svelte';
+  import { ArrowLeft, ChevronRight, ChevronLeft, Search, Info, SlidersHorizontal, RotateCcw } from '@lucide/svelte';
   import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS } from '../data/v3Data';
   import {
     v3DomainWeights,
@@ -19,7 +19,8 @@
   let statusFilter = 'all';
   let drawerSubjectId: string | null = null;
   let showWeightConfig = false;
-  let showAllSubjects = false;
+  let subjectPage = 1;
+  let subjectPageSize = 15;
 
   $: readinessMetrics = computeCompositeReadiness(
     $v3DomainWeights,
@@ -76,7 +77,19 @@
     })
     .sort((a, b) => a.completion - b.completion || b.subj.daysOpen - a.subj.daysOpen);
 
-  $: visibleSubjects = showAllSubjects ? filteredSubjects : filteredSubjects.slice(0, 20);
+  $: totalSubjectPages = Math.max(1, Math.ceil(filteredSubjects.length / subjectPageSize));
+  $: if (subjectPage > totalSubjectPages) subjectPage = 1;
+  $: visibleSubjects = filteredSubjects.slice(
+    (subjectPage - 1) * subjectPageSize,
+    subjectPage * subjectPageSize
+  );
+  $: visibleSubjectPageNumbers = (() => {
+    const pages: number[] = [];
+    const start = Math.max(1, subjectPage - 2);
+    const end = Math.min(totalSubjectPages, start + 4);
+    for (let p = Math.max(1, end - 4); p <= end; p++) pages.push(p);
+    return pages;
+  })();
 
   function statusPill(status: string): string {
     if (status === 'On track') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -580,18 +593,50 @@
               </tbody>
             </table>
           </div>
-          {#if filteredSubjects.length > 20}
-            <div class="flex items-center justify-between pt-2 text-[11px] text-slate-500">
-              <span>Showing {visibleSubjects.length} of {filteredSubjects.length} subjects in {currentDomain.name}</span>
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-3 mt-2 border-t border-slate-100 text-xs">
+            <div class="flex items-center gap-2 text-slate-500">
+              <span>
+                Showing {filteredSubjects.length === 0 ? 0 : (subjectPage - 1) * subjectPageSize + 1}–{Math.min(subjectPage * subjectPageSize, filteredSubjects.length)} of {filteredSubjects.length} subjects · Page {subjectPage} of {totalSubjectPages}
+              </span>
+              <select
+                bind:value={subjectPageSize}
+                on:change={() => (subjectPage = 1)}
+                class="border border-slate-200 rounded-md px-1.5 py-0.5 bg-white text-xs text-slate-700"
+              >
+                <option value={15}>15 / page</option>
+                <option value={25}>25 / page</option>
+                <option value={50}>50 / page</option>
+                <option value={220}>All (220)</option>
+              </select>
+            </div>
+            <div class="flex items-center gap-1.5">
               <button
                 type="button"
-                on:click={() => (showAllSubjects = !showAllSubjects)}
-                class="font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+                disabled={subjectPage === 1}
+                on:click={() => (subjectPage = Math.max(1, subjectPage - 1))}
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
               >
-                {showAllSubjects ? 'Show Top 20' : `Show All ${filteredSubjects.length} Subjects`}
+                <ChevronLeft size={13} /> Previous
+              </button>
+              {#each visibleSubjectPageNumbers as p}
+                <button
+                  type="button"
+                  on:click={() => (subjectPage = p)}
+                  class="w-7 h-7 rounded-md text-xs font-semibold border cursor-pointer {subjectPage === p ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
+                >
+                  {p}
+                </button>
+              {/each}
+              <button
+                type="button"
+                disabled={subjectPage === totalSubjectPages}
+                on:click={() => (subjectPage = Math.min(totalSubjectPages, subjectPage + 1))}
+                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              >
+                Next <ChevronRight size={13} />
               </button>
             </div>
-          {/if}
+          </div>
         {/if}
 
         <!-- Top Pending Items Table -->
