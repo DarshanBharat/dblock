@@ -7,7 +7,9 @@
     Info,
     CheckCircle2,
     ChevronRight,
-    FileText
+    FileText,
+    SlidersHorizontal,
+    RotateCcw
   } from '@lucide/svelte';
   import {
     V3_STUDY_META,
@@ -21,6 +23,69 @@
   export let onSelectTab: (tab: string) => void;
   export let onSelectDomain: (domainId: string) => void;
   export let onSelectCountry: (country: string) => void = () => onSelectTab('sites_countries');
+
+  // Readiness Weightage Configurator State
+  let showWeightConfig = false;
+  const DEFAULT_WEIGHTS: Record<string, number> = {
+    edc: 20,
+    queries: 15,
+    external: 20,
+    safety: 15,
+    coding: 8,
+    pi_sig: 10,
+    deviations: 6,
+    sdv: 6,
+  };
+  let domainWeights: Record<string, number> = { ...DEFAULT_WEIGHTS };
+
+  $: totalWeight = Object.values(domainWeights).reduce((sum, w) => sum + w, 0);
+  $: weightedReadinessRaw =
+    totalWeight > 0
+      ? V3_DOMAINS.reduce((sum, d) => sum + d.readiness * (domainWeights[d.id] ?? 0), 0) / totalWeight
+      : V3_STUDY_META.overallReadiness;
+  $: defaultWeightedRaw =
+    V3_DOMAINS.reduce((sum, d) => sum + d.readiness * (DEFAULT_WEIGHTS[d.id] ?? 0), 0) / 100;
+  // Anchor default weights to V3_STUDY_META.overallReadiness (72%) and reflect delta dynamically
+  $: computedReadiness = Math.max(
+    0,
+    Math.min(100, Math.round(V3_STUDY_META.overallReadiness + (weightedReadinessRaw - defaultWeightedRaw)))
+  );
+  $: computedGap = computedReadiness - V3_STUDY_META.expectedReadiness;
+  $: isCustomWeights = V3_DOMAINS.some((d) => domainWeights[d.id] !== DEFAULT_WEIGHTS[d.id]);
+
+  function resetWeights() {
+    domainWeights = { ...DEFAULT_WEIGHTS };
+  }
+
+  function applyPreset(preset: 'balanced' | 'safety_ext' | 'edc_query') {
+    if (preset === 'balanced') {
+      domainWeights = { ...DEFAULT_WEIGHTS };
+    } else if (preset === 'safety_ext') {
+      domainWeights = { edc: 10, queries: 10, external: 30, safety: 25, coding: 5, pi_sig: 10, deviations: 5, sdv: 5 };
+    } else {
+      domainWeights = { edc: 30, queries: 25, external: 10, safety: 10, coding: 8, pi_sig: 7, deviations: 5, sdv: 5 };
+    }
+  }
+
+  function normalizeWeights() {
+    if (totalWeight <= 0) {
+      resetWeights();
+      return;
+    }
+    const next: Record<string, number> = {};
+    let running = 0;
+    const keys = V3_DOMAINS.map((d) => d.id);
+    keys.forEach((k, i) => {
+      if (i === keys.length - 1) {
+        next[k] = Math.max(0, 100 - running);
+      } else {
+        const val = Math.round(((domainWeights[k] ?? 0) / totalWeight) * 100);
+        next[k] = val;
+        running += val;
+      }
+    });
+    domainWeights = next;
+  }
 
   // SVG chart geometry for Readiness Trend and Forecast
   const W = 580;
@@ -85,13 +150,26 @@
         <p class="text-xs text-slate-500 mt-1">{V3_STUDY_META.title}</p>
       </div>
       <div class="flex flex-col items-end gap-1.5">
-        <button
-          type="button"
-          on:click={() => onSelectTab('actions_sim')}
-          class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
-        >
-          <FileText size={13} /> Generate Executive Report
-        </button>
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            on:click={() => (showWeightConfig = !showWeightConfig)}
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-colors {showWeightConfig || isCustomWeights ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}"
+          >
+            <SlidersHorizontal size={13} />
+            <span>{showWeightConfig ? 'Hide Weightage Config' : 'Configure Readiness Weights'}</span>
+            {#if isCustomWeights}
+              <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-bold">Custom</span>
+            {/if}
+          </button>
+          <button
+            type="button"
+            on:click={() => onSelectTab('actions_sim')}
+            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
+          >
+            <FileText size={13} /> Generate Executive Report
+          </button>
+        </div>
         <span class="text-[11px] text-slate-400">Last refreshed: {V3_STUDY_META.lastRefreshed}</span>
       </div>
     </div>
@@ -133,72 +211,235 @@
     </div>
   </div>
 
-  <!-- 5 Executive KPI Cards -->
+  <!-- 5 Executive KPI Cards with Drill-Down Buttons -->
   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-      <div class="text-xs font-medium text-slate-500">Overall Study Readiness</div>
-      <div class="mt-1.5 flex items-baseline gap-2">
-        <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.overallReadiness}%</span>
-        <div class="text-[11px] leading-tight">
-          <div class="font-semibold text-rose-600">{V3_STUDY_META.readinessGap}% vs expected</div>
-          <div class="text-slate-400">Expected today: {V3_STUDY_META.expectedReadiness}%</div>
+    <!-- Card 1: Overall Study Readiness -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between gap-1">
+          <div class="text-xs font-medium text-slate-500">Overall Study Readiness</div>
+          {#if isCustomWeights}
+            <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[9px] font-bold">Weighted</span>
+          {/if}
+        </div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span class="text-3xl font-bold text-slate-900">{computedReadiness}%</span>
+          <div class="text-[11px] leading-tight">
+            <div class="font-semibold {computedGap >= 0 ? 'text-emerald-600' : 'text-rose-600'}">
+              {computedGap >= 0 ? `+${computedGap}` : computedGap}% vs expected
+            </div>
+            <div class="text-slate-400">Expected today: {V3_STUDY_META.expectedReadiness}%</div>
+          </div>
+        </div>
+        <div class="mt-3 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full bg-amber-500 rounded-full transition-all" style="width: {computedReadiness}%"></div>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-500">
+          {V3_STUDY_META.lockReadySubjects} / {V3_STUDY_META.enrolledSubjects} subjects lock-ready
         </div>
       </div>
-      <div class="mt-3 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-        <div class="h-full bg-amber-500 rounded-full" style="width: {V3_STUDY_META.overallReadiness}%"></div>
-      </div>
-      <div class="mt-2 text-[11px] text-slate-500">
-        {V3_STUDY_META.lockReadySubjects} / {V3_STUDY_META.enrolledSubjects} subjects lock-ready
-      </div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-      <div class="text-xs font-medium text-slate-500">Predicted DBL Date (P80)</div>
-      <div class="mt-1.5 flex items-baseline gap-2">
-        <span class="text-2xl font-bold text-slate-900">{V3_STUDY_META.predictedDbl}</span>
-        <span class="text-xs font-bold text-rose-600">+{V3_STUDY_META.delayDays} days</span>
-      </div>
-      <div class="mt-2.5 text-[11px] text-slate-500">Target DBL: {V3_STUDY_META.targetDbl}</div>
-      <div class="mt-1 text-[11px] text-slate-500">
-        Confidence: <span class="font-semibold text-slate-700">{V3_STUDY_META.confidence}</span> · P50: 19 Dec · P90: 23 Dec
+      <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          on:click={() => (showWeightConfig = !showWeightConfig)}
+          class="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-blue-600 cursor-pointer"
+        >
+          <SlidersHorizontal size={11} /> Weights
+        </button>
+        <button
+          type="button"
+          on:click={() => onSelectTab('clinical_domains')}
+          class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+        >
+          Drill into Domains <ChevronRight size={12} />
+        </button>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-      <div class="text-xs font-medium text-slate-500">Probability of Meeting DBL</div>
-      <div class="mt-1.5 flex items-baseline gap-2">
-        <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.probMeetingDbl}%</span>
+    <!-- Card 2: Predicted DBL Date (P80) -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="text-xs font-medium text-slate-500">Predicted DBL Date (P80)</div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span class="text-2xl font-bold text-slate-900">{V3_STUDY_META.predictedDbl}</span>
+          <span class="text-xs font-bold text-rose-600">+{V3_STUDY_META.delayDays} days</span>
+        </div>
+        <div class="mt-2.5 text-[11px] text-slate-500">Target DBL: {V3_STUDY_META.targetDbl}</div>
+        <div class="mt-1 text-[11px] text-slate-500">
+          Confidence: <span class="font-semibold text-slate-700">{V3_STUDY_META.confidence}</span> · P50: 19 Dec · P90: 23 Dec
+        </div>
       </div>
-      <div class="mt-3 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-        <div class="h-full bg-rose-500 rounded-full" style="width: {V3_STUDY_META.probMeetingDbl}%"></div>
-      </div>
-      <div class="mt-2 text-[11px] text-slate-500">
-        Velocity: {V3_STUDY_META.currentVelocity} (req {V3_STUDY_META.requiredVelocity})
+      <div class="mt-3 pt-2.5 border-t border-slate-100">
+        <button
+          type="button"
+          on:click={() => onSelectTab('actions_sim')}
+          class="w-full inline-flex items-center justify-between text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+        >
+          <span>Simulate DBL Recovery</span>
+          <ChevronRight size={12} />
+        </button>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-      <div class="text-xs font-medium text-slate-500">Hard-Gate Blockers</div>
-      <div class="mt-1.5 flex items-baseline gap-2">
-        <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.hardGateBlockers}</span>
-        <span class="text-xs font-semibold text-rose-600">+2 vs last week</span>
+    <!-- Card 3: Probability of Meeting DBL -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="text-xs font-medium text-slate-500">Probability of Meeting DBL</div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.probMeetingDbl}%</span>
+        </div>
+        <div class="mt-3 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full bg-rose-500 rounded-full" style="width: {V3_STUDY_META.probMeetingDbl}%"></div>
+        </div>
+        <div class="mt-2 text-[11px] text-slate-500">
+          Velocity: {V3_STUDY_META.currentVelocity} (req {V3_STUDY_META.requiredVelocity})
+        </div>
       </div>
-      <div class="mt-4 text-[11px] text-slate-500">
-        2 SAEs · 2 Labs · 3 Queries · 1 PI Signature
+      <div class="mt-3 pt-2.5 border-t border-slate-100">
+        <button
+          type="button"
+          on:click={() => onSelectTab('actions_sim')}
+          class="w-full inline-flex items-center justify-between text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+        >
+          <span>View Forecast &amp; Drivers</span>
+          <ChevronRight size={12} />
+        </button>
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-      <div class="text-xs font-medium text-slate-500">High-Risk Sites</div>
-      <div class="mt-1.5 flex items-baseline gap-2">
-        <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.highRiskSites}</span>
-        <span class="text-lg text-slate-400 font-semibold">/ {V3_STUDY_META.totalSites}</span>
+    <!-- Card 4: Hard-Gate Blockers -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="text-xs font-medium text-slate-500">Hard-Gate Blockers</div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.hardGateBlockers}</span>
+          <span class="text-xs font-semibold text-rose-600">+2 vs last week</span>
+        </div>
+        <div class="mt-4 text-[11px] text-slate-500">
+          2 SAEs · 2 Labs · 3 Queries · 1 PI Signature
+        </div>
       </div>
-      <div class="mt-4 text-[11px] text-slate-500">
-        Site 104 (US), Site 317 (DE), Site 405 (KR)
+      <div class="mt-3 pt-2.5 border-t border-slate-100">
+        <button
+          type="button"
+          on:click={() => onSelectDomain('external')}
+          class="w-full inline-flex items-center justify-between text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+        >
+          <span>Inspect Critical Blockers</span>
+          <ChevronRight size={12} />
+        </button>
+      </div>
+    </div>
+
+    <!-- Card 5: High-Risk Sites -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="text-xs font-medium text-slate-500">High-Risk Sites</div>
+        <div class="mt-1.5 flex items-baseline gap-2">
+          <span class="text-3xl font-bold text-slate-900">{V3_STUDY_META.highRiskSites}</span>
+          <span class="text-lg text-slate-400 font-semibold">/ {V3_STUDY_META.totalSites}</span>
+        </div>
+        <div class="mt-4 text-[11px] text-slate-500">
+          Site 104 (US), Site 317 (DE), Site 405 (KR)
+        </div>
+      </div>
+      <div class="mt-3 pt-2.5 border-t border-slate-100">
+        <button
+          type="button"
+          on:click={() => onSelectTab('sites_countries')}
+          class="w-full inline-flex items-center justify-between text-[11px] font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+        >
+          <span>Drill into High-Risk Sites</span>
+          <ChevronRight size={12} />
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- Collapsible Readiness Score Weightage Configurator -->
+  {#if showWeightConfig}
+    <div class="bg-white rounded-xl border border-blue-200 shadow-xs p-5 space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div>
+          <div class="flex items-center gap-2">
+            <SlidersHorizontal size={15} class="text-blue-600" />
+            <h2 class="text-sm font-bold text-slate-900">Readiness Score Weightage Configurator</h2>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+              Total Weight: {totalWeight}%
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Adjust domain weightages to model study-specific lock priorities. Overall Study Readiness recalculates live (<span class="font-bold text-slate-800">{computedReadiness}%</span>).
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            on:click={() => applyPreset('balanced')}
+            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 cursor-pointer"
+          >
+            Balanced (Default)
+          </button>
+          <button
+            type="button"
+            on:click={() => applyPreset('safety_ext')}
+            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 cursor-pointer"
+          >
+            Safety &amp; External Heavy
+          </button>
+          <button
+            type="button"
+            on:click={() => applyPreset('edc_query')}
+            class="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-[11px] font-semibold text-slate-700 cursor-pointer"
+          >
+            EDC &amp; Query Heavy
+          </button>
+          {#if totalWeight !== 100}
+            <button
+              type="button"
+              on:click={normalizeWeights}
+              class="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold cursor-pointer"
+            >
+              Normalize to 100%
+            </button>
+          {/if}
+          <button
+            type="button"
+            on:click={resetWeights}
+            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-[11px] font-semibold text-slate-600 hover:text-slate-900 cursor-pointer"
+          >
+            <RotateCcw size={11} /> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {#each V3_DOMAINS as dom}
+          {@const w = domainWeights[dom.id] ?? 0}
+          <div class="rounded-lg border border-slate-200/80 bg-slate-50/50 p-3 space-y-2">
+            <div class="flex items-center justify-between gap-2 text-xs">
+              <span class="font-semibold text-slate-800 truncate">{dom.name}</span>
+              <span class="font-mono font-bold text-blue-700 shrink-0">{w}%</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="50"
+              step="1"
+              bind:value={domainWeights[dom.id]}
+              class="w-full accent-blue-600 cursor-pointer"
+              aria-label="{dom.name} weightage"
+            />
+            <div class="flex items-center justify-between text-[10px] text-slate-500">
+              <span>Domain score: <strong class="text-slate-700">{dom.readiness}%</strong></span>
+              <span>Contrib: <strong class="text-slate-700">{totalWeight > 0 ? Math.round((dom.readiness * w) / totalWeight) : 0} pts</strong></span>
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
   <!-- Row 2: Readiness Trend & Forecast + Key Insights -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
