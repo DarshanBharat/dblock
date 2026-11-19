@@ -17,10 +17,24 @@
   let subTab: 'site' | 'subject' | 'details' = 'site';
   let searchQuery = '';
   let statusFilter = 'all';
+  let criticalityFilter = 'all';
   let drawerSubjectId: string | null = null;
   let showWeightConfig = false;
   let subjectPage = 1;
   let subjectPageSize = 15;
+  let pendingPage = 1;
+  let pendingPageSize = 15;
+
+  const DOMAIN_CATEGORY_MAP: Record<string, string[]> = {
+    edc: ['edc data cleaning', 'edc'],
+    queries: ['query resolution', 'query management'],
+    external: ['external data reconciliation', 'external data'],
+    safety: ['safety reconciliation'],
+    coding: ['medical coding'],
+    pi_sig: ['pi signatures', 'pi signature'],
+    deviations: ['protocol deviations'],
+    sdv: ['sdv / sdr', 'sdv'],
+  };
 
   $: readinessMetrics = computeCompositeReadiness(
     $v3DomainWeights,
@@ -87,6 +101,92 @@
     const pages: number[] = [];
     const start = Math.max(1, subjectPage - 2);
     const end = Math.min(totalSubjectPages, start + 4);
+    for (let p = Math.max(1, end - 4); p <= end; p++) pages.push(p);
+    return pages;
+  })();
+
+  $: allDomainPendingRecords = (() => {
+    const cats = DOMAIN_CATEGORY_MAP[currentDomain.id] || [currentDomain.name.toLowerCase()];
+    const records = currentDomain.topPendingRows.map((r) => ({ ...r }));
+    const seen = new Set(records.map((r) => `${r.subjectId}::${r.issue.toLowerCase()}`));
+
+    for (const subj of V3_SUBJECT_ROWS) {
+      for (const oi of subj.openItems) {
+        if (cats.some((c) => oi.category.toLowerCase().includes(c))) {
+          const key = `${subj.id}::${oi.issue.toLowerCase()}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            records.push({
+              id: oi.id,
+              subjectId: subj.id,
+              siteId: `Site ${subj.siteId}`,
+              visit: subj.timeline.find((t) => t.state === 'missed' || t.state === 'in_progress')?.label || 'Ongoing Visit',
+              form: oi.id,
+              issue: oi.issue,
+              daysOpen: oi.daysOpen,
+              criticality: oi.severity === 'Critical' ? 'Critical' : 'Medium',
+              owner: subj.owner,
+              status: oi.daysOpen >= 10 ? 'Escalated' : 'Open',
+              actionLabel: 'Inspect',
+            });
+          }
+        }
+      }
+
+      const domEntry = subj.domainBreakdown.find(
+        (b) => b.domain.toLowerCase() === currentDomain.name.toLowerCase()
+      );
+      if (domEntry && domEntry.status === 'Action Required') {
+        const key = `${subj.id}::${domEntry.details.toLowerCase()}`;
+        const hasAnyForSubj = records.some((r) => r.subjectId === subj.id);
+        if (!hasAnyForSubj && !seen.has(key)) {
+          seen.add(key);
+          records.push({
+            id: `${currentDomain.id.toUpperCase()}-${subj.id}`,
+            subjectId: subj.id,
+            siteId: `Site ${subj.siteId}`,
+            visit: subj.timeline.find((t) => t.state === 'missed' || t.state === 'in_progress')?.label || 'Study Visit',
+            form: currentDomain.name,
+            issue: domEntry.details,
+            daysOpen: subj.daysOpen,
+            criticality: domEntry.completion < 65 ? 'Critical' : domEntry.completion < 80 ? 'High' : 'Medium',
+            owner: subj.owner,
+            status: subj.daysOpen >= 10 ? 'Escalated' : 'Open',
+            actionLabel: 'Inspect',
+          });
+        }
+      }
+    }
+
+    return records.sort((a, b) => {
+      const rank = { Critical: 3, High: 2, Medium: 1 };
+      return (rank[b.criticality] || 0) - (rank[a.criticality] || 0) || b.daysOpen - a.daysOpen;
+    });
+  })();
+
+  $: filteredPendingRecords = allDomainPendingRecords.filter((r) => {
+    const q = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      r.subjectId.toLowerCase().includes(q) ||
+      r.siteId.toLowerCase().includes(q) ||
+      r.form.toLowerCase().includes(q) ||
+      r.issue.toLowerCase().includes(q) ||
+      r.owner.toLowerCase().includes(q);
+    const matchesCrit = criticalityFilter === 'all' || r.criticality === criticalityFilter;
+    return matchesSearch && matchesCrit;
+  });
+
+  $: totalPendingPages = Math.max(1, Math.ceil(filteredPendingRecords.length / pendingPageSize));
+  $: if (pendingPage > totalPendingPages) pendingPage = 1;
+  $: pagedPendingRecords = filteredPendingRecords.slice(
+    (pendingPage - 1) * pendingPageSize,
+    pendingPage * pendingPageSize
+  );
+  $: visiblePendingPageNumbers = (() => {
+    const pages: number[] = [];
+    const start = Math.max(1, pendingPage - 2);
+    const end = Math.min(totalPendingPages, start + 4);
     for (let p = Math.max(1, end - 4); p <= end; p++) pages.push(p);
     return pages;
   })();
@@ -464,8 +564,9 @@
       <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div class="flex items-center gap-4 text-xs font-semibold">
-            <button type="button" on:click={() => (subTab = 'site')} class="pb-1 border-b-2 cursor-pointer {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
-              {currentDomain.breakdownTitle}
+            <button type="button" on:click={() => (subTab = 'site')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+              <span>{currentDomain.breakdownTitle}</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'site' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredBreakdown.length}</span>
             </button>
             <button type="button" on:click={() => (subTab = 'subject')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'subject' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
               <span>Subject Breakdown</span>
@@ -473,7 +574,7 @@
             </button>
             <button type="button" on:click={() => (subTab = 'details')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
               <span>Pending Records</span>
-              <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'details' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{currentDomain.topPendingRows.length}</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'details' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredPendingRecords.length}</span>
             </button>
           </div>
           <div class="flex items-center gap-2">
@@ -482,12 +583,20 @@
               <input
                 type="text"
                 bind:value={searchQuery}
-                placeholder={subTab === 'subject' ? 'Search subject, site, country...' : 'Search site or country...'}
+                on:input={() => { subjectPage = 1; pendingPage = 1; }}
+                placeholder={subTab === 'subject' ? 'Search subject, site, country...' : subTab === 'details' ? 'Search subject, issue, owner...' : 'Search site or country...'}
                 class="pl-7 pr-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-blue-500"
               />
             </div>
-            {#if subTab !== 'details'}
-              <select bind:value={statusFilter} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
+            {#if subTab === 'details'}
+              <select bind:value={criticalityFilter} on:change={() => (pendingPage = 1)} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
+                <option value="all">All Criticality</option>
+                <option value="Critical">Critical</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+              </select>
+            {:else}
+              <select bind:value={statusFilter} on:change={() => (subjectPage = 1)} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
                 <option value="all">All Status</option>
                 <option value="On track">On track</option>
                 <option value="At risk">At risk</option>
@@ -498,39 +607,62 @@
         </div>
 
         {#if subTab === 'site'}
-          <div class="overflow-x-auto">
+          <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
             <table class="w-full text-xs">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-                  <th class="pb-2 font-medium">Country / Source</th>
-                  <th class="pb-2 font-medium">Site ID</th>
-                  <th class="pb-2 font-medium text-right">Subjects</th>
-                  <th class="pb-2 font-medium text-right">Expected</th>
-                  <th class="pb-2 font-medium text-right">Complete</th>
-                  <th class="pb-2 font-medium text-right">Incomplete</th>
-                  <th class="pb-2 font-medium text-right">% Complete</th>
-                  <th class="pb-2 font-medium text-right">Trend (7d)</th>
-                  <th class="pb-2 font-medium text-right">Critical</th>
-                  <th class="pb-2 font-medium text-right">Status</th>
+              <thead class="bg-slate-50/90 border-b border-slate-200/80">
+                <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th class="px-3 py-2.5">Country / Source</th>
+                  <th class="px-3 py-2.5">Site ID</th>
+                  <th class="px-3 py-2.5 text-right">Subjects</th>
+                  <th class="px-3 py-2.5 text-right">Complete / Exp</th>
+                  <th class="px-3 py-2.5 text-right">Incomplete</th>
+                  <th class="px-3 py-2.5 text-right">% Complete</th>
+                  <th class="px-3 py-2.5 text-right">7d Trend</th>
+                  <th class="px-3 py-2.5 text-right">Critical</th>
+                  <th class="px-3 py-2.5 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
+              <tbody class="divide-y divide-slate-100 bg-white">
                 {#each filteredBreakdown as row}
                   <tr
-                    class="hover:bg-blue-50/40 cursor-pointer"
+                    class="hover:bg-blue-50/50 transition-colors cursor-pointer"
                     on:click={() => { if (/^\d+$/.test(row.siteId)) onSelectSite(row.siteId); }}
                   >
-                    <td class="py-2 font-medium text-slate-800">{row.country}</td>
-                    <td class="py-2 font-mono text-slate-600">{row.siteId}</td>
-                    <td class="py-2 text-right text-slate-600">{row.subjects}</td>
-                    <td class="py-2 text-right text-slate-600">{row.expected}</td>
-                    <td class="py-2 text-right text-slate-600">{row.complete}</td>
-                    <td class="py-2 text-right font-semibold text-rose-600">{row.incomplete}</td>
-                    <td class="py-2 text-right font-bold text-slate-900">{row.pctComplete}%</td>
-                    <td class="py-2 text-right font-semibold {row.trend7d.startsWith('-') ? 'text-rose-600' : 'text-emerald-600'}">{row.trend7d}</td>
-                    <td class="py-2 text-right font-semibold {row.criticalItems > 0 ? 'text-rose-600' : 'text-slate-500'}">{row.criticalItems}</td>
-                    <td class="py-2 text-right">
-                      <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border {statusPill(row.status)}">
+                    <td class="px-3 py-2.5 font-semibold text-slate-800">{row.country}</td>
+                    <td class="px-3 py-2.5">
+                      <span class="px-2 py-0.5 rounded bg-slate-100 font-mono font-semibold text-slate-700 text-[11px]">{row.siteId}</span>
+                    </td>
+                    <td class="px-3 py-2.5 text-right font-medium text-slate-700">{row.subjects}</td>
+                    <td class="px-3 py-2.5 text-right text-slate-600">
+                      <span class="font-semibold text-slate-800">{row.complete}</span>
+                      <span class="text-slate-400"> / {row.expected}</span>
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                      <span class="px-1.5 py-0.5 rounded font-semibold {row.incomplete > 0 ? 'bg-rose-50 text-rose-700' : 'text-slate-400'}">{row.incomplete}</span>
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                      <div class="inline-flex items-center gap-2">
+                        <div class="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                          <div
+                            class="h-full rounded-full {row.status === 'On track' ? 'bg-emerald-500' : row.status === 'High risk' ? 'bg-rose-500' : 'bg-amber-500'}"
+                            style="width: {row.pctComplete}%"
+                          ></div>
+                        </div>
+                        <span class="font-bold text-slate-900 w-9 text-right">{row.pctComplete}%</span>
+                      </div>
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                      <span class="px-1.5 py-0.5 rounded text-[11px] font-semibold {row.trend7d.startsWith('-') ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}">
+                        {row.trend7d}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                      <span class="px-1.5 py-0.5 rounded font-bold {row.criticalItems > 0 ? 'bg-rose-50 text-rose-700' : 'text-slate-400 font-medium'}">
+                        {row.criticalItems}
+                      </span>
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                      <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border {statusPill(row.status)}">
                         <span class="w-1.5 h-1.5 rounded-full {dotColor(row.status)}"></span>
                         {row.status}
                       </span>
@@ -541,49 +673,54 @@
             </table>
           </div>
         {:else if subTab === 'subject'}
-          <div class="overflow-x-auto">
+          <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
             <table class="w-full text-xs">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-                  <th class="pb-2 font-medium">Subject ID</th>
-                  <th class="pb-2 font-medium">Site / Country</th>
-                  <th class="pb-2 font-medium">Domain Details</th>
-                  <th class="pb-2 font-medium text-right">Domain %</th>
-                  <th class="pb-2 font-medium">Lock Classification</th>
-                  <th class="pb-2 font-medium text-right">Days Open</th>
-                  <th class="pb-2 font-medium">Owner</th>
-                  <th class="pb-2 font-medium text-right">Status</th>
+              <thead class="bg-slate-50/90 border-b border-slate-200/80">
+                <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th class="px-3 py-2.5">Subject ID</th>
+                  <th class="px-3 py-2.5">Site / Country</th>
+                  <th class="px-3 py-2.5">Domain Details</th>
+                  <th class="px-3 py-2.5 text-right">Domain %</th>
+                  <th class="px-3 py-2.5">Classification</th>
+                  <th class="px-3 py-2.5 text-right">Days Open</th>
+                  <th class="px-3 py-2.5">Owner</th>
+                  <th class="px-3 py-2.5 text-right">Status</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
+              <tbody class="divide-y divide-slate-100 bg-white">
                 {#each visibleSubjects as item}
                   <tr
-                    class="hover:bg-blue-50/40 cursor-pointer"
+                    class="hover:bg-blue-50/50 transition-colors cursor-pointer"
                     on:click={() => (drawerSubjectId = item.subj.id)}
                   >
-                    <td class="py-2 font-mono font-semibold text-blue-700">{item.subj.id}</td>
-                    <td class="py-2 text-slate-700">Site {item.subj.siteId} <span class="text-slate-400">· {item.subj.country}</span></td>
-                    <td class="py-2 text-slate-600 max-w-[260px] truncate">{item.domEntry?.details || item.subj.keyOpenItems}</td>
-                    <td class="py-2 text-right">
-                      <div class="inline-flex items-center gap-1.5">
-                        <div class="w-12 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                    <td class="px-3 py-2.5 font-mono font-bold text-blue-700 whitespace-nowrap">{item.subj.id}</td>
+                    <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">
+                      <span class="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[11px] font-semibold text-slate-700 mr-1">{item.subj.siteId}</span>
+                      <span class="text-slate-500">{item.subj.country}</span>
+                    </td>
+                    <td class="px-3 py-2.5 text-slate-600 max-w-[260px] truncate" title={item.domEntry?.details || item.subj.keyOpenItems}>
+                      {item.domEntry?.details || item.subj.keyOpenItems}
+                    </td>
+                    <td class="px-3 py-2.5 text-right">
+                      <div class="inline-flex items-center gap-2">
+                        <div class="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
                           <div
                             class="h-full rounded-full {item.domainStatus === 'On track' ? 'bg-emerald-500' : item.domainStatus === 'High risk' ? 'bg-rose-500' : 'bg-amber-500'}"
                             style="width: {item.completion}%"
                           ></div>
                         </div>
-                        <span class="font-bold text-slate-900">{item.completion}%</span>
+                        <span class="font-bold text-slate-900 w-9 text-right">{item.completion}%</span>
                       </div>
                     </td>
-                    <td class="py-2">
-                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold {item.subj.classification === 'Hard Blocked' ? 'bg-rose-50 text-rose-700' : item.subj.classification === 'Action Required' ? 'bg-amber-50 text-amber-700' : item.subj.classification === 'Conditionally Ready' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'}">
+                    <td class="px-3 py-2.5">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border {item.subj.classification === 'Hard Blocked' ? 'bg-rose-50 text-rose-700 border-rose-200' : item.subj.classification === 'Action Required' ? 'bg-amber-50 text-amber-700 border-amber-200' : item.subj.classification === 'Conditionally Ready' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-emerald-50 text-emerald-700 border-emerald-200'}">
                         {item.subj.classification}
                       </span>
                     </td>
-                    <td class="py-2 text-right font-semibold text-slate-700">{item.subj.daysOpen}d</td>
-                    <td class="py-2 text-slate-600">{item.subj.owner}</td>
-                    <td class="py-2 text-right">
-                      <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border {statusPill(item.domainStatus)}">
+                    <td class="px-3 py-2.5 text-right font-semibold text-slate-700">{item.subj.daysOpen}d</td>
+                    <td class="px-3 py-2.5 text-slate-600">{item.subj.owner}</td>
+                    <td class="px-3 py-2.5 text-right">
+                      <span class="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border {statusPill(item.domainStatus)}">
                         <span class="w-1.5 h-1.5 rounded-full {dotColor(item.domainStatus)}"></span>
                         {item.domainStatus}
                       </span>
@@ -593,7 +730,7 @@
               </tbody>
             </table>
           </div>
-          <div class="flex flex-wrap items-center justify-between gap-2 pt-3 mt-2 border-t border-slate-100 text-xs">
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 text-xs">
             <div class="flex items-center gap-2 text-slate-500">
               <span>
                 Showing {filteredSubjects.length === 0 ? 0 : (subjectPage - 1) * subjectPageSize + 1}–{Math.min(subjectPage * subjectPageSize, filteredSubjects.length)} of {filteredSubjects.length} subjects · Page {subjectPage} of {totalSubjectPages}
@@ -639,54 +776,119 @@
           </div>
         {/if}
 
-        <!-- Top Pending Items Table -->
-        <div class="{subTab === 'details' ? '' : 'pt-2 border-t border-slate-100'}">
+        <!-- Pending Items: Preview on Site/Subject tabs, Full Paginated List on Pending Records tab -->
+        <div class="{subTab === 'details' ? '' : 'pt-3 border-t border-slate-100'}">
           <div class="flex items-center justify-between mb-2">
-            <h4 class="text-xs font-bold text-slate-900">{currentDomain.topPendingTitle}</h4>
-            <button type="button" on:click={() => onSelectTab('subjects')} class="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer">
-              View All Subjects →
-            </button>
+            <h4 class="text-xs font-bold text-slate-900">
+              {subTab === 'details' ? `All Pending Records · ${filteredPendingRecords.length} items` : currentDomain.topPendingTitle}
+            </h4>
+            {#if subTab !== 'details'}
+              <button
+                type="button"
+                on:click={() => (subTab = 'details')}
+                class="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+              >
+                View All {allDomainPendingRecords.length} Pending Records →
+              </button>
+            {:else}
+              <button type="button" on:click={() => onSelectTab('subjects')} class="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer">
+                Open Subjects Workspace →
+              </button>
+            {/if}
           </div>
-          <div class="overflow-x-auto">
+          <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
             <table class="w-full text-xs">
-              <thead>
-                <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-                  <th class="pb-1.5 font-medium">Subject ID</th>
-                  <th class="pb-1.5 font-medium">Site</th>
-                  <th class="pb-1.5 font-medium">Visit / Scope</th>
-                  <th class="pb-1.5 font-medium">Form / Item</th>
-                  <th class="pb-1.5 font-medium">Issue</th>
-                  <th class="pb-1.5 font-medium text-right">Days Open</th>
-                  <th class="pb-1.5 font-medium">Criticality</th>
-                  <th class="pb-1.5 font-medium">Owner</th>
-                  <th class="pb-1.5 font-medium text-right">Action</th>
+              <thead class="bg-slate-50/90 border-b border-slate-200/80">
+                <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <th class="px-3 py-2">Subject ID</th>
+                  <th class="px-3 py-2">Site</th>
+                  <th class="px-3 py-2">Visit / Scope</th>
+                  <th class="px-3 py-2">Form / Item</th>
+                  <th class="px-3 py-2">Issue</th>
+                  <th class="px-3 py-2 text-right">Days Open</th>
+                  <th class="px-3 py-2">Criticality</th>
+                  <th class="px-3 py-2">Owner</th>
+                  <th class="px-3 py-2 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
-                {#each currentDomain.topPendingRows as item}
-                  <tr class="hover:bg-blue-50/50 cursor-pointer" on:click={() => (drawerSubjectId = item.subjectId)}>
-                    <td class="py-2 font-mono font-medium text-blue-700">{item.subjectId}</td>
-                    <td class="py-2 text-slate-600">{item.siteId}</td>
-                    <td class="py-2 text-slate-600">{item.visit}</td>
-                    <td class="py-2 font-medium text-slate-800">{item.form}</td>
-                    <td class="py-2 text-slate-600">{item.issue}</td>
-                    <td class="py-2 text-right font-semibold text-slate-800">{item.daysOpen}</td>
-                    <td class="py-2">
-                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold {item.criticality === 'Critical' ? 'bg-rose-50 text-rose-700' : item.criticality === 'High' ? 'bg-amber-50 text-amber-700' : 'bg-slate-100 text-slate-700'}">
+              <tbody class="divide-y divide-slate-100 bg-white">
+                {#each (subTab === 'details' ? pagedPendingRecords : currentDomain.topPendingRows) as item}
+                  <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer" on:click={() => (drawerSubjectId = item.subjectId)}>
+                    <td class="px-3 py-2 font-mono font-bold text-blue-700 whitespace-nowrap">{item.subjectId}</td>
+                    <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{item.siteId}</td>
+                    <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{item.visit}</td>
+                    <td class="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">{item.form}</td>
+                    <td class="px-3 py-2 text-slate-600">{item.issue}</td>
+                    <td class="px-3 py-2 text-right font-semibold text-slate-800">{item.daysOpen}d</td>
+                    <td class="px-3 py-2">
+                      <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border {item.criticality === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-200' : item.criticality === 'High' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-700 border-slate-200'}">
                         {item.criticality}
                       </span>
                     </td>
-                    <td class="py-2 text-slate-600">{item.owner}</td>
-                    <td class="py-2 text-right">
+                    <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{item.owner}</td>
+                    <td class="px-3 py-2 text-right whitespace-nowrap">
                       <span class="text-blue-600 hover:text-blue-800 font-semibold">
                         {item.actionLabel} →
                       </span>
+                    </td>
+                  </tr>
+                {:else}
+                  <tr>
+                    <td colspan="9" class="py-8 text-center text-xs text-slate-400">
+                      No pending records match the current filters.
                     </td>
                   </tr>
                 {/each}
               </tbody>
             </table>
           </div>
+
+          {#if subTab === 'details'}
+            <div class="flex flex-wrap items-center justify-between gap-2 pt-3 mt-1 text-xs">
+              <div class="flex items-center gap-2 text-slate-500">
+                <span>
+                  Showing {filteredPendingRecords.length === 0 ? 0 : (pendingPage - 1) * pendingPageSize + 1}–{Math.min(pendingPage * pendingPageSize, filteredPendingRecords.length)} of {filteredPendingRecords.length} records · Page {pendingPage} of {totalPendingPages}
+                </span>
+                <select
+                  bind:value={pendingPageSize}
+                  on:change={() => (pendingPage = 1)}
+                  class="border border-slate-200 rounded-md px-1.5 py-0.5 bg-white text-xs text-slate-700"
+                >
+                  <option value={15}>15 / page</option>
+                  <option value={25}>25 / page</option>
+                  <option value={50}>50 / page</option>
+                  <option value={500}>All ({filteredPendingRecords.length})</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={pendingPage === 1}
+                  on:click={() => (pendingPage = Math.max(1, pendingPage - 1))}
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  <ChevronLeft size={13} /> Previous
+                </button>
+                {#each visiblePendingPageNumbers as p}
+                  <button
+                    type="button"
+                    on:click={() => (pendingPage = p)}
+                    class="w-7 h-7 rounded-md text-xs font-semibold border cursor-pointer {pendingPage === p ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
+                  >
+                    {p}
+                  </button>
+                {/each}
+                <button
+                  type="button"
+                  disabled={pendingPage === totalPendingPages}
+                  on:click={() => (pendingPage = Math.min(totalPendingPages, pendingPage + 1))}
+                  class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-medium disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  Next <ChevronRight size={13} />
+                </button>
+              </div>
+            </div>
+          {/if}
         </div>
       </div>
     </div>
