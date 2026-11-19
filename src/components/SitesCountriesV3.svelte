@@ -1,52 +1,18 @@
 <script lang="ts">
   import { ArrowLeft, Search, RotateCcw, ChevronRight } from '@lucide/svelte';
-  import { V3_STUDY_META, V3_COUNTRY_SUMMARY } from '../data/v3Data';
+  import { V3_STUDY_META, V3_COUNTRY_SUMMARY, V3_SITES } from '../data/v3Data';
 
-  export let sites: any[] = [];
+  export let countryFilter = 'all';
   export let onSelectTab: (tab: string) => void;
   export let onSelectSite: (siteId: string) => void;
 
-  let countryFilter = 'all';
   let riskFilter = 'all';
   let searchQuery = '';
 
-  function normalizeSite(s: any) {
-    const readiness = s.readinessScore ?? s.readiness ?? 75;
-    const riskLevel =
-      readiness < 60
-        ? 'High risk'
-        : readiness < 80
-        ? 'At risk'
-        : 'On track';
-    const criticalSubjects = s.criticalSubjects ?? Math.max(0, Math.round(((100 - readiness) / 100) * (s.enrolledSubjects ?? 20) * 0.4));
-    const dblImpact =
-      s.dblImpactDays ?? (readiness < 60 ? 3 : readiness < 75 ? 2 : readiness < 85 ? 1 : 0);
-    return {
-      id: s.id,
-      name: s.name,
-      country: s.country,
-      enrolled: s.enrolledSubjects ?? 24,
-      completed: s.completedSubjects ?? Math.max(10, (s.enrolledSubjects ?? 24) - 4),
-      readiness,
-      riskLevel,
-      criticalSubjects,
-      dblImpact,
-      primaryDriver:
-        s.primaryDriver ??
-        (readiness < 60
-          ? 'Pending lab data, 10 critical queries'
-          : readiness < 80
-          ? '6 PI signatures, 4 data entry'
-          : '1 routine query'),
-      lastActivity: s.lastActivity ?? '28 Oct 2026',
-      estReadyDate: s.estReadyDate ?? (dblImpact > 0 ? '14 Dec 2026' : '08 Dec 2026'),
-    };
-  }
-
   // Rank sites by DBL impact first (per PDF page 6/22), not readiness % alone
-  $: normalizedSites = sites
-    .map(normalizeSite)
-    .sort((a, b) => b.dblImpact - a.dblImpact || b.criticalSubjects - a.criticalSubjects || a.readiness - b.readiness);
+  const normalizedSites = [...V3_SITES].sort(
+    (a, b) => b.dblImpactDays - a.dblImpactDays || b.criticalSubjects - a.criticalSubjects || a.readiness - b.readiness
+  );
 
   $: filteredSites = normalizedSites.filter((s) => {
     const q = searchQuery.trim().toLowerCase();
@@ -261,8 +227,8 @@
                   <td class="py-2 text-slate-700">{s.country}</td>
                   <td class="py-2 text-right font-semibold text-slate-900">{s.readiness}%</td>
                   <td class="py-2 text-right text-slate-700">{s.criticalSubjects}</td>
-                  <td class="py-2 text-right font-bold {s.dblImpact >= 2 ? 'text-rose-600' : s.dblImpact > 0 ? 'text-amber-600' : 'text-slate-500'}">
-                    {s.dblImpact > 0 ? `+${s.dblImpact} days` : '0 days'}
+                  <td class="py-2 text-right font-bold {s.dblImpactDays >= 2 ? 'text-rose-600' : s.dblImpactDays > 0 ? 'text-amber-600' : 'text-slate-500'}">
+                    {s.dblImpactDays > 0 ? `+${s.dblImpactDays} days` : '0 days'}
                   </td>
                 </tr>
               {/each}

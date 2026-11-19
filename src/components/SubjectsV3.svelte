@@ -6,9 +6,12 @@
   export let onSelectTab: (tab: string) => void;
 
   let countryFilter = 'all';
+  let siteFilter = 'all';
   let readinessFilter = 'all';
   let quickFilter: 'all' | 'lock_pop' | 'hard_blocked' | 'endpoint' | 'sae' = 'all';
   let searchQuery = '';
+  let currentPage = 1;
+  let pageSize = 25;
 
   let drawerSubjectIndex: number | null = null;
 
@@ -20,6 +23,7 @@
       s.siteId.toLowerCase().includes(q) ||
       s.country.toLowerCase().includes(q);
     const matchCountry = countryFilter === 'all' || s.country === countryFilter;
+    const matchSite = siteFilter === 'all' || s.siteId === siteFilter;
     const matchReadiness = readinessFilter === 'all' || s.classification === readinessFilter;
     const matchQuick =
       quickFilter === 'all' ||
@@ -27,8 +31,12 @@
       (quickFilter === 'hard_blocked' && s.classification === 'Hard Blocked') ||
       (quickFilter === 'endpoint' && s.hasEndpointIssue) ||
       (quickFilter === 'sae' && s.hasSae);
-    return matchSearch && matchCountry && matchReadiness && matchQuick;
+    return matchSearch && matchCountry && matchSite && matchReadiness && matchQuick;
   });
+
+  $: totalPages = Math.max(1, Math.ceil(filteredSubjects.length / pageSize));
+  $: if (currentPage > totalPages) currentPage = 1;
+  $: pagedSubjects = filteredSubjects.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   // Donut data matching page 37 (220 subjects: 158 Lock Ready, 32 Conditionally Ready, 20 Action Required, 10 Hard Blocked)
   const subjectDonut = [
@@ -290,7 +298,10 @@
             </thead>
             <tbody class="divide-y divide-slate-100">
               {#each topSitesNotReady as r}
-                <tr>
+                <tr
+                  class="hover:bg-blue-50/50 cursor-pointer {siteFilter === r.siteId ? 'bg-blue-50/70' : ''}"
+                  on:click={() => { siteFilter = siteFilter === r.siteId ? 'all' : r.siteId; currentPage = 1; }}
+                >
                   <td class="py-1.5 font-mono font-bold text-blue-700">{r.siteId}</td>
                   <td class="py-1.5 text-slate-700">{r.country}</td>
                   <td class="py-1.5 text-right text-slate-600">{r.total}</td>
@@ -315,9 +326,27 @@
 
       <!-- Subject List Table -->
       <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-        <div class="flex items-center justify-between mb-3">
-          <h3 class="text-xs font-bold text-slate-900">Subject List · Click any row to open Subject Details Drawer</h3>
-          <span class="text-[11px] text-slate-400">Showing {filteredSubjects.length} key subjects</span>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <div class="flex items-center gap-2">
+            <h3 class="text-xs font-bold text-slate-900">Subject List · Click any row to open Subject Details Drawer</h3>
+            {#if siteFilter !== 'all'}
+              <button
+                type="button"
+                on:click={() => (siteFilter = 'all')}
+                class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[11px] font-semibold cursor-pointer"
+              >
+                Site {siteFilter} ×
+              </button>
+            {/if}
+          </div>
+          <div class="flex items-center gap-2 text-[11px] text-slate-500">
+            <span>Showing {pagedSubjects.length} of {filteredSubjects.length} subjects</span>
+            <select bind:value={pageSize} on:change={() => (currentPage = 1)} class="border border-slate-200 rounded px-1.5 py-0.5 bg-white text-xs">
+              <option value={25}>25 / page</option>
+              <option value={50}>50 / page</option>
+              <option value={220}>All (220)</option>
+            </select>
+          </div>
         </div>
         <div class="overflow-x-auto">
           <table class="w-full text-xs">
@@ -335,8 +364,8 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              {#each filteredSubjects as s, idx}
-                <tr class="hover:bg-blue-50/50 cursor-pointer" on:click={() => (drawerSubjectIndex = idx)}>
+              {#each pagedSubjects as s, idx}
+                <tr class="hover:bg-blue-50/50 cursor-pointer" on:click={() => (drawerSubjectIndex = (currentPage - 1) * pageSize + idx)}>
                   <td class="py-2.5 font-mono font-bold text-blue-700">{s.id}</td>
                   <td class="py-2.5 text-slate-600">{s.country}</td>
                   <td class="py-2.5 font-mono text-slate-600">{s.siteId}</td>
@@ -363,6 +392,29 @@
             </tbody>
           </table>
         </div>
+        {#if totalPages > 1}
+          <div class="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-xs">
+            <span class="text-slate-500">Page {currentPage} of {totalPages}</span>
+            <div class="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                on:click={() => (currentPage = Math.max(1, currentPage - 1))}
+                class="px-2.5 py-1 rounded border border-slate-200 bg-white text-slate-700 disabled:opacity-40 cursor-pointer"
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                disabled={currentPage === totalPages}
+                on:click={() => (currentPage = Math.min(totalPages, currentPage + 1))}
+                class="px-2.5 py-1 rounded border border-slate-200 bg-white text-slate-700 disabled:opacity-40 cursor-pointer"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        {/if}
       </div>
     </div>
   </div>

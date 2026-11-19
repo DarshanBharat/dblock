@@ -20,6 +20,7 @@
 
   export let onSelectTab: (tab: string) => void;
   export let onSelectDomain: (domainId: string) => void;
+  export let onSelectCountry: (country: string) => void = () => onSelectTab('sites_countries');
 
   // SVG chart geometry for Readiness Trend and Forecast
   const W = 580;
@@ -353,7 +354,7 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             {#each V3_COUNTRY_SUMMARY as c}
-              <tr class="hover:bg-slate-50 cursor-pointer" on:click={() => onSelectTab('sites_countries')}>
+              <tr class="hover:bg-blue-50/40 cursor-pointer" on:click={() => onSelectCountry(c.country)}>
                 <td class="py-2.5 font-medium text-slate-800">{c.flag} {c.country}</td>
                 <td class="py-2.5 text-right text-slate-600">{c.sites}</td>
                 <td class="py-2.5 text-right font-bold {c.readiness < 70 ? 'text-rose-600' : c.readiness < 80 ? 'text-amber-600' : 'text-emerald-600'}">

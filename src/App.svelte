@@ -18,6 +18,8 @@
   import SitesCountriesV3 from './components/SitesCountriesV3.svelte';
   import SubjectsV3 from './components/SubjectsV3.svelte';
   import ActionsSimulationV3 from './components/ActionsSimulationV3.svelte';
+  import PortfolioViewV3 from './components/PortfolioViewV3.svelte';
+  import SiteInterventionV3 from './components/SiteInterventionV3.svelte';
 
   import { workflow, initialize, resetDemo } from './lib/workflow';
   import {
@@ -39,6 +41,7 @@
   let selectedReadinessCategory: string | null = null;
   let openWeightConfigOnLoad = false;
   let selectedDomainId: string = 'edc';
+  let selectedCountryFilter: string = 'all';
 
   // Modals state
   let showDataHealth = false;
@@ -134,6 +137,12 @@
     handleSelectTab('clinical_domains');
   }
 
+  function handleSelectCountry(country: string) {
+    selectedCountryFilter = country;
+    selectedSiteId = null;
+    handleSelectTab('sites_countries');
+  }
+
   function handleSelectStudy(studyId: string) {
     currentStudyId = studyId;
     activeTab = 'command_centre';
@@ -142,10 +151,10 @@
   }
 
   function handleSelectSite(siteId: string) {
-    activeTab = 'risk_matrix';
+    activeTab = 'sites_countries';
     selectedSiteId = siteId;
     selectedSubjectId = null;
-    try { window.location.hash = 'risk_matrix'; } catch (e) {}
+    try { window.location.hash = 'sites_countries'; } catch (e) {}
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -312,51 +321,53 @@
     
     {#if activeTab === 'portfolio'}
       <!-- Screen 1: Full Portfolio View -->
-      <PortfolioView
-        {portfolioStudies}
-        {sites}
-        {subjects}
-        {saeDiscrepancies}
-        {labBatches}
-        {queriesDetail}
+      <PortfolioViewV3
         onSelectStudy={handleSelectStudy}
-        onSelectSite={handleSelectSite}
       />
     {:else}
       <!-- Full-Width Operational Study Workspace -->
-      <div class="space-y-5">
+      <div class="space-y-4">
 
-        <!-- ================================================================= -->
-        <!-- UNIFIED FORECAST & SIMULATION MODE SWITCHER (#5)                  -->
-        <!-- ================================================================= -->
-        {#if activeTab === 'simulator' || activeTab === 'forecast_scenarios'}
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 db-card px-5 py-3">
-            <div class="flex items-center gap-2.5 text-xs text-slate-600">
-              <Sliders size={15} class="text-slate-700" />
-              <span class="font-semibold text-slate-900 text-sm">Forecast &amp; Simulation</span>
-              <span class="hidden md:inline text-slate-400">&middot;</span>
-              <span class="hidden md:inline text-slate-500">Model operational interventions or compare trajectory confidence intervals</span>
-            </div>
-            <div class="db-segmented self-start sm:self-auto">
-              <button
-                type="button"
-                on:click={() => handleSelectTab('simulator')}
-                class="db-segmented-btn flex items-center gap-1.5 {activeTab === 'simulator' ? 'active' : ''}"
-              >
-                <Sliders size={13} />
-                <span>Intervention Simulator</span>
-              </button>
-              <button
-                type="button"
-                on:click={() => handleSelectTab('forecast_scenarios')}
-                class="db-segmented-btn flex items-center gap-1.5 {activeTab === 'forecast_scenarios' ? 'active' : ''}"
-              >
-                <TrendingUp size={13} />
-                <span>Trajectory Scenarios</span>
-              </button>
-            </div>
+        <!-- Persistent Study Context & 5-Step Investigative Flow Bar -->
+        <div class="bg-white rounded-xl border border-slate-200/80 px-4 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div class="flex flex-wrap items-center gap-1.5">
+            <button type="button" on:click={() => handleSelectTab('portfolio')} class="text-slate-500 hover:text-blue-600 font-medium cursor-pointer">
+              Portfolio
+            </button>
+            <span class="text-slate-300">/</span>
+            <button type="button" on:click={() => handleSelectTab('command_centre')} class="font-bold text-slate-900 hover:text-blue-600 cursor-pointer">
+              {currentStudyId}
+            </button>
+            {#if selectedSiteId && activeTab === 'sites_countries'}
+              <span class="text-slate-300">/</span>
+              <span class="font-semibold text-blue-700">Site {selectedSiteId}</span>
+            {/if}
+            <span class="hidden sm:inline-block ml-2 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-semibold">
+              72% Ready (-8%) · P80 DBL 21 Dec (+6d)
+            </span>
           </div>
-        {/if}
+
+          <nav class="flex flex-wrap items-center gap-1" aria-label="Study investigation flow">
+            {#each [
+              { id: 'command_centre', step: '1. Overview' },
+              { id: 'clinical_domains', step: '2. Domains' },
+              { id: 'sites_countries', step: '3. Sites' },
+              { id: 'subjects', step: '4. Subjects' },
+              { id: 'actions_sim', step: '5. Actions & Sim' },
+            ] as flowStep, i}
+              {#if i > 0}
+                <ArrowRight size={11} class="text-slate-300 hidden sm:inline" />
+              {/if}
+              <button
+                type="button"
+                on:click={() => handleSelectTab(flowStep.id)}
+                class="px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer {activeTab === flowStep.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}"
+              >
+                {flowStep.step}
+              </button>
+            {/each}
+          </nav>
+        </div>
 
         <!-- ================================================================= -->
         <!-- STUDY MAIN CONTENT VIEW (Full Width)                              -->
@@ -367,6 +378,7 @@
             <StudyOverviewV3
               onSelectTab={handleSelectTab}
               onSelectDomain={handleSelectDomain}
+              onSelectCountry={handleSelectCountry}
             />
 
           {:else if activeTab === 'clinical_domains'}
@@ -377,27 +389,15 @@
             />
 
           {:else if activeTab === 'sites_countries'}
-            {#if currentSubject}
-              <SubjectDetailView
-                subject={currentSubject}
-                queries={trackerQueries.filter(query => query.subjectId === currentSubject.id)}
-                onBackToSite={handleBackToSite}
-                onSelectTab={handleSelectTab}
-              />
-            {:else if currentSite}
-              <SiteDetailView
-                site={currentSite}
-                subjects={trackerSubjects}
-                {saeDiscrepancies}
-                queriesDetail={trackerQueries}
-                {labBatches}
+            {#if selectedSiteId}
+              <SiteInterventionV3
+                siteId={selectedSiteId}
                 onBackToSites={handleBackToSites}
-                onSelectSubject={handleSelectSubject}
                 onSelectTab={handleSelectTab}
               />
             {:else}
               <SitesCountriesV3
-                {sites}
+                bind:countryFilter={selectedCountryFilter}
                 onSelectTab={handleSelectTab}
                 onSelectSite={handleSelectSite}
               />
@@ -411,6 +411,7 @@
           {:else if activeTab === 'actions_sim'}
             <ActionsSimulationV3
               onSelectTab={handleSelectTab}
+              onSelectSite={handleSelectSite}
             />
 
           {:else if activeTab === 'risk_matrix'}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { ArrowLeft, ChevronRight, Search, Info } from '@lucide/svelte';
-  import { V3_DOMAINS, V3_STUDY_META } from '../data/v3Data';
+  import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS } from '../data/v3Data';
+  import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
 
   export let selectedDomainId: string = 'edc';
   export let onSelectTab: (tab: string) => void;
@@ -9,6 +10,12 @@
   let subTab: 'site' | 'subject' | 'details' = 'site';
   let searchQuery = '';
   let statusFilter = 'all';
+  let drawerSubjectId: string | null = null;
+
+  $: drawerSubjectIdx = drawerSubjectId
+    ? V3_SUBJECT_ROWS.findIndex((s) => s.id === drawerSubjectId)
+    : -1;
+  $: drawerSubject = drawerSubjectIdx >= 0 ? V3_SUBJECT_ROWS[drawerSubjectIdx] : null;
 
   $: currentDomain = V3_DOMAINS.find((d) => d.id === selectedDomainId) || V3_DOMAINS[0];
 
@@ -375,7 +382,7 @@
               </thead>
               <tbody class="divide-y divide-slate-100">
                 {#each currentDomain.topPendingRows as item}
-                  <tr class="hover:bg-slate-50">
+                  <tr class="hover:bg-blue-50/50 cursor-pointer" on:click={() => (drawerSubjectId = item.subjectId)}>
                     <td class="py-2 font-mono font-medium text-blue-700">{item.subjectId}</td>
                     <td class="py-2 text-slate-600">{item.siteId}</td>
                     <td class="py-2 text-slate-600">{item.visit}</td>
@@ -389,9 +396,9 @@
                     </td>
                     <td class="py-2 text-slate-600">{item.owner}</td>
                     <td class="py-2 text-right">
-                      <button type="button" on:click={() => onSelectTab('actions_sim')} class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer">
-                        {item.actionLabel}
-                      </button>
+                      <span class="text-blue-600 hover:text-blue-800 font-semibold">
+                        {item.actionLabel} →
+                      </span>
                     </td>
                   </tr>
                 {/each}
@@ -403,3 +410,21 @@
     </div>
   </div>
 </div>
+
+{#if drawerSubject}
+  <SubjectDrawerV3
+    subject={drawerSubject}
+    subjectIndex={drawerSubjectIdx}
+    totalSubjects={V3_SUBJECT_ROWS.length}
+    onClose={() => (drawerSubjectId = null)}
+    onPrev={() => {
+      const prevIdx = (drawerSubjectIdx - 1 + V3_SUBJECT_ROWS.length) % V3_SUBJECT_ROWS.length;
+      drawerSubjectId = V3_SUBJECT_ROWS[prevIdx].id;
+    }}
+    onNext={() => {
+      const nextIdx = (drawerSubjectIdx + 1) % V3_SUBJECT_ROWS.length;
+      drawerSubjectId = V3_SUBJECT_ROWS[nextIdx].id;
+    }}
+    onOpenActions={() => { drawerSubjectId = null; onSelectTab('actions_sim'); }}
+  />
+{/if}

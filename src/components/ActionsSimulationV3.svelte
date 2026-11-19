@@ -4,6 +4,7 @@
   import { runDblSimulation, formatShortDate, type SimulationScenarioInput } from '../lib/dblEngine';
 
   export let onSelectTab: (tab: string) => void;
+  export let onSelectSite: (siteId: string) => void = () => {};
 
   let statusFilter = 'all';
   let ownerFilter = 'all';
@@ -196,10 +197,13 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             {#each filteredActions as a}
-              <tr class="hover:bg-slate-50/70">
+              <tr
+                class="hover:bg-blue-50/50 cursor-pointer"
+                on:click={() => { if (a.siteId) onSelectSite(a.siteId); }}
+              >
                 <td class="py-2 font-bold text-slate-700">P{a.priority}</td>
                 <td class="py-2">
-                  <div class="font-medium text-slate-800">{a.title}</div>
+                  <div class="font-medium text-blue-700 hover:underline">{a.title}</div>
                   <div class="text-[10px] text-slate-400">{a.domain} · {a.studySite}</div>
                 </td>
                 <td class="py-2 text-slate-600">{a.owner}</td>
@@ -274,6 +278,70 @@
         </div>
         <div class="text-[10px] text-slate-500 pt-1 border-t border-emerald-200/60">
           Monte Carlo Range: <span class="font-semibold">P50 {formatShortDate(simOutput.p50Date)}</span> · P80 {formatShortDate(simOutput.p80Date)} · P90 {formatShortDate(simOutput.p90Date)}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forecast & Waterfall Visuals (Page 38) -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
+      <h3 class="text-xs font-bold text-slate-900 mb-3">DBL Forecast – Current vs After Actions</h3>
+      <div class="space-y-3 text-xs">
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="font-medium text-slate-700">Current Forecast (P80)</span>
+            <span class="font-bold text-rose-600">{V3_STUDY_META.predictedDbl} (+{simOutput.baselineVarianceDays}d)</span>
+          </div>
+          <div class="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-full bg-rose-500 rounded-full" style="width: 92%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="font-medium text-slate-700">After Planned Actions</span>
+            <span class="font-bold text-emerald-700">{formatShortDate(simOutput.simulatedDblDate)} (-{simOutput.daysRecovered}d)</span>
+          </div>
+          <div class="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-full bg-emerald-500 rounded-full transition-all" style="width: {Math.max(45, 92 - simOutput.daysRecovered * 7)}%"></div>
+          </div>
+        </div>
+        <div>
+          <div class="flex justify-between mb-1">
+            <span class="font-medium text-slate-700">Target DBL</span>
+            <span class="font-bold text-blue-700">{V3_STUDY_META.targetDbl}</span>
+          </div>
+          <div class="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
+            <div class="h-full bg-blue-600 rounded-full" style="width: 60%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
+      <h3 class="text-xs font-bold text-slate-900 mb-3">Cumulative Impact of Actions (Waterfall)</h3>
+      <div class="grid grid-cols-5 gap-2 items-end h-32 pt-4 text-center text-[10px]">
+        <div class="flex flex-col items-center justify-end h-full">
+          <span class="font-bold text-rose-600 mb-1">21 Dec</span>
+          <div class="w-10 rounded-t bg-rose-500" style="height: 76px"></div>
+          <span class="text-slate-500 mt-1 leading-tight">Current P80</span>
+        </div>
+        {#each scenarios as sc}
+          <div class="flex flex-col items-center justify-end h-full">
+            <span class="font-bold {sc.enabled ? 'text-emerald-700' : 'text-slate-400'} mb-1">
+              {sc.enabled ? `-${sc.daysSaved}d` : '0d'}
+            </span>
+            <div
+              class="w-10 rounded-t transition-all {sc.enabled ? 'bg-emerald-500' : 'bg-slate-200'}"
+              style="height: {sc.enabled ? Math.max(16, sc.daysSaved * 14) : 10}px"
+            ></div>
+            <span class="text-slate-500 mt-1 leading-tight truncate w-full">{sc.id.replace('sim-', '').toUpperCase()}</span>
+          </div>
+        {/each}
+        <div class="flex flex-col items-center justify-end h-full">
+          <span class="font-bold text-blue-700 mb-1">{formatShortDate(simOutput.simulatedDblDate).slice(0, 6)}</span>
+          <div class="w-10 rounded-t bg-blue-600 transition-all" style="height: {Math.max(24, 76 - simOutput.daysRecovered * 8)}px"></div>
+          <span class="text-slate-500 mt-1 leading-tight">Post Actions</span>
         </div>
       </div>
     </div>
