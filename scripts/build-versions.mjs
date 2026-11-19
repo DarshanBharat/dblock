@@ -4,10 +4,12 @@ import os from 'node:os';
 import path from 'node:path';
 
 const V1_COMMIT = '47ad5fa';
+const V2_COMMIT = '760a413';
 const repoRoot = path.resolve(import.meta.dirname, '..');
 const distDir = path.join(repoRoot, 'dist');
 const v1DistDir = path.join(distDir, 'v1');
 const v2DistDir = path.join(distDir, 'V2');
+const v3DistDir = path.join(distDir, 'v3');
 
 const v1Only = process.argv.includes('--v1-only');
 
@@ -35,37 +37,68 @@ function writeRedirectHtml(targetDir, redirectTo, title) {
   fs.writeFileSync(path.join(targetDir, 'index.html'), html, 'utf8');
 }
 
-function buildV2() {
-  console.log('\n=== Building V2 (latest) ===');
+function injectSwitcher(indexPath, activeVersion) {
+  if (!fs.existsSync(indexPath)) return;
+  let html = fs.readFileSync(indexPath, 'utf8');
+  const pill = (ver, label) =>
+    ver === activeVersion
+      ? `<span style="padding:4px 8px;border-radius:7px;background:#2563eb;color:#fff;font-weight:700;">${label}</span>`
+      : `<a data-dblock-ver="${ver}" href="../${ver}/" style="padding:4px 8px;border-radius:7px;color:#e2e8f0;text-decoration:none;font-weight:600;">${label}</a>`;
+
+  const switcherSnippet = `
+    <div id="dblock-version-switcher" style="position:fixed;bottom:16px;right:16px;z-index:9999;display:inline-flex;align-items:center;gap:4px;padding:4px;border-radius:10px;background:rgba(15,23,42,0.92);border:1px solid rgba(148,163,184,0.3);box-shadow:0 8px 24px rgba(0,0,0,0.2);font-family:Inter,system-ui,sans-serif;font-size:12px;">
+      ${pill('v1', 'v1')}
+      ${pill('V2', 'V2')}
+      ${pill('v3', 'v3')}
+    </div>
+    <script>
+      (function () {
+        document.querySelectorAll('[data-dblock-ver]').forEach(function (link) {
+          link.addEventListener('click', function (e) {
+            e.preventDefault();
+            var target = link.getAttribute('data-dblock-ver');
+            var base = window.location.pathname.replace(/\\/(v1|v2|v3|V1|V2|V3)(\\/.*)?$/, '/');
+            if (!base.endsWith('/')) base += '/';
+            window.location.href = base + target + '/' + window.location.hash;
+          });
+        });
+      })();
+    </script>`;
+  html = html.replace('</body>', `${switcherSnippet}\n  </body>`);
+  fs.writeFileSync(indexPath, html, 'utf8');
+}
+
+function buildV3() {
+  console.log('\n=== Building v3 (latest) ===');
   fs.rmSync(distDir, { recursive: true, force: true });
   run('npx', ['vite', 'build']);
 
-  // Copy root V2 build into dist/V2/ so both / and /V2/ serve the latest version
+  // Copy root v3 build into dist/v3/ so both / and /v3/ serve v3
   const entries = fs.readdirSync(distDir);
-  fs.mkdirSync(v2DistDir, { recursive: true });
+  fs.mkdirSync(v3DistDir, { recursive: true });
   for (const entry of entries) {
-    if (entry === 'V2' || entry === 'v2' || entry === 'v1' || entry === 'V1') continue;
-    fs.cpSync(path.join(distDir, entry), path.join(v2DistDir, entry), { recursive: true });
+    if (['v1', 'V1', 'v2', 'V2', 'v3', 'V3'].includes(entry)) continue;
+    fs.cpSync(path.join(distDir, entry), path.join(v3DistDir, entry), { recursive: true });
   }
 
-  // Case-insensitive convenience redirect: /v2/ -> /V2/
-  writeRedirectHtml(path.join(distDir, 'v2'), '../V2/', 'DBLock AI V2');
+  // Case-insensitive convenience redirect: /V3/ -> /v3/
+  writeRedirectHtml(path.join(distDir, 'V3'), '../v3/', 'DBLock AI v3');
 }
 
-function buildV1() {
-  console.log(`\n=== Building v1 (${V1_COMMIT}, 2026-11-08) ===`);
+function buildFromCommit(commitHash, label, outDir, redirectDir, redirectTarget) {
+  console.log(`\n=== Building ${label} (${commitHash}) ===`);
 
   try {
-    execSync(`git cat-file -e ${V1_COMMIT}^{commit}`, { cwd: repoRoot, stdio: 'ignore' });
+    execSync(`git cat-file -e ${commitHash}^{commit}`, { cwd: repoRoot, stdio: 'ignore' });
   } catch {
     throw new Error(
-      `Commit ${V1_COMMIT} was not found in git history. Ensure a full git clone (fetch-depth: 0) is available.`
+      `Commit ${commitHash} was not found in git history. Ensure a full git clone (fetch-depth: 0) is available.`
     );
   }
 
-  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'dblock-v1-'));
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), `dblock-${label.toLowerCase()}-`));
   try {
-    run('git', ['worktree', 'add', '--detach', tmpDir, V1_COMMIT]);
+    run('git', ['worktree', 'add', '--detach', tmpDir, commitHash]);
 
     const rootNodeModules = path.join(repoRoot, 'node_modules');
     const tmpNodeModules = path.join(tmpDir, 'node_modules');
@@ -73,37 +106,11 @@ function buildV1() {
       fs.symlinkSync(rootNodeModules, tmpNodeModules, 'dir');
     }
 
-    fs.rmSync(v1DistDir, { recursive: true, force: true });
-    run('npx', ['vite', 'build', '--outDir', v1DistDir], tmpDir);
+    fs.rmSync(outDir, { recursive: true, force: true });
+    run('npx', ['vite', 'build', '--outDir', outDir], tmpDir);
 
-    // Inject a lightweight floating switcher into v1's index.html so users can switch back to V2 from the UI
-    const v1IndexPath = path.join(v1DistDir, 'index.html');
-    if (fs.existsSync(v1IndexPath)) {
-      let html = fs.readFileSync(v1IndexPath, 'utf8');
-      const switcherSnippet = `
-    <div id="dblock-version-switcher" style="position:fixed;bottom:16px;right:16px;z-index:9999;display:inline-flex;align-items:center;gap:4px;padding:4px;border-radius:10px;background:rgba(15,23,42,0.92);border:1px solid rgba(148,163,184,0.3);box-shadow:0 8px 24px rgba(0,0,0,0.2);font-family:Inter,system-ui,sans-serif;font-size:12px;">
-      <span style="padding:4px 8px;border-radius:7px;background:#2563eb;color:#fff;font-weight:700;">v1</span>
-      <a id="dblock-switch-v2" href="../V2/" style="padding:4px 8px;border-radius:7px;color:#e2e8f0;text-decoration:none;font-weight:600;">V2</a>
-    </div>
-    <script>
-      (function () {
-        var link = document.getElementById('dblock-switch-v2');
-        if (link) {
-          link.addEventListener('click', function (e) {
-            e.preventDefault();
-            var base = window.location.pathname.replace(/\\/(v1|v2|V1|V2)(\\/.*)?$/, '/');
-            if (!base.endsWith('/')) base += '/';
-            window.location.href = base + 'V2/' + window.location.hash;
-          });
-        }
-      })();
-    </script>`;
-      html = html.replace('</body>', `${switcherSnippet}\n  </body>`);
-      fs.writeFileSync(v1IndexPath, html, 'utf8');
-    }
-
-    // Case-insensitive convenience redirect: /V1/ -> /v1/
-    writeRedirectHtml(path.join(distDir, 'V1'), '../v1/', 'DBLock AI v1');
+    injectSwitcher(path.join(outDir, 'index.html'), label);
+    writeRedirectHtml(redirectDir, redirectTarget, `DBLock AI ${label}`);
   } finally {
     try {
       run('git', ['worktree', 'remove', '--force', tmpDir]);
@@ -114,7 +121,8 @@ function buildV1() {
 }
 
 if (!v1Only) {
-  buildV2();
+  buildV3();
+  buildFromCommit(V2_COMMIT, 'V2', v2DistDir, path.join(distDir, 'v2'), '../V2/');
 }
-buildV1();
-console.log('\n=== Multi-version build complete: /, /v1/, /V2/ ===\n');
+buildFromCommit(V1_COMMIT, 'v1', v1DistDir, path.join(distDir, 'V1'), '../v1/');
+console.log('\n=== Multi-version build complete: /, /v1/, /V2/, /v3/ ===\n');

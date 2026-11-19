@@ -21,21 +21,20 @@
 
   const navItems = [
     { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
-    { id: 'command_centre', label: 'Overview', icon: LayoutDashboard },
-    { id: 'risk_matrix', label: 'Sites & Risks', icon: MapPin },
-    { id: 'digital_twin', label: 'Readiness', icon: CheckSquare },
-    { id: 'action_workbench', label: 'Actions', icon: CheckCircle2 },
-    { id: 'simulator', label: 'Forecast & Sim', icon: Sliders, matchIds: ['simulator', 'forecast_scenarios'] }
+    { id: 'command_centre', label: 'Study Overview', icon: LayoutDashboard },
+    { id: 'clinical_domains', label: 'Clinical Domains', icon: CheckSquare },
+    { id: 'sites_countries', label: 'Sites & Countries', icon: MapPin, matchIds: ['sites_countries', 'risk_matrix'] },
+    { id: 'subjects', label: 'Subjects', icon: CheckCircle2 },
+    { id: 'actions_sim', label: 'Actions & Simulation', icon: Sliders, matchIds: ['actions_sim', 'action_workbench', 'simulator', 'forecast_scenarios'] }
   ];
 
   const quickLinks = [
     { label: 'Study Portfolio', sub: 'All active trials', tab: 'portfolio' },
-    { label: 'Study CA-209-301 Overview', sub: 'Command centre & KPIs', tab: 'command_centre' },
-    { label: 'Sites & Risks', sub: 'Site 104 (Critical), 317, 405', tab: 'risk_matrix' },
-    { label: 'Readiness Traceability', sub: '158/220 clean subjects', tab: 'digital_twin' },
-    { label: 'Action Workbench', sub: '12 recommended actions', tab: 'action_workbench' },
-    { label: 'What-If Simulator', sub: 'Test DBL date shifts', tab: 'simulator' },
-    { label: 'Forecast Scenarios', sub: 'Target-meeting likelihood', tab: 'forecast_scenarios' }
+    { label: 'Study CA-209-301 Overview', sub: 'Readiness, P80 DBL & key insights', tab: 'command_centre' },
+    { label: 'Clinical Domains (8)', sub: 'EDC, Queries, Labs, Safety, Coding, PI, PD, SDV', tab: 'clinical_domains' },
+    { label: 'Sites & Countries', sub: 'Site 104, 317, 405 & country risk', tab: 'sites_countries' },
+    { label: 'Subjects (220)', sub: 'Lock Ready, Hard Blocked & Subject Drawer', tab: 'subjects' },
+    { label: 'Actions & Simulation', sub: 'Prioritized actions & What-If DBL simulator', tab: 'actions_sim' }
   ];
 
   $: filteredQuickLinks = searchHeader.trim()
@@ -45,8 +44,8 @@
       )
     : quickLinks;
 
-  function switchVersion(target: 'v1' | 'V2') {
-    const base = window.location.pathname.replace(/\/(v1|v2|V1|V2)(\/.*)?$/, '/');
+  function switchVersion(target: 'v1' | 'V2' | 'v3') {
+    const base = window.location.pathname.replace(/\/(v1|v2|v3|V1|V2|V3)(\/.*)?$/, '/');
     const normalizedBase = base.endsWith('/') ? base : `${base}/`;
     window.location.href = `${normalizedBase}${target}/${window.location.hash}`;
   }
@@ -68,7 +67,7 @@
             DBLock <span class="text-blue-600">AI</span>
           </strong>
           <small class="text-[10px] text-slate-500 font-medium block leading-none mt-0.5 max-[380px]:hidden">
-            Database Lock Engine
+            Accelerating Studies to Database Lock
           </small>
         </div>
       </button>
@@ -83,11 +82,19 @@
         >
           v1
         </button>
-        <span
-          class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-blue-700 shadow-2xs"
-          title="Currently viewing V2 (Latest)"
+        <button
+          type="button"
+          on:click={() => switchVersion('V2')}
+          class="px-2 py-0.5 text-[11px] font-medium rounded-md text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
+          title="Switch to V2"
         >
           V2
+        </button>
+        <span
+          class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-blue-700 shadow-2xs"
+          title="Currently viewing v3 (Latest)"
+        >
+          v3
         </span>
       </div>
     </div>
@@ -166,11 +173,11 @@
       <!-- User Profile -->
       <div class="flex items-center gap-2.5 pl-2.5 ml-0.5 border-l border-slate-200">
         <div class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold text-xs">
-          SS
+          DF
         </div>
         <div class="hidden xl:block text-left">
-          <strong class="text-xs font-semibold text-slate-900 block leading-tight">Sarah Smith</strong>
-          <small class="text-[11px] text-slate-500 block leading-none mt-0.5">Study Data Lead</small>
+          <strong class="text-xs font-semibold text-slate-900 block leading-tight">Dipti Fondekar</strong>
+          <small class="text-[11px] text-slate-500 block leading-none mt-0.5">Consultant</small>
         </div>
       </div>
 

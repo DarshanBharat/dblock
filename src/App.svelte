@@ -13,6 +13,11 @@
   import ActionWorkbench from './components/ActionWorkbench.svelte';
   import WhatIfSimulator from './components/WhatIfSimulator.svelte';
   import ForecastScenarios from './components/ForecastScenarios.svelte';
+  import StudyOverviewV3 from './components/StudyOverviewV3.svelte';
+  import ClinicalDomainDrilldownV3 from './components/ClinicalDomainDrilldownV3.svelte';
+  import SitesCountriesV3 from './components/SitesCountriesV3.svelte';
+  import SubjectsV3 from './components/SubjectsV3.svelte';
+  import ActionsSimulationV3 from './components/ActionsSimulationV3.svelte';
 
   import { workflow, initialize, resetDemo } from './lib/workflow';
   import {
@@ -27,13 +32,13 @@
     RotateCcw
   } from '@lucide/svelte';
 
-  // Active top-level tab: 'portfolio' | 'command_centre' | 'risk_matrix' | 'digital_twin' | 'action_workbench' | 'simulator' | 'forecast_scenarios'
-  // Screen 1 (Study Portfolio and Selection) is the entry point before opening Study CA-209-301
+  // Active top-level tab
   let activeTab = 'portfolio';
 
-  // Deep readiness category & weightage config state
+  // Deep readiness category & domain drilldown state
   let selectedReadinessCategory: string | null = null;
   let openWeightConfigOnLoad = false;
+  let selectedDomainId: string = 'edc';
 
   // Modals state
   let showDataHealth = false;
@@ -73,14 +78,23 @@
     async function applyHash() {
       const h = window.location.hash.replace('#', '');
       if (h === 'sae-reconciliation') {
-        activeTab = 'digital_twin';
-        selectedReadinessCategory = 'safety_recon';
-        openWeightConfigOnLoad = false;
-        await tick();
-        if (window.location.hash === '#sae-reconciliation') focusReadinessDetails('safety_recon');
+        activeTab = 'clinical_domains';
+        selectedDomainId = 'safety';
         return;
       }
-      if (['portfolio', 'command_centre', 'risk_matrix', 'digital_twin', 'action_workbench', 'simulator', 'forecast_scenarios'].includes(h)) {
+      if ([
+        'portfolio',
+        'command_centre',
+        'clinical_domains',
+        'sites_countries',
+        'subjects',
+        'actions_sim',
+        'risk_matrix',
+        'digital_twin',
+        'action_workbench',
+        'simulator',
+        'forecast_scenarios'
+      ].includes(h)) {
         activeTab = h;
       }
     }
@@ -102,7 +116,7 @@
       openWeightConfigOnLoad = showWeightConfig ?? false;
     }
     try { window.location.hash = tab; } catch (e) {}
-    if (tab === 'risk_matrix') {
+    if (tab === 'risk_matrix' || tab === 'sites_countries') {
       selectedSiteId = null;
       selectedSubjectId = null;
     }
@@ -113,6 +127,11 @@
       return;
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function handleSelectDomain(domainId: string) {
+    selectedDomainId = domainId;
+    handleSelectTab('clinical_domains');
   }
 
   function handleSelectStudy(studyId: string) {
@@ -345,18 +364,53 @@
         <div class="min-w-0 w-full">
           
           {#if activeTab === 'command_centre'}
-            <ExecutiveCommandCentre
-              {study}
-              {actions}
-              {timelineSnapshots}
-              {sites}
-              {subjects}
-              {saeDiscrepancies}
-              {labBatches}
-              {queriesDetail}
-              {activeRole}
+            <StudyOverviewV3
+              onSelectTab={handleSelectTab}
+              onSelectDomain={handleSelectDomain}
+            />
+
+          {:else if activeTab === 'clinical_domains'}
+            <ClinicalDomainDrilldownV3
+              bind:selectedDomainId
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
+            />
+
+          {:else if activeTab === 'sites_countries'}
+            {#if currentSubject}
+              <SubjectDetailView
+                subject={currentSubject}
+                queries={trackerQueries.filter(query => query.subjectId === currentSubject.id)}
+                onBackToSite={handleBackToSite}
+                onSelectTab={handleSelectTab}
+              />
+            {:else if currentSite}
+              <SiteDetailView
+                site={currentSite}
+                subjects={trackerSubjects}
+                {saeDiscrepancies}
+                queriesDetail={trackerQueries}
+                {labBatches}
+                onBackToSites={handleBackToSites}
+                onSelectSubject={handleSelectSubject}
+                onSelectTab={handleSelectTab}
+              />
+            {:else}
+              <SitesCountriesV3
+                {sites}
+                onSelectTab={handleSelectTab}
+                onSelectSite={handleSelectSite}
+              />
+            {/if}
+
+          {:else if activeTab === 'subjects'}
+            <SubjectsV3
+              onSelectTab={handleSelectTab}
+            />
+
+          {:else if activeTab === 'actions_sim'}
+            <ActionsSimulationV3
+              onSelectTab={handleSelectTab}
             />
 
           {:else if activeTab === 'risk_matrix'}

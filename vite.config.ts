@@ -60,6 +60,18 @@ function multiVersionDevPlugin(): Plugin {
           return
         }
 
+        if (pathname === '/v3' || pathname === '/V3' || pathname.startsWith('/V3/')) {
+          const rest = pathname.startsWith('/V3/') ? pathname.slice(3) : ''
+          res.writeHead(302, { Location: `/v3/${rest}${search}` })
+          res.end()
+          return
+        }
+
+        if (pathname.startsWith('/v3/')) {
+          const stripped = pathname.slice('/v3'.length) || '/'
+          req.url = `${stripped}${search}`
+        }
+
         if (pathname.startsWith('/V2/')) {
           const stripped = pathname.slice('/V2'.length) || '/'
           req.url = `${stripped}${search}`
