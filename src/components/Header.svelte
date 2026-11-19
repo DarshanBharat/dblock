@@ -1,23 +1,17 @@
 <script lang="ts">
   import tcsLogo from '../assets/tcs-logo.svg';
   import {
-    Search,
     LayoutDashboard,
     MapPin,
     CheckSquare,
     CheckCircle2,
     Sliders,
     FolderKanban,
-    Briefcase,
     ChevronDown
   } from '@lucide/svelte';
 
   export let activeTab: string;
-  export let workspaceLabel = 'Workspace';
   export let onSelectTab: (tab: string) => void;
-
-  let showSearchInput = false;
-  let searchHeader = '';
 
   const navItems = [
     { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
@@ -28,26 +22,11 @@
     { id: 'actions_sim', label: 'Actions & Simulation', icon: Sliders, matchIds: ['actions_sim', 'action_workbench', 'simulator', 'forecast_scenarios'] }
   ];
 
-  const quickLinks = [
-    { label: 'Study Portfolio', sub: 'All active trials', tab: 'portfolio' },
-    { label: 'Study CA-209-301 Overview', sub: 'Readiness, P80 DBL & key insights', tab: 'command_centre' },
-    { label: 'Clinical Domains (8)', sub: 'EDC, Queries, Labs, Safety, Coding, PI, PD, SDV', tab: 'clinical_domains' },
-    { label: 'Sites & Countries', sub: 'Site 104, 317, 405 & country risk', tab: 'sites_countries' },
-    { label: 'Subjects (220)', sub: 'Lock Ready, Hard Blocked & Subject Drawer', tab: 'subjects' },
-    { label: 'Actions & Simulation', sub: 'Prioritized actions & What-If DBL simulator', tab: 'actions_sim' }
-  ];
-
-  $: filteredQuickLinks = searchHeader.trim()
-    ? quickLinks.filter(q =>
-        q.label.toLowerCase().includes(searchHeader.toLowerCase()) ||
-        q.sub.toLowerCase().includes(searchHeader.toLowerCase())
-      )
-    : quickLinks;
-
-  function switchVersion(target: 'v1' | 'V2' | 'v3') {
+  function switchVersion(event: Event) {
+    const target = (event.currentTarget as HTMLSelectElement).value;
     const base = window.location.pathname.replace(/\/(v1|v2|v3|V1|V2|V3)(\/.*)?$/, '/');
     const normalizedBase = base.endsWith('/') ? base : `${base}/`;
-    window.location.href = `${normalizedBase}${target}/${window.location.hash}`;
+    window.location.href = `${normalizedBase}${target}/${window.location.search}${window.location.hash}`;
   }
 </script>
 
@@ -55,7 +34,7 @@
   <div class="max-w-[1440px] mx-auto px-4 sm:px-6 flex items-center justify-between h-15 gap-4">
 
     <!-- Left: Brand Logo & Version Switcher -->
-    <div class="flex items-center gap-3.5 shrink-0">
+    <div class="flex items-center gap-2 sm:gap-3.5 shrink-0">
       <button
         type="button"
         class="flex items-center gap-2.5 cursor-pointer text-left group"
@@ -72,30 +51,18 @@
         </div>
       </button>
 
-      <!-- Version Switcher -->
-      <div class="hidden sm:inline-flex items-center rounded-lg bg-slate-100/90 p-0.5 border border-slate-200/80" role="group" aria-label="Version switcher">
-        <button
-          type="button"
-          on:click={() => switchVersion('v1')}
-          class="px-2 py-0.5 text-[11px] font-medium rounded-md text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-          title="Switch to v1 (Nov 8 snapshot)"
+      <div class="relative">
+        <select
+          aria-label="Version"
+          value="v3"
+          on:change={switchVersion}
+          class="appearance-none cursor-pointer rounded-lg border border-slate-200 bg-slate-100 py-1.5 pl-2 pr-6 text-xs font-semibold text-slate-700 focus-visible:outline-2 focus-visible:outline-blue-600"
         >
-          v1
-        </button>
-        <button
-          type="button"
-          on:click={() => switchVersion('V2')}
-          class="px-2 py-0.5 text-[11px] font-medium rounded-md text-slate-500 hover:text-slate-900 transition-colors cursor-pointer"
-          title="Switch to V2"
-        >
-          V2
-        </button>
-        <span
-          class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-white text-blue-700 shadow-2xs"
-          title="Currently viewing v3 (Latest)"
-        >
-          v3
-        </span>
+          <option value="v1">v1</option>
+          <option value="V2">V2</option>
+          <option value="v3">v3</option>
+        </select>
+        <ChevronDown size={12} class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-500" aria-hidden="true" />
       </div>
     </div>
 
@@ -115,72 +82,14 @@
       {/each}
     </nav>
 
-    <!-- Right: Global Utilities & Profile -->
-    <div class="flex items-center gap-2 shrink-0">
-      {#if activeTab !== 'portfolio'}
-        <button
-          type="button"
-          popovertarget="study-workspace"
-          on:click={() => showSearchInput = false}
-          class="flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold cursor-pointer transition-colors {workspaceLabel === 'Workspace' ? 'bg-slate-100 text-slate-700 hover:bg-slate-200' : 'bg-blue-50 text-blue-800 hover:bg-blue-100'}"
-          aria-label={workspaceLabel === 'Workspace' ? 'Workspace' : `Workspace · ${workspaceLabel}`}
-          title={workspaceLabel}
-        >
-          <Briefcase size={15} aria-hidden="true" />
-          <span class="hidden xl:inline">{workspaceLabel}</span>
-          <ChevronDown size={12} class="hidden xl:block" aria-hidden="true" />
-        </button>
-        <div id="study-workspace" popover="auto" role="region" aria-labelledby="study-workspace-heading" class="workspace-popover rounded-xl border border-slate-200 bg-white text-slate-900 shadow-xl">
-          <slot name="workspace" />
-        </div>
-      {/if}
-
-      <!-- Quick Jump Search -->
-      <div class="relative">
-        <button
-          type="button"
-          on:click={() => showSearchInput = !showSearchInput}
-          class="p-2 text-slate-500 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-          aria-label="Quick search"
-        >
-          <Search size={16} />
-        </button>
-        {#if showSearchInput}
-          <div class="absolute right-0 top-11 w-72 bg-white border border-slate-200 rounded-xl shadow-xl p-2.5 z-50 space-y-2">
-            <input
-              type="text"
-              bind:value={searchHeader}
-              placeholder="Jump to view or site (e.g. 104, Actions)..."
-              class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg py-2 px-3 text-slate-800 focus:outline-hidden focus:border-blue-500 focus:bg-white"
-              autoFocus
-            />
-            <div class="max-h-56 overflow-y-auto divide-y divide-slate-100">
-              {#each filteredQuickLinks as ql}
-                <button
-                  type="button"
-                  on:click={() => { onSelectTab(ql.tab); showSearchInput = false; searchHeader = ''; }}
-                  class="w-full text-left px-2.5 py-2 hover:bg-blue-50/70 rounded-lg transition-colors cursor-pointer"
-                >
-                  <div class="text-xs font-semibold text-slate-900">{ql.label}</div>
-                  <div class="text-[11px] text-slate-500">{ql.sub}</div>
-                </button>
-              {/each}
-            </div>
-          </div>
-        {/if}
+    <div class="flex shrink-0 items-center gap-2.5" role="group" aria-label="Darshan, Consultant">
+      <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">
+        D
       </div>
-
-      <!-- User Profile -->
-      <div class="flex items-center gap-2.5 pl-2.5 ml-0.5 border-l border-slate-200">
-        <div class="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-semibold text-xs">
-          DF
-        </div>
-        <div class="hidden xl:block text-left">
-          <strong class="text-xs font-semibold text-slate-900 block leading-tight">Dipti Fondekar</strong>
-          <small class="text-[11px] text-slate-500 block leading-none mt-0.5">Consultant</small>
-        </div>
+      <div class="hidden text-left xl:block" aria-hidden="true">
+        <strong class="block text-xs font-semibold leading-tight text-slate-900">Darshan</strong>
+        <small class="mt-0.5 block text-[11px] leading-none text-slate-500">Consultant</small>
       </div>
-
     </div>
 
   </div>
@@ -198,16 +107,3 @@
     {/each}
   </div>
 </header>
-
-
-<style>
-  .workspace-popover {
-    position: fixed;
-    inset: 4rem max(1rem, calc((100vw - 1440px) / 2 + 1.5rem)) auto auto;
-    width: min(28rem, calc(100vw - 2rem));
-    max-height: calc(100vh - 5rem);
-    max-height: calc(100dvh - 5rem);
-    margin: 0;
-    overflow-y: auto;
-  }
-</style>

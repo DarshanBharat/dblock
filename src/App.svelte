@@ -177,144 +177,12 @@
   // Reactive selection helpers
   $: currentSubject = selectedSubjectId ? trackerSubjects.find((s: any) => s.id === selectedSubjectId) : null;
   $: currentSite = selectedSiteId ? sites.find((s: any) => s.id === selectedSiteId) : null;
-
-  // 5-Step Pre-DBL Hard Gate Sequence (Item C)
-  const hardGates = [
-    {
-      id: 'lslv',
-      name: 'LSLV Cut-Off',
-      date: '30 Nov',
-      status: 'on_track',
-      metric: '220/220 Enrolled',
-      roleFilter: 'all' as const
-    },
-    {
-      id: 'vendor_lock',
-      name: 'Vendor Transfer Lock',
-      date: '05 Dec',
-      status: 'blocked',
-      metric: '1 Batch Blocked (#LXB-8921)',
-      roleFilter: 'vendor' as const
-    },
-    {
-      id: 'safety_freeze',
-      name: 'Safety / SAE Freeze',
-      date: '08 Dec',
-      status: 'blocked',
-      metric: '2 SAE Discordances',
-      roleFilter: 'safety' as const
-    },
-    {
-      id: 'coding_query_lock',
-      name: 'Coding & Query Lock',
-      date: '11 Dec',
-      status: 'at_risk',
-      metric: '14 Crit Queries · 12 Terms',
-      roleFilter: 'cdm' as const
-    },
-    {
-      id: 'pi_sign_dbl',
-      name: 'PI e-Sign & Hard DBL',
-      date: '15 Dec',
-      status: 'delayed',
-      metric: '18 Unsigned · Forecast 21 Dec (+6d)',
-      roleFilter: 'cra_site' as const
-    }
-  ];
-
-  // Role / Workstream operational filter (#2)
-  let activeRole: 'all' | 'my_queue' | 'cra_site' | 'cdm' | 'safety' | 'vendor' = 'all';
-
-  const roleQueues = [
-    { id: 'all', label: 'All Workstreams', count: 8, desc: 'Full study view across all 6 data domains' },
-    { id: 'my_queue', label: 'My Queue (Sarah)', count: 4, desc: 'Critical path decisions awaiting Study Data Lead sign-off' },
-    { id: 'cra_site', label: 'CRA / Site Ops', count: 3, desc: 'SDV backlog, eCRF entry & 18 pending PI signatures (8 Site 104, 6 Site 405, 4 Site 317)' },
-    { id: 'cdm', label: 'CDM & Coding', count: 3, desc: '14 critical RECIST queries >14d & 12 uncoded MedDRA 27.0 / WHODrug C3 terms' },
-    { id: 'safety', label: 'Safety / PV', count: 2, desc: '2 Rave-vs-Argus SAE discrepancies at Site 104 blocking 08 Dec safety freeze' },
-    { id: 'vendor', label: 'External Vendors', count: 2, desc: 'LabCorp ctDNA #LXB-8921 SHA-256 failure & Eurofins chemistry QA batch' }
-  ] as const;
-
-  $: activeRoleObj = roleQueues.find(r => r.id === activeRole) || roleQueues[0];
 </script>
 
 <div class="min-h-screen bg-[#f5f5f7] text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
   
   <!-- Unified Top Header Bar -->
-  <Header
-    {activeTab}
-    workspaceLabel={activeRole === 'all' ? 'Workspace' : activeRoleObj.label}
-    onSelectTab={handleSelectTab}
-  >
-    <div slot="workspace" class="p-4 sm:p-5">
-      <div class="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 pb-4">
-        <div>
-          <h2 id="study-workspace-heading" class="text-sm font-semibold text-slate-900">Study workspace</h2>
-          <p class="mt-1 text-xs text-slate-600">
-            {study.protocol} · {study.id} · {study.therapeuticArea} · Phase III
-          </p>
-        </div>
-        <button
-          type="button"
-          popovertarget="study-workspace"
-          popovertargetaction="hide"
-          on:click={() => handleSelectTab('portfolio')}
-          class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-200 cursor-pointer"
-        >
-          Switch study
-        </button>
-      </div>
-
-      <div class="pt-4">
-        <h3 id="workstreams-heading" class="text-xs font-semibold text-slate-900">Workstreams</h3>
-        <div class="mt-2 grid grid-cols-2 gap-2" role="group" aria-labelledby="workstreams-heading">
-          {#each roleQueues as queue (queue.id)}
-            <button
-              type="button"
-              popovertarget="study-workspace"
-              popovertargetaction="hide"
-              aria-pressed={activeRole === queue.id}
-              on:click={() => activeRole = queue.id}
-              class="flex min-h-10 items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition-colors cursor-pointer {activeRole === queue.id ? 'border-blue-200 bg-blue-50 text-blue-800' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}"
-            >
-              <span>{queue.label}</span>
-              <span class="num-tabular">{queue.count}</span>
-            </button>
-          {/each}
-        </div>
-        <p class="mt-2 text-xs text-slate-600">{activeRoleObj.desc}</p>
-      </div>
-
-      <div class="mt-4 border-t border-slate-100 pt-4">
-        <h3 class="text-xs font-semibold text-slate-900">Database lock milestones</h3>
-        <ul class="mt-2 divide-y divide-slate-100">
-          {#each hardGates as gate (gate.id)}
-            <li>
-              <button
-                type="button"
-                popovertarget="study-workspace"
-                popovertargetaction="hide"
-                aria-pressed={activeRole === gate.roleFilter && gate.roleFilter !== 'all'}
-                aria-label={`${gate.name}, ${gate.date}. ${gate.metric}`}
-                on:click={() => activeRole = activeRole === gate.roleFilter ? 'all' : gate.roleFilter}
-                class="grid w-full grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 rounded-lg px-2 py-2 text-left text-xs hover:bg-slate-50 cursor-pointer"
-              >
-                <span class="font-medium text-slate-900">{gate.name}</span>
-                <span class="num-tabular text-slate-500">{gate.date}</span>
-                <span class="col-span-2 {gate.status === 'on_track' ? 'text-emerald-700' : gate.status === 'at_risk' ? 'text-amber-700' : 'text-rose-700'}">
-                  {gate.metric}
-                </span>
-              </button>
-            </li>
-          {/each}
-        </ul>
-      </div>
-      <dl class="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-xs">
-        <div><dt class="text-slate-500">Clean patients</dt><dd class="font-semibold text-slate-900 num-tabular">158 / 220 (71.8%)</dd></div>
-        <div><dt class="text-slate-500">Target DBL</dt><dd class="font-semibold text-slate-900 num-tabular">15 Dec 2026</dd></div>
-        <div><dt class="text-slate-500">Forecast DBL</dt><dd class="font-semibold text-rose-700 num-tabular">21 Dec (+6d)</dd></div>
-      </dl>
-    </div>
-  </Header>
+  <Header {activeTab} onSelectTab={handleSelectTab} />
 
   <!-- Main View Container -->
   <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-6">
@@ -441,7 +309,6 @@
                 {saeDiscrepancies}
                 {labBatches}
                 {queriesDetail}
-                {activeRole}
                 onSelectSite={handleSelectSite}
                 onSelectSubject={(subjId, siteId) => {
                   selectedSiteId = siteId;
@@ -464,7 +331,6 @@
               {queriesDetail}
               {selectedReadinessCategory}
               {openWeightConfigOnLoad}
-              {activeRole}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
@@ -472,7 +338,6 @@
           {:else if activeTab === 'action_workbench'}
             <ActionWorkbench
               {sites}
-              {activeRole}
               onSelectTab={handleSelectTab}
               onSelectSite={handleSelectSite}
             />
@@ -481,7 +346,6 @@
             <WhatIfSimulator
               {interventions}
               {study}
-              {activeRole}
               onSelectTab={handleSelectTab}
             />
 
