@@ -1,222 +1,320 @@
 <script lang="ts">
-  import { V3_COUNTRY_SUMMARY } from '../data/v3Data';
+  import { onMount, onDestroy } from 'svelte';
+  import { ZoomIn, ZoomOut, RotateCcw } from '@lucide/svelte';
+  import { V3_SITES, V3_COUNTRY_SUMMARY } from '../data/v3Data';
 
   export let onSelectCountry: (country: string) => void = () => {};
 
-  type CountrySummary = (typeof V3_COUNTRY_SUMMARY)[number];
+  let mapContainer: HTMLElement;
+  let map: any = null;
+  let L: any = null;
+  let clusterGroup: any = null;
+  let resizeObserver: ResizeObserver | null = null;
 
-  let hoveredCountry: CountrySummary | null = null;
-
-  // Map projection: equirectangular cropped to [-180..180] lon, [82..-58] lat -> 800x360
-  const W = 800;
-  const H = 360;
-
-  function projX(lon: number): number {
-    return ((lon + 180) / 360) * W;
-  }
-
-  function projY(lat: number): number {
-    return ((82 - lat) / 140) * H;
-  }
-
-  function getCountryStatus(c: CountrySummary): 'High risk' | 'At risk' | 'On track' {
-    if (c.highRiskSites > 0 && c.readiness < 70) return 'High risk';
-    if (c.highRiskSites > 0 || c.atRiskSites > 0) return 'At risk';
-    return 'On track';
-  }
-
-  function pinColors(status: 'High risk' | 'At risk' | 'On track') {
-    if (status === 'High risk') {
-      return {
-        fill: '#e11d48',
-        stroke: '#fff1f2',
-        ring: '#fda4af',
-        badgeBg: 'bg-rose-50 text-rose-700 border-rose-200',
-      };
-    }
-    if (status === 'At risk') {
-      return {
-        fill: '#d97706',
-        stroke: '#fffbeb',
-        ring: '#fcd34d',
-        badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
-      };
-    }
-    return {
-      fill: '#059669',
-      stroke: '#ecfdf5',
-      ring: '#6ee7b7',
-      badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    };
-  }
-
-  // Subtle label offsets so nearby European pins (Spain, France, Germany) never overlap
-  const labelOffset: Record<string, { dx: number; dy: number; anchor: 'start' | 'middle' | 'end' }> = {
-    'United States': { dx: 0, dy: 16, anchor: 'middle' },
-    'Canada': { dx: 0, dy: -12, anchor: 'middle' },
-    'Spain': { dx: -12, dy: 14, anchor: 'end' },
-    'France': { dx: -10, dy: -10, anchor: 'end' },
-    'Germany': { dx: 12, dy: -8, anchor: 'start' },
-    'South Korea': { dx: -10, dy: -10, anchor: 'end' },
-    'Australia': { dx: 0, dy: 16, anchor: 'middle' },
+  const SITE_COORDS: Record<string, [number, number]> = {
+    '317': [52.52, 13.40],   // Charité, Berlin
+    '344': [49.41, 8.67],    // Heidelberg
+    '405': [37.58, 127.00],  // Seoul National Univ
+    '455': [37.53, 127.11],  // Asan Medical Center
+    '104': [42.36, -71.06],  // Boston
+    '901': [29.71, -95.40],  // Houston
+    '112': [40.76, -73.96],  // New York
+    '233': [37.76, -122.46], // San Francisco
+    '990': [39.30, -76.59],  // Baltimore
+    '208': [48.86, 2.35],    // Paris
+    '788': [45.74, 4.88],    // Lyon
+    '722': [48.79, 2.35],    // Villejuif / Paris
+    '511': [40.42, -3.70],   // Madrid
+    '899': [41.39, 2.15],    // Barcelona
+    '120': [43.66, -79.39],  // Toronto
+    '677': [45.50, -73.58],  // Montreal
+    '502': [-37.80, 144.96], // Melbourne
+    '566': [-33.87, 151.21], // Sydney
   };
 
-  const shortCode: Record<string, string> = {
-    'United States': 'US',
-    'Canada': 'CA',
-    'Spain': 'ES',
-    'France': 'FR',
-    'Germany': 'DE',
-    'South Korea': 'KR',
-    'Australia': 'AU',
-  };
+  function getColors(riskLevel: string) {
+    if (riskLevel === 'High risk') return { bg: '#e11d48', ring: '#f43f5e' };
+    if (riskLevel === 'At risk') return { bg: '#d97706', ring: '#f59e0b' };
+    return { bg: '#059669', ring: '#10b981' };
+  }
 
-  $: totalSites = V3_COUNTRY_SUMMARY.reduce((s, c) => s + c.sites, 0);
+  function fitAllSites(animate = true) {
+    if (!map || !L) return;
+    const pts = V3_SITES.map((s) => SITE_COORDS[s.id]).filter(Boolean);
+    if (pts.length > 0) {
+      const bounds = L.latLngBounds(pts);
+      map.fitBounds(bounds, { padding: [32, 32], maxZoom: 4, animate });
+    }
+  }
+
+  onMount(async () => {
+    try {
+      const leafletModule = await import('leaflet');
+      L = leafletModule.default || leafletModule;
+      (window as any).L = L;
+      await import('leaflet.markercluster');
+
+      if (!mapContainer) return;
+
+      map = L.map(mapContainer, {
+        center: [28, 12],
+        zoom: 2,
+        minZoom: 1.5,
+        maxZoom: 16,
+        zoomControl: false,
+        attributionControl: true,
+        worldCopyJump: true,
+      });
+
+      if (map.attributionControl) {
+        map.attributionControl.setPrefix(false);
+      }
+
+      // Clean CartoDB Positron light basemap (ideal for executive clinical dashboards)
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OSM</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 19,
+      }).addTo(map);
+
+      clusterGroup = L.markerClusterGroup({
+        maxClusterRadius: 36,
+        spiderfyOnMaxZoom: true,
+        zoomToBoundsOnClick: true,
+        showCoverageOnHover: false,
+        iconCreateFunction: (cluster: any) => {
+          const markers = cluster.getAllChildMarkers();
+          const count = markers.length;
+          let hasHighRisk = false;
+          let hasAtRisk = false;
+
+          for (const m of markers) {
+            const r = m.options?.siteData?.riskLevel;
+            if (r === 'High risk') hasHighRisk = true;
+            else if (r === 'At risk') hasAtRisk = true;
+          }
+
+          const color = hasHighRisk ? '#e11d48' : hasAtRisk ? '#d97706' : '#059669';
+          const ring = hasHighRisk ? '#f43f5e' : hasAtRisk ? '#f59e0b' : '#10b981';
+
+          return L.divIcon({
+            html: `
+              <div class="v3-cluster-dot" style="background:${color};">
+                ${hasHighRisk ? `<span class="v3-cluster-pulse" style="border-color:${ring};"></span>` : ''}
+                <span>${count}</span>
+              </div>
+            `,
+            className: 'v3-cluster-wrapper',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+          });
+        },
+      });
+
+      V3_SITES.forEach((site) => {
+        const coords = SITE_COORDS[site.id];
+        if (!coords) return;
+        const colors = getColors(site.riskLevel);
+        const isHighRisk = site.riskLevel === 'High risk';
+
+        const icon = L.divIcon({
+          html: `
+            <div class="v3-site-pin" style="background:${colors.bg};">
+              ${isHighRisk ? `<span class="v3-pin-pulse" style="border-color:${colors.ring};"></span>` : ''}
+              <span>${site.id}</span>
+            </div>
+          `,
+          className: 'v3-pin-wrapper',
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          popupAnchor: [0, -16],
+        });
+
+        const marker = L.marker(coords, { icon, siteData: site });
+
+        const badgeClass =
+          site.riskLevel === 'High risk'
+            ? 'background:#fff1f2;color:#be123c;border:1px solid #fecdd3;'
+            : site.riskLevel === 'At risk'
+            ? 'background:#fffbeb;color:#b45309;border:1px solid #fde68a;'
+            : 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;';
+
+        const popupHtml = `
+          <div style="min-width:205px;font-family:Inter,system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1e293b;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">
+              <strong style="font-size:12px;color:#0f172a;">Site ${site.id} · ${site.country}</strong>
+              <span style="padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;${badgeClass}">${site.riskLevel}</span>
+            </div>
+            <div style="margin-top:5px;font-weight:600;color:#334155;">${site.name}</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px;color:#475569;">
+              <div>Readiness: <strong style="color:#0f172a;">${site.readiness}%</strong></div>
+              <div>Impact: <strong style="color:${site.dblImpactDays > 0 ? '#e11d48' : '#059669'};">${site.dblImpactDays > 0 ? `+${site.dblImpactDays}d` : '0d'}</strong></div>
+              <div>Blockers: <strong style="color:#0f172a;">${site.hardGateBlockers}</strong></div>
+              <div>Subjects: <strong style="color:#0f172a;">${site.enrolled}</strong></div>
+            </div>
+            <div style="margin-top:5px;font-size:10px;color:#64748b;">Driver: ${site.primaryDriver}</div>
+            <button type="button" data-country="${site.country}" class="v3-popup-filter-btn" style="margin-top:7px;width:100%;padding:4px 8px;border-radius:6px;background:#2563eb;color:#ffffff;font-weight:600;font-size:10.5px;border:none;cursor:pointer;">
+              Filter ${site.country} Sites →
+            </button>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml, { closeButton: true, className: 'v3-leaflet-popup' });
+        marker.on('popupopen', (e: any) => {
+          const btn = e.popup.getElement()?.querySelector('.v3-popup-filter-btn');
+          if (btn) {
+            btn.addEventListener('click', () => onSelectCountry(site.country));
+          }
+        });
+
+        clusterGroup.addLayer(marker);
+      });
+
+      map.addLayer(clusterGroup);
+      fitAllSites(false);
+
+      if (typeof ResizeObserver !== 'undefined') {
+        resizeObserver = new ResizeObserver(() => {
+          if (map) map.invalidateSize();
+        });
+        resizeObserver.observe(mapContainer);
+      }
+
+      setTimeout(() => {
+        if (map) map.invalidateSize();
+      }, 150);
+    } catch (err) {
+      console.error('Failed to initialize WorldMapWidgetV3:', err);
+    }
+  });
+
+  onDestroy(() => {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      resizeObserver = null;
+    }
+    if (map) {
+      map.remove();
+      map = null;
+    }
+  });
 </script>
 
-<div class="relative w-full h-full min-h-[280px] bg-gradient-to-b from-slate-50 to-slate-100/80 rounded-lg border border-slate-200/90 overflow-hidden select-none flex flex-col justify-between">
+<div class="relative w-full h-[310px] rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+  <div bind:this={mapContainer} class="w-full h-full z-0"></div>
+
   <!-- Top-left Summary Pill -->
-  <div class="absolute top-2.5 left-2.5 z-10 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/90 backdrop-blur-xs border border-slate-200/80 shadow-2xs text-[11px] font-semibold text-slate-700">
+  <div class="absolute top-2.5 left-2.5 z-[400] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-xs border border-slate-200/90 shadow-xs text-[11px] font-semibold text-slate-700 pointer-events-none">
     <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-    <span>{V3_COUNTRY_SUMMARY.length} Countries · {totalSites} Sites</span>
+    <span>{V3_COUNTRY_SUMMARY.length} Countries · {V3_SITES.length} Sites</span>
   </div>
 
-  <!-- SVG World Map -->
-  <svg
-    viewBox="0 0 {W} {H}"
-    class="w-full h-full block"
-    preserveAspectRatio="xMidYMid meet"
-    role="img"
-    aria-label="Global site readiness map"
-  >
-    <!-- Subtle Graticule Lines -->
-    <g stroke="#e2e8f0" stroke-width="0.7" stroke-dasharray="3 3">
-      <line x1="0" y1={projY(60)} x2={W} y2={projY(60)} />
-      <line x1="0" y1={projY(30)} x2={W} y2={projY(30)} />
-      <line x1="0" y1={projY(0)} x2={W} y2={projY(0)} />
-      <line x1="0" y1={projY(-30)} x2={W} y2={projY(-30)} />
-      <line x1={projX(-120)} y1="0" x2={projX(-120)} y2={H} />
-      <line x1={projX(-60)} y1="0" x2={projX(-60)} y2={H} />
-      <line x1={projX(0)} y1="0" x2={projX(0)} y2={H} />
-      <line x1={projX(60)} y1="0" x2={projX(60)} y2={H} />
-      <line x1={projX(120)} y1="0" x2={projX(120)} y2={H} />
-    </g>
+  <!-- Top-right Clean Zoom Controls -->
+  <div class="absolute top-2.5 right-2.5 z-[400] flex items-center bg-white/95 backdrop-blur-xs rounded-md border border-slate-200/90 shadow-xs overflow-hidden">
+    <button
+      type="button"
+      on:click={() => map?.zoomIn()}
+      title="Zoom in"
+      class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer border-r border-slate-200/80"
+    >
+      <ZoomIn size={13} />
+    </button>
+    <button
+      type="button"
+      on:click={() => map?.zoomOut()}
+      title="Zoom out"
+      class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer border-r border-slate-200/80"
+    >
+      <ZoomOut size={13} />
+    </button>
+    <button
+      type="button"
+      on:click={() => fitAllSites(true)}
+      title="Reset view"
+      class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+    >
+      <RotateCcw size={13} />
+    </button>
+  </div>
 
-    <!-- Continent Silhouettes -->
-    <g fill="#dbe4ee" stroke="#cbd5e1" stroke-width="1" stroke-linejoin="round">
-      <!-- North America -->
-      <path d="M 31 44 L 65 34 L 100 31 L 148 28 L 200 51 L 245 58 L 276 77 L 251 95 L 222 147 L 208 134 L 184 144 L 200 172 L 227 190 L 214 192 L 186 168 L 156 152 L 146 132 L 124 108 L 122 85 L 92 66 L 52 58 Z" />
-      <!-- Greenland -->
-      <path d="M 284 57 L 328 42 L 356 15 L 300 3 L 249 15 L 265 40 Z" />
-      <!-- South America -->
-      <path d="M 227 190 L 262 185 L 298 205 L 322 226 L 316 254 L 304 270 L 278 308 L 249 352 L 236 319 L 234 272 L 220 224 Z" />
-      <!-- Europe + Asia -->
-      <path d="M 380 116 L 380 100 L 391 87 L 404 79 L 418 72 L 411 57 L 440 31 L 467 31 L 533 31 L 633 15 L 735 28 L 789 41 L 760 77 L 732 82 L 705 94 L 687 121 L 680 113 L 671 131 L 653 154 L 640 180 L 629 206 L 616 170 L 596 154 L 571 190 L 551 152 L 533 154 L 498 177 L 478 136 L 462 105 L 451 113 L 440 108 L 427 98 L 414 104 L 407 103 L 394 116 Z" />
-      <!-- United Kingdom & Ireland -->
-      <path d="M 387 62 L 398 64 L 402 80 L 389 82 Z" />
-      <!-- Africa -->
-      <path d="M 387 118 L 422 116 L 471 131 L 492 162 L 513 180 L 489 216 L 478 260 L 462 296 L 440 298 L 427 249 L 420 211 L 396 202 L 368 188 L 362 172 L 367 139 Z" />
-      <!-- Madagascar -->
-      <path d="M 498 250 L 508 248 L 504 280 L 494 278 Z" />
-      <!-- Japan -->
-      <path d="M 691 129 L 709 105 L 722 98 L 713 113 L 700 129 Z" />
-      <!-- Indonesia / SE Islands -->
-      <path d="M 622 214 L 654 218 L 664 226 L 632 224 Z" />
-      <!-- Australia -->
-      <path d="M 653 267 L 689 242 L 716 239 L 740 283 L 727 309 L 702 301 L 672 298 L 656 298 Z" />
-      <!-- New Zealand -->
-      <path d="M 762 302 L 772 296 L 766 322 L 756 320 Z" />
-    </g>
-
-    <!-- Country Pins -->
-    {#each V3_COUNTRY_SUMMARY as c}
-      {@const cx = projX(c.lon)}
-      {@const cy = projY(c.lat)}
-      {@const status = getCountryStatus(c)}
-      {@const colors = pinColors(status)}
-      {@const off = labelOffset[c.country] || { dx: 0, dy: 16, anchor: 'middle' }}
-      {@const isHovered = hoveredCountry?.country === c.country}
-      <!-- svelte-ignore a11y_click_events_have_key_events -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <g
-        class="cursor-pointer transition-transform"
-        on:mouseenter={() => (hoveredCountry = c)}
-        on:mouseleave={() => (hoveredCountry = null)}
-        on:click={() => onSelectCountry(c.country)}
-      >
-        <!-- Pulse ring for High-risk countries -->
-        {#if status === 'High risk'}
-          <circle cx={cx} cy={cy} r="13" fill={colors.ring} opacity="0.35">
-            <animate attributeName="r" values="8;16;8" dur="2.2s" repeatCount="indefinite" />
-            <animate attributeName="opacity" values="0.5;0.1;0.5" dur="2.2s" repeatCount="indefinite" />
-          </circle>
-        {/if}
-
-        <!-- Outer halo on hover -->
-        <circle
-          cx={cx}
-          cy={cy}
-          r={isHovered ? 11 : 8.5}
-          fill={colors.ring}
-          opacity={isHovered ? 0.55 : 0.3}
-        />
-
-        <!-- Main Pin -->
-        <circle
-          cx={cx}
-          cy={cy}
-          r={isHovered ? 6.5 : 5.5}
-          fill={colors.fill}
-          stroke={colors.stroke}
-          stroke-width="1.8"
-        />
-
-        <!-- Compact Country + Readiness Tag -->
-        <text
-          x={cx + off.dx}
-          y={cy + off.dy}
-          text-anchor={off.anchor}
-          font-size="9.5"
-          font-weight="700"
-          fill="#1e293b"
-          stroke="#ffffff"
-          stroke-width="2.5"
-          paint-order="stroke"
-        >
-          {shortCode[c.country] || c.country} {c.readiness}%
-        </text>
-      </g>
-    {/each}
-  </svg>
-
-  <!-- Hover Tooltip -->
-  {#if hoveredCountry}
-    {@const hStatus = getCountryStatus(hoveredCountry)}
-    {@const hColors = pinColors(hStatus)}
-    <div class="absolute top-2.5 right-2.5 z-20 w-56 rounded-lg bg-white/95 backdrop-blur-xs border border-slate-200 shadow-md p-2.5 text-[11px] pointer-events-none">
-      <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-100">
-        <span class="font-bold text-slate-900">{hoveredCountry.flag} {hoveredCountry.country}</span>
-        <span class="px-1.5 py-0.5 rounded-full border text-[10px] font-semibold {hColors.badgeBg}">
-          {hStatus}
-        </span>
-      </div>
-      <div class="grid grid-cols-2 gap-y-1 gap-x-2 mt-1.5 text-slate-600">
-        <div>Sites: <span class="font-bold text-slate-900">{hoveredCountry.sites}</span></div>
-        <div>Readiness: <span class="font-bold text-slate-900">{hoveredCountry.readiness}%</span></div>
-        <div>High-Risk: <span class="font-bold {hoveredCountry.highRiskSites > 0 ? 'text-rose-600' : 'text-slate-700'}">{hoveredCountry.highRiskSites}</span></div>
-        <div>DBL Impact: <span class="font-bold {hoveredCountry.forecastDays > 0 ? 'text-rose-600' : 'text-emerald-600'}">{hoveredCountry.forecastDays > 0 ? `+${hoveredCountry.forecastDays}d` : '0d'}</span></div>
-      </div>
-      <div class="mt-1.5 text-[10px] text-slate-500 truncate">
-        Driver: <span class="font-medium text-slate-700">{hoveredCountry.driver}</span>
-      </div>
-      <div class="mt-1 text-[10px] font-semibold text-blue-600">Click pin to filter sites →</div>
-    </div>
-  {/if}
-
-  <!-- Bottom Legend -->
-  <div class="absolute bottom-2 left-2.5 z-10 flex items-center gap-3 px-2.5 py-1 rounded-md bg-white/90 backdrop-blur-xs border border-slate-200/80 text-[10px] font-medium text-slate-600">
+  <!-- Bottom-left Legend -->
+  <div class="absolute bottom-2 left-2.5 z-[400] flex items-center gap-3 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-xs border border-slate-200/90 shadow-xs text-[10px] font-medium text-slate-600 pointer-events-none">
     <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-600"></span> On track</span>
     <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-600"></span> At risk</span>
     <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-600"></span> High risk</span>
   </div>
 </div>
+
+<style>
+  :global(.v3-pin-wrapper),
+  :global(.v3-cluster-wrapper) {
+    background: transparent !important;
+    border: none !important;
+  }
+
+  :global(.v3-site-pin) {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-size: 9.5px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.28);
+    transition: transform 0.15s ease;
+  }
+
+  :global(.v3-site-pin:hover) {
+    transform: scale(1.12);
+  }
+
+  :global(.v3-cluster-dot) {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 9999px;
+    border: 2px solid #ffffff;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.3);
+  }
+
+  :global(.v3-pin-pulse),
+  :global(.v3-cluster-pulse) {
+    position: absolute;
+    inset: -5px;
+    border-radius: 9999px;
+    border: 2px solid;
+    animation: v3-map-pulse 2s infinite ease-out;
+    pointer-events: none;
+  }
+
+  @keyframes v3-map-pulse {
+    0% {
+      transform: scale(0.9);
+      opacity: 0.85;
+    }
+    100% {
+      transform: scale(1.45);
+      opacity: 0;
+    }
+  }
+
+  :global(.v3-leaflet-popup .leaflet-popup-content-wrapper) {
+    border-radius: 10px;
+    padding: 2px;
+    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.18);
+  }
+
+  :global(.v3-leaflet-popup .leaflet-popup-content) {
+    margin: 10px 12px;
+  }
+</style>
