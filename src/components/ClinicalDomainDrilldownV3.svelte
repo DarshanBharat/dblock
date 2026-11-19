@@ -19,6 +19,7 @@
   let statusFilter = 'all';
   let drawerSubjectId: string | null = null;
   let showWeightConfig = false;
+  let showAllSubjects = false;
 
   $: readinessMetrics = computeCompositeReadiness(
     $v3DomainWeights,
@@ -45,6 +46,37 @@
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  $: filteredSubjects = V3_SUBJECT_ROWS.map((subj) => {
+    const domEntry =
+      subj.domainBreakdown.find(
+        (b) => b.domain.toLowerCase() === currentDomain.name.toLowerCase()
+      ) || subj.domainBreakdown[0];
+    const completion = domEntry?.completion ?? subj.readiness;
+    const domainStatus: 'On track' | 'At risk' | 'High risk' =
+      completion >= 90 ? 'On track' : completion >= 70 ? 'At risk' : 'High risk';
+    return {
+      subj,
+      domEntry,
+      completion,
+      domainStatus,
+    };
+  })
+    .filter(({ subj, domEntry, domainStatus }) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        subj.id.toLowerCase().includes(q) ||
+        subj.siteId.toLowerCase().includes(q) ||
+        subj.country.toLowerCase().includes(q) ||
+        subj.owner.toLowerCase().includes(q) ||
+        (domEntry?.details || '').toLowerCase().includes(q);
+      const matchesStatus = statusFilter === 'all' || domainStatus === statusFilter;
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => a.completion - b.completion || b.subj.daysOpen - a.subj.daysOpen);
+
+  $: visibleSubjects = showAllSubjects ? filteredSubjects : filteredSubjects.slice(0, 20);
 
   function statusPill(status: string): string {
     if (status === 'On track') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -327,40 +359,45 @@
         </div>
       </div>
 
-      <!-- Charts & Key Insights Row -->
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+      <!-- Charts & Key Insights Row (3 Balanced Cards) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
         <!-- Trend Chart -->
-        <div class="md:col-span-5 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-xs font-bold text-slate-900">{currentDomain.trendLabel}</h3>
+        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+            <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.trendLabel}</h3>
+            <div class="flex items-center gap-2 text-[10px] text-slate-500 shrink-0">
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 bg-blue-600 inline-block"></span> Act</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 border-t border-dashed border-slate-400 inline-block"></span> Exp</span>
+              <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 border-t border-dashed border-emerald-500 inline-block"></span> Fcst</span>
+            </div>
           </div>
-          <div class="flex items-center gap-3 text-[10px] text-slate-500 mb-2">
-            <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 bg-blue-600 inline-block"></span> Actual</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 border-t border-dashed border-slate-400 inline-block"></span> Expected</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 border-t border-dashed border-emerald-500 inline-block"></span> Forecast</span>
+          <div class="flex-1 flex items-center">
+            <svg viewBox="0 0 {W} {H}" class="w-full h-auto">
+              {#each [0, 20, 40, 60, 80, 100] as tick}
+                <line x1={PAD_L} y1={yPos(tick)} x2={W - PAD_R} y2={yPos(tick)} stroke="#e2e8f0" stroke-width="1" />
+                <text x={PAD_L - 5} y={yPos(tick) + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}%</text>
+              {/each}
+              <polyline fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" points={expectedPoints} />
+              <polyline fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3 2" points={forecastPoints} />
+              <polyline fill="none" stroke="#2563eb" stroke-width="2.2" points={actualPoints} />
+              {#each currentDomain.trendSeries as p, i}
+                {#if p.actual !== null}
+                  <circle cx={xPos(i)} cy={yPos(p.actual)} r="3" fill="#2563eb" />
+                  <text x={xPos(i)} y={yPos(p.actual) - 6} text-anchor="middle" font-size="8" font-weight="700" fill="#1e293b">{p.actual}%</text>
+                {/if}
+                <text x={xPos(i)} y={H - 8} text-anchor="middle" font-size="8" fill="#64748b">{p.label}</text>
+              {/each}
+            </svg>
           </div>
-          <svg viewBox="0 0 {W} {H}" class="w-full h-auto">
-            {#each [0, 20, 40, 60, 80, 100] as tick}
-              <line x1={PAD_L} y1={yPos(tick)} x2={W - PAD_R} y2={yPos(tick)} stroke="#e2e8f0" stroke-width="1" />
-              <text x={PAD_L - 5} y={yPos(tick) + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}%</text>
-            {/each}
-            <polyline fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" points={expectedPoints} />
-            <polyline fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3 2" points={forecastPoints} />
-            <polyline fill="none" stroke="#2563eb" stroke-width="2.2" points={actualPoints} />
-            {#each currentDomain.trendSeries as p, i}
-              {#if p.actual !== null}
-                <circle cx={xPos(i)} cy={yPos(p.actual)} r="3" fill="#2563eb" />
-                <text x={xPos(i)} y={yPos(p.actual) - 6} text-anchor="middle" font-size="8" font-weight="700" fill="#1e293b">{p.actual}%</text>
-              {/if}
-              <text x={xPos(i)} y={H - 8} text-anchor="middle" font-size="8" fill="#64748b">{p.label}</text>
-            {/each}
-          </svg>
         </div>
 
         <!-- Donut Chart -->
-        <div class="md:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-          <h3 class="text-xs font-bold text-slate-900 mb-3">{currentDomain.donutTitle}</h3>
-          <div class="flex items-center gap-3">
+        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+            <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.donutTitle}</h3>
+            <span class="text-[10px] font-semibold text-slate-400 shrink-0">Distribution</span>
+          </div>
+          <div class="flex-1 flex items-center gap-4">
             <svg viewBox="0 0 110 110" class="w-24 h-24 shrink-0">
               <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
               {#each donutArcs as arc}
@@ -379,14 +416,14 @@
               <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{currentDomain.donutCenterValue}</text>
               <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">{currentDomain.donutCenterLabel}</text>
             </svg>
-            <div class="space-y-1.5 flex-1 min-w-0">
+            <div class="space-y-2 flex-1 min-w-0">
               {#each currentDomain.donutSegments as seg}
-                <div class="flex items-center justify-between text-[11px] gap-1">
+                <div class="flex items-center justify-between text-[11px] gap-2">
                   <span class="inline-flex items-center gap-1.5 truncate text-slate-700">
                     <span class="w-2 h-2 rounded-full shrink-0" style="background:{seg.color}"></span>
                     <span class="truncate">{seg.label}</span>
                   </span>
-                  <span class="font-semibold text-slate-900 shrink-0">{seg.count}</span>
+                  <span class="font-semibold text-slate-900 shrink-0">{seg.count} <span class="text-slate-400 font-normal">({seg.pct}%)</span></span>
                 </div>
               {/each}
             </div>
@@ -394,12 +431,15 @@
         </div>
 
         <!-- Key Insights -->
-        <div class="md:col-span-3 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-          <h3 class="text-xs font-bold text-slate-900 mb-2.5">Key Insights</h3>
-          <ol class="space-y-2">
+        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+            <h3 class="text-xs font-bold text-slate-900">Key Insights</h3>
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">{currentDomain.insights.length} signals</span>
+          </div>
+          <ol class="flex-1 flex flex-col justify-center space-y-2">
             {#each currentDomain.insights as ins, idx}
-              <li class="flex items-start gap-2 text-[11px] text-slate-700 leading-snug">
-                <span class="w-4 h-4 rounded-full bg-slate-100 text-slate-600 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
+              <li class="flex items-start gap-2 text-[11px] text-slate-700 leading-snug rounded-lg bg-slate-50/80 border border-slate-100 px-2.5 py-2">
+                <span class="w-4 h-4 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
                 <span>{ins}</span>
               </li>
             {/each}
@@ -411,14 +451,16 @@
       <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div class="flex items-center gap-4 text-xs font-semibold">
-            <button type="button" on:click={() => (subTab = 'site')} class="pb-1 border-b-2 cursor-pointer {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}">
+            <button type="button" on:click={() => (subTab = 'site')} class="pb-1 border-b-2 cursor-pointer {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
               {currentDomain.breakdownTitle}
             </button>
-            <button type="button" on:click={() => (subTab = 'subject')} class="pb-1 border-b-2 cursor-pointer {subTab === 'subject' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}">
-              Subject Breakdown
+            <button type="button" on:click={() => (subTab = 'subject')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'subject' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+              <span>Subject Breakdown</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'subject' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredSubjects.length}</span>
             </button>
-            <button type="button" on:click={() => (subTab = 'details')} class="pb-1 border-b-2 cursor-pointer {subTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500'}">
-              Pending Records
+            <button type="button" on:click={() => (subTab = 'details')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+              <span>Pending Records</span>
+              <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'details' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{currentDomain.topPendingRows.length}</span>
             </button>
           </div>
           <div class="flex items-center gap-2">
@@ -427,20 +469,22 @@
               <input
                 type="text"
                 bind:value={searchQuery}
-                placeholder="Search site or country..."
+                placeholder={subTab === 'subject' ? 'Search subject, site, country...' : 'Search site or country...'}
                 class="pl-7 pr-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-blue-500"
               />
             </div>
-            <select bind:value={statusFilter} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
-              <option value="all">All Status</option>
-              <option value="On track">On track</option>
-              <option value="At risk">At risk</option>
-              <option value="High risk">High risk</option>
-            </select>
+            {#if subTab !== 'details'}
+              <select bind:value={statusFilter} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
+                <option value="all">All Status</option>
+                <option value="On track">On track</option>
+                <option value="At risk">At risk</option>
+                <option value="High risk">High risk</option>
+              </select>
+            {/if}
           </div>
         </div>
 
-        {#if subTab === 'site' || subTab === 'subject'}
+        {#if subTab === 'site'}
           <div class="overflow-x-auto">
             <table class="w-full text-xs">
               <thead>
@@ -483,10 +527,75 @@
               </tbody>
             </table>
           </div>
+        {:else if subTab === 'subject'}
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead>
+                <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
+                  <th class="pb-2 font-medium">Subject ID</th>
+                  <th class="pb-2 font-medium">Site / Country</th>
+                  <th class="pb-2 font-medium">Domain Details</th>
+                  <th class="pb-2 font-medium text-right">Domain %</th>
+                  <th class="pb-2 font-medium">Lock Classification</th>
+                  <th class="pb-2 font-medium text-right">Days Open</th>
+                  <th class="pb-2 font-medium">Owner</th>
+                  <th class="pb-2 font-medium text-right">Status</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                {#each visibleSubjects as item}
+                  <tr
+                    class="hover:bg-blue-50/40 cursor-pointer"
+                    on:click={() => (drawerSubjectId = item.subj.id)}
+                  >
+                    <td class="py-2 font-mono font-semibold text-blue-700">{item.subj.id}</td>
+                    <td class="py-2 text-slate-700">Site {item.subj.siteId} <span class="text-slate-400">· {item.subj.country}</span></td>
+                    <td class="py-2 text-slate-600 max-w-[260px] truncate">{item.domEntry?.details || item.subj.keyOpenItems}</td>
+                    <td class="py-2 text-right">
+                      <div class="inline-flex items-center gap-1.5">
+                        <div class="w-12 h-1.5 rounded-full bg-slate-100 overflow-hidden hidden sm:block">
+                          <div
+                            class="h-full rounded-full {item.domainStatus === 'On track' ? 'bg-emerald-500' : item.domainStatus === 'High risk' ? 'bg-rose-500' : 'bg-amber-500'}"
+                            style="width: {item.completion}%"
+                          ></div>
+                        </div>
+                        <span class="font-bold text-slate-900">{item.completion}%</span>
+                      </div>
+                    </td>
+                    <td class="py-2">
+                      <span class="px-1.5 py-0.5 rounded text-[10px] font-semibold {item.subj.classification === 'Hard Blocked' ? 'bg-rose-50 text-rose-700' : item.subj.classification === 'Action Required' ? 'bg-amber-50 text-amber-700' : item.subj.classification === 'Conditionally Ready' ? 'bg-blue-50 text-blue-700' : 'bg-emerald-50 text-emerald-700'}">
+                        {item.subj.classification}
+                      </span>
+                    </td>
+                    <td class="py-2 text-right font-semibold text-slate-700">{item.subj.daysOpen}d</td>
+                    <td class="py-2 text-slate-600">{item.subj.owner}</td>
+                    <td class="py-2 text-right">
+                      <span class="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border {statusPill(item.domainStatus)}">
+                        <span class="w-1.5 h-1.5 rounded-full {dotColor(item.domainStatus)}"></span>
+                        {item.domainStatus}
+                      </span>
+                    </td>
+                  </tr>
+                {/each}
+              </tbody>
+            </table>
+          </div>
+          {#if filteredSubjects.length > 20}
+            <div class="flex items-center justify-between pt-2 text-[11px] text-slate-500">
+              <span>Showing {visibleSubjects.length} of {filteredSubjects.length} subjects in {currentDomain.name}</span>
+              <button
+                type="button"
+                on:click={() => (showAllSubjects = !showAllSubjects)}
+                class="font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
+              >
+                {showAllSubjects ? 'Show Top 20' : `Show All ${filteredSubjects.length} Subjects`}
+              </button>
+            </div>
+          {/if}
         {/if}
 
         <!-- Top Pending Items Table -->
-        <div class="pt-2 border-t border-slate-100">
+        <div class="{subTab === 'details' ? '' : 'pt-2 border-t border-slate-100'}">
           <div class="flex items-center justify-between mb-2">
             <h4 class="text-xs font-bold text-slate-900">{currentDomain.topPendingTitle}</h4>
             <button type="button" on:click={() => onSelectTab('subjects')} class="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer">
