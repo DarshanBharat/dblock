@@ -18,78 +18,32 @@
     V3_DOMAINS,
     V3_COUNTRY_SUMMARY,
     V3_ACTIONS,
-    V3_SITES
   } from '../data/v3Data';
-  import dblockData from '../data/dblock_data.json';
-  import RealWorldMap from './RealWorldMap.svelte';
+  import {
+    v3DomainWeights,
+    resetV3Weights,
+    applyV3WeightPreset,
+    normalizeV3Weights,
+    computeCompositeReadiness,
+  } from '../lib/v3Weights';
+  import WorldMapWidgetV3 from './WorldMapWidgetV3.svelte';
 
   export let onSelectTab: (tab: string) => void;
   export let onSelectDomain: (domainId: string) => void;
   export let onSelectCountry: (country: string) => void = () => onSelectTab('sites_countries');
 
-  const v2SitesById = new Map<string, any>(((dblockData as any).sites || []).map((s: any) => [String(s.id), s]));
-  const countryCoords: Record<string, { lat: number; lng: number; code: string }> = {
-    'United States': { lat: 42.36, lng: -71.06, code: 'US' },
-    'Germany': { lat: 52.52, lng: 13.4, code: 'DE' },
-    'South Korea': { lat: 37.56, lng: 126.97, code: 'KR' },
-    'France': { lat: 48.85, lng: 2.35, code: 'FR' },
-    'Japan': { lat: 35.68, lng: 139.69, code: 'JP' },
-    'United Kingdom': { lat: 51.5, lng: -0.12, code: 'UK' },
-  };
-
-  const mappedSitesForMap = V3_SITES.map((s, idx) => {
-    const v2 = v2SitesById.get(s.id);
-    const fallback = countryCoords[s.country] || { lat: 40 + idx, lng: 0, code: 'US' };
-    const openItems = Math.max(4, Math.round((100 - s.readiness) * 0.9) + s.hardGateBlockers * 3);
-    return {
-      id: s.id,
-      code: `Site ${s.id}`,
-      name: s.name,
-      city: v2?.city || s.name.split('–')[1]?.trim() || s.country,
-      country: s.country,
-      countryCode: v2?.countryCode || fallback.code,
-      lat: v2?.lat ?? fallback.lat + (idx % 3) * 0.6,
-      lng: v2?.lng ?? fallback.lng + (idx % 3) * 0.6,
-      openItems,
-      forecastImpactDays: s.dblImpactDays > 0 ? `+${s.dblImpactDays}d` : '0d',
-      riskLevel: s.riskLevel === 'High risk' ? 'Critical' : s.riskLevel === 'At risk' ? 'High' : 'Low',
-      riskProbability: Math.min(95, Math.max(10, 100 - s.readiness + s.hardGateBlockers * 6)),
-      keyRiskDrivers: s.primaryDriver,
-    };
-  });
-
-  // Readiness Weightage Configurator State
+  // Readiness Weightage Configurator State (synced via v3DomainWeights store)
   let showWeightConfig = false;
-  const DEFAULT_WEIGHTS: Record<string, number> = {
-    edc: 20,
-    queries: 15,
-    external: 20,
-    safety: 15,
-    coding: 8,
-    pi_sig: 10,
-    deviations: 6,
-    sdv: 6,
-  };
-  let domainWeights: Record<string, number> = { ...DEFAULT_WEIGHTS };
 
-  $: totalWeight = Object.values(domainWeights).reduce((sum, w) => sum + w, 0);
-  $: weightedReadinessRaw =
-    totalWeight > 0
-      ? V3_DOMAINS.reduce((sum, d) => sum + d.readiness * (domainWeights[d.id] ?? 0), 0) / totalWeight
-      : V3_STUDY_META.overallReadiness;
-  $: defaultWeightedRaw =
-    V3_DOMAINS.reduce((sum, d) => sum + d.readiness * (DEFAULT_WEIGHTS[d.id] ?? 0), 0) / 100;
-  // Anchor default weights to V3_STUDY_META.overallReadiness (72%) and reflect delta dynamically
-  $: computedReadiness = Math.max(
-    0,
-    Math.min(100, Math.round(V3_STUDY_META.overallReadiness + (weightedReadinessRaw - defaultWeightedRaw)))
+  $: readinessMetrics = computeCompositeReadiness(
+    $v3DomainWeights,
+    V3_DOMAINS,
+    V3_STUDY_META.overallReadiness
   );
+  $: totalWeight = readinessMetrics.totalWeight;
+  $: computedReadiness = readinessMetrics.composite;
   $: computedGap = computedReadiness - V3_STUDY_META.expectedReadiness;
-  $: isCustomWeights = V3_DOMAINS.some((d) => domainWeights[d.id] !== DEFAULT_WEIGHTS[d.id]);
-
-  function resetWeights() {
-    domainWeights = { ...DEFAULT_WEIGHTS };
-  }
+  $: isCustomWeights = readinessMetrics.isCustom;
 
   function openWeightConfigurator() {
     showWeightConfig = !showWeightConfig;
@@ -98,36 +52,6 @@
         document.getElementById('clinical-domain-readiness')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 40);
     }
-  }
-
-  function applyPreset(preset: 'balanced' | 'safety_ext' | 'edc_query') {
-    if (preset === 'balanced') {
-      domainWeights = { ...DEFAULT_WEIGHTS };
-    } else if (preset === 'safety_ext') {
-      domainWeights = { edc: 10, queries: 10, external: 30, safety: 25, coding: 5, pi_sig: 10, deviations: 5, sdv: 5 };
-    } else {
-      domainWeights = { edc: 30, queries: 25, external: 10, safety: 10, coding: 8, pi_sig: 7, deviations: 5, sdv: 5 };
-    }
-  }
-
-  function normalizeWeights() {
-    if (totalWeight <= 0) {
-      resetWeights();
-      return;
-    }
-    const next: Record<string, number> = {};
-    let running = 0;
-    const keys = V3_DOMAINS.map((d) => d.id);
-    keys.forEach((k, i) => {
-      if (i === keys.length - 1) {
-        next[k] = Math.max(0, 100 - running);
-      } else {
-        const val = Math.round(((domainWeights[k] ?? 0) / totalWeight) * 100);
-        next[k] = val;
-        running += val;
-      }
-    });
-    domainWeights = next;
   }
 
   // SVG chart geometry for Readiness Trend and Forecast
@@ -494,11 +418,8 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
       <!-- Map on the Left -->
-      <div class="lg:col-span-6 h-[290px] rounded-lg overflow-hidden border border-slate-200">
-        <RealWorldMap
-          sites={mappedSitesForMap}
-          onSelectSite={(site) => onSelectCountry(site.country)}
-        />
+      <div class="lg:col-span-6 min-h-[280px]">
+        <WorldMapWidgetV3 {onSelectCountry} />
       </div>
 
       <!-- Table on the Right -->
@@ -564,21 +485,21 @@
             <span class="font-semibold text-slate-600 mr-1">Presets:</span>
             <button
               type="button"
-              on:click={() => applyPreset('balanced')}
+              on:click={() => applyV3WeightPreset('balanced')}
               class="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 cursor-pointer"
             >
               Balanced
             </button>
             <button
               type="button"
-              on:click={() => applyPreset('safety_ext')}
+              on:click={() => applyV3WeightPreset('safety_ext')}
               class="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 cursor-pointer"
             >
               Safety &amp; External
             </button>
             <button
               type="button"
-              on:click={() => applyPreset('edc_query')}
+              on:click={() => applyV3WeightPreset('edc_query')}
               class="px-2 py-0.5 rounded border border-slate-200 bg-white hover:bg-slate-50 font-semibold text-slate-700 cursor-pointer"
             >
               EDC &amp; Query
@@ -588,7 +509,7 @@
             {#if totalWeight !== 100}
               <button
                 type="button"
-                on:click={normalizeWeights}
+                on:click={() => normalizeV3Weights($v3DomainWeights, V3_DOMAINS)}
                 class="px-2 py-0.5 rounded bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer"
               >
                 Normalize 100%
@@ -596,7 +517,7 @@
             {/if}
             <button
               type="button"
-              on:click={resetWeights}
+              on:click={resetV3Weights}
               class="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-slate-200 bg-white text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
             >
               <RotateCcw size={10} /> Reset
@@ -618,7 +539,7 @@
           </thead>
           <tbody class="divide-y divide-slate-100">
             {#each V3_DOMAINS as dom}
-              {@const w = domainWeights[dom.id] ?? 0}
+              {@const w = $v3DomainWeights[dom.id] ?? 0}
               <tr
                 class="hover:bg-blue-50/50 transition-colors cursor-pointer"
                 on:click={() => onSelectDomain(dom.id)}
@@ -646,7 +567,7 @@
                         min="0"
                         max="50"
                         step="1"
-                        bind:value={domainWeights[dom.id]}
+                        bind:value={$v3DomainWeights[dom.id]}
                         class="w-16 accent-blue-600 cursor-pointer"
                         aria-label="{dom.name} weightage"
                       />

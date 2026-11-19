@@ -1,6 +1,13 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronRight, Search, Info } from '@lucide/svelte';
+  import { ArrowLeft, ChevronRight, Search, Info, SlidersHorizontal, RotateCcw } from '@lucide/svelte';
   import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS } from '../data/v3Data';
+  import {
+    v3DomainWeights,
+    resetV3Weights,
+    applyV3WeightPreset,
+    normalizeV3Weights,
+    computeCompositeReadiness,
+  } from '../lib/v3Weights';
   import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
 
   export let selectedDomainId: string = 'edc';
@@ -11,6 +18,16 @@
   let searchQuery = '';
   let statusFilter = 'all';
   let drawerSubjectId: string | null = null;
+  let showWeightConfig = false;
+
+  $: readinessMetrics = computeCompositeReadiness(
+    $v3DomainWeights,
+    V3_DOMAINS,
+    V3_STUDY_META.overallReadiness
+  );
+  $: totalWeight = readinessMetrics.totalWeight;
+  $: computedReadiness = readinessMetrics.composite;
+  $: isCustomWeights = readinessMetrics.isCustom;
 
   $: drawerSubjectIdx = drawerSubjectId
     ? V3_SUBJECT_ROWS.findIndex((s) => s.id === drawerSubjectId)
@@ -102,23 +119,131 @@
       </div>
       <p class="text-xs text-slate-500 mt-0.5">{V3_STUDY_META.title}</p>
     </div>
-    <div class="text-right text-xs">
+    <div class="flex flex-col items-end gap-1.5 text-right text-xs">
+      <div class="flex flex-wrap items-center justify-end gap-2">
+        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+          Composite Readiness: {computedReadiness}% · {totalWeight}% wt
+        </span>
+        <button
+          type="button"
+          on:click={() => (showWeightConfig = !showWeightConfig)}
+          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold cursor-pointer transition-colors {showWeightConfig || isCustomWeights ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}"
+        >
+          <SlidersHorizontal size={13} />
+          <span>{showWeightConfig ? 'Hide Weightage Config' : 'Configure Weights'}</span>
+          {#if isCustomWeights}
+            <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-bold">Custom</span>
+          {/if}
+        </button>
+      </div>
       <div>
         Target DBL: <span class="font-semibold text-slate-800">{V3_STUDY_META.targetDbl}</span>
         <span class="mx-1.5 text-slate-300">|</span>
         Predicted DBL: <span class="font-bold text-rose-600">{V3_STUDY_META.predictedDbl} (+{V3_STUDY_META.delayDays}d)</span>
+        <span class="mx-1.5 text-slate-300">|</span>
+        <span class="text-[11px] text-slate-400">Last refreshed: {V3_STUDY_META.lastRefreshed}</span>
       </div>
-      <div class="text-[11px] text-slate-400 mt-0.5">Last refreshed: {V3_STUDY_META.lastRefreshed}</div>
     </div>
   </div>
+
+  {#if showWeightConfig}
+    <div class="bg-white rounded-xl border border-blue-200/90 p-4 shadow-xs space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+        <div>
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-bold text-slate-900">Readiness Score Weightage Configuration</h2>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+              Total: {totalWeight}% {totalWeight === 100 ? '✓' : '(recommend 100%)'}
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500">Adjust domain weights to recalculate Composite Study Readiness (synced with Study Overview)</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span class="font-semibold text-slate-500 mr-0.5">Presets:</span>
+          <button
+            type="button"
+            on:click={() => applyV3WeightPreset('balanced')}
+            class="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 cursor-pointer"
+          >
+            Balanced
+          </button>
+          <button
+            type="button"
+            on:click={() => applyV3WeightPreset('safety_ext')}
+            class="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 cursor-pointer"
+          >
+            Safety &amp; External
+          </button>
+          <button
+            type="button"
+            on:click={() => applyV3WeightPreset('edc_query')}
+            class="px-2.5 py-1 rounded-md border border-slate-200 bg-slate-50 hover:bg-slate-100 font-semibold text-slate-700 cursor-pointer"
+          >
+            EDC &amp; Query
+          </button>
+          {#if totalWeight !== 100}
+            <button
+              type="button"
+              on:click={() => normalizeV3Weights($v3DomainWeights, V3_DOMAINS)}
+              class="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold cursor-pointer"
+            >
+              Normalize 100%
+            </button>
+          {/if}
+          <button
+            type="button"
+            on:click={resetV3Weights}
+            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md border border-slate-200 bg-white text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
+          >
+            <RotateCcw size={11} /> Reset
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        {#each V3_DOMAINS as dom}
+          {@const active = dom.id === currentDomain.id}
+          {@const w = $v3DomainWeights[dom.id] ?? 0}
+          <div class="rounded-lg border p-2.5 transition-colors {active ? 'border-blue-300 bg-blue-50/40' : 'border-slate-200/80 bg-slate-50/50'}">
+            <div class="flex items-center justify-between gap-1 text-xs">
+              <button
+                type="button"
+                on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; }}
+                class="font-semibold text-slate-800 hover:text-blue-700 truncate text-left cursor-pointer"
+              >
+                {dom.name}
+              </button>
+              <span class="font-mono font-bold text-blue-700 shrink-0">{w}%</span>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+              <input
+                type="range"
+                min="0"
+                max="50"
+                step="1"
+                bind:value={$v3DomainWeights[dom.id]}
+                class="w-full accent-blue-600 cursor-pointer"
+                aria-label="{dom.name} weightage"
+              />
+              <span class="text-[10px] font-semibold text-slate-500 w-8 text-right shrink-0">{dom.readiness}%</span>
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  {/if}
 
   <!-- Sidebar + Main Drilldown -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
     <!-- Left Domain Selector -->
     <aside class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-1">
-      <div class="px-2 py-1.5 text-xs font-bold text-slate-700 uppercase tracking-wider">Clinical Domains</div>
+      <div class="px-2 py-1.5 flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Clinical Domains</span>
+        <span class="text-[10px] font-semibold text-slate-400">Weight</span>
+      </div>
       {#each V3_DOMAINS as dom}
         {@const active = dom.id === currentDomain.id}
+        {@const w = $v3DomainWeights[dom.id] ?? 0}
         <button
           type="button"
           on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; }}
@@ -132,7 +257,10 @@
               <span>{dom.status}</span>
             </div>
           </div>
-          <ChevronRight size={14} class={active ? 'text-blue-600' : 'text-slate-400'} />
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono font-semibold text-slate-600">{w}%</span>
+            <ChevronRight size={14} class={active ? 'text-blue-600' : 'text-slate-400'} />
+          </div>
         </button>
       {/each}
     </aside>
