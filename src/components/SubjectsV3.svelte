@@ -45,6 +45,8 @@
 
   let hoveredDonutIdx: number | null = null;
   let hoveredTimeIdx: number | null = null;
+  let statusChartTab: 'trajectory' | 'stacked' | 'velocity' = 'trajectory';
+  let distChartTab: 'donut' | 'histogram' | 'matrix' = 'donut';
   let rightCardTab: 'sites' | 'insights' = 'sites';
   let drawerSubjectIndex: number | null = null;
 
@@ -57,6 +59,42 @@
     { label: 'LSLV', lockReady: 184, conditional: 22, actionReq: 10, hardBlocked: 4 },
     { label: 'DBL', lockReady: 214, conditional: 6, actionReq: 0, hardBlocked: 0 },
   ];
+
+  const STATUS_VELOCITY = STATUS_OVER_TIME.map((pt, i) => {
+    const prev = i > 0 ? STATUS_OVER_TIME[i - 1].lockReady : 78;
+    const gained = pt.lockReady - prev;
+    return {
+      label: pt.label,
+      gained,
+      lockReadyPct: Math.round((pt.lockReady / 220) * 100),
+      blockers: pt.actionReq + pt.hardBlocked,
+    };
+  });
+
+  $: readinessBuckets = [
+    { label: '<50%', min: 0, max: 49, color: 'bg-rose-500', text: 'text-rose-700' },
+    { label: '50–69%', min: 50, max: 69, color: 'bg-amber-500', text: 'text-amber-700' },
+    { label: '70–84%', min: 70, max: 84, color: 'bg-blue-500', text: 'text-blue-700' },
+    { label: '85–94%', min: 85, max: 94, color: 'bg-emerald-400', text: 'text-emerald-700' },
+    { label: '95–100%', min: 95, max: 100, color: 'bg-emerald-600', text: 'text-emerald-800' },
+  ].map((b) => {
+    const count = V3_SUBJECT_ROWS.filter((s) => s.readiness >= b.min && s.readiness <= b.max).length;
+    return { ...b, count, pct: Math.round((count / Math.max(1, V3_SUBJECT_ROWS.length)) * 100) };
+  });
+
+  $: maxBucketCount = Math.max(1, ...readinessBuckets.map((b) => b.count));
+
+  $: criticalityMatrix = ['Critical', 'High', 'Medium', 'Low'].map((crit) => {
+    const rows = V3_SUBJECT_ROWS.filter((s) => s.criticality === crit);
+    return {
+      crit,
+      total: rows.length,
+      hardBlocked: rows.filter((s) => s.classification === 'Hard Blocked').length,
+      actionReq: rows.filter((s) => s.classification === 'Action Required').length,
+      conditional: rows.filter((s) => s.classification === 'Conditionally Ready').length,
+      lockReady: rows.filter((s) => s.classification === 'Lock Ready').length,
+    };
+  });
 
   const DOMAIN_COLUMNS = [
     { match: 'EDC Data Cleaning', short: 'EDC Data Cleaning' },
@@ -461,6 +499,13 @@
           </button>
         {/each}
       </div>
+
+      <div class="mt-2 pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-[10px] font-semibold">
+        <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Lock Ready</span>
+        <span class="inline-flex items-center gap-1 text-blue-700"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Conditional</span>
+        <span class="inline-flex items-center gap-1 text-amber-700"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Action Req</span>
+        <span class="inline-flex items-center gap-1 text-rose-700"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Hard Blocked</span>
+      </div>
     </div>
 
     <!-- Col 2 (4 cols): Subjects by Key Domain with Open Items (Interactive) -->
@@ -552,165 +597,268 @@
     </div>
   </div>
 
-  <!-- 2-Column Row: Subjects by Status Over Time & Subjects by Country -->
+  <!-- 2-Column Row: Tabbed Subjects by Status Over Time & Tabbed Readiness Distribution -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-    <!-- Left 6 cols: Subjects by Status Over Time -->
-    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
+    <!-- Left 6 cols: Subjects by Status Over Time (3 chart tabs) -->
+    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
         <div>
           <h3 class="text-xs font-bold text-slate-900">Subjects by Status Over Time</h3>
           <p class="text-[10px] text-slate-500">Progression from D-60 through Current to Target DBL (n=220)</p>
         </div>
-        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold">
+        <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-[10px] font-semibold">
+          <button
+            type="button"
+            on:click={() => (statusChartTab = 'trajectory')}
+            class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {statusChartTab === 'trajectory' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+          >Trend Lines</button>
+          <button
+            type="button"
+            on:click={() => (statusChartTab = 'stacked')}
+            class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {statusChartTab === 'stacked' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+          >Stacked Bars</button>
+          <button
+            type="button"
+            on:click={() => (statusChartTab = 'velocity')}
+            class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {statusChartTab === 'velocity' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+          >Net Velocity</button>
+        </div>
+      </div>
+
+      {#if statusChartTab === 'trajectory'}
+        <div class="flex flex-wrap items-center gap-3 text-[10px] font-semibold mb-1">
           <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Lock Ready</span>
           <span class="inline-flex items-center gap-1 text-blue-700"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Conditional</span>
           <span class="inline-flex items-center gap-1 text-amber-700"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Action Req</span>
           <span class="inline-flex items-center gap-1 text-rose-700"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Hard Blocked</span>
         </div>
-      </div>
+        <div class="relative h-[165px]" role="presentation" on:mouseleave={() => (hoveredTimeIdx = null)}>
+          <svg viewBox="0 0 460 150" class="w-full h-full overflow-visible">
+            {#each [0, 55, 110, 165, 220] as tick}
+              {@const gy = 126 - (tick / 220) * 112}
+              <line x1="34" y1={gy} x2="446" y2={gy} stroke="#f1f5f9" stroke-width="1" />
+              <text x="28" y={gy + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}</text>
+            {/each}
 
-      <div class="relative h-[165px]" role="presentation" on:mouseleave={() => (hoveredTimeIdx = null)}>
-        <svg viewBox="0 0 460 150" class="w-full h-full overflow-visible">
-          {#each [0, 55, 110, 165, 220] as tick}
-            {@const gy = 126 - (tick / 220) * 112}
-            <line x1="34" y1={gy} x2="446" y2={gy} stroke="#f1f5f9" stroke-width="1" />
-            <text x="28" y={gy + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}</text>
-          {/each}
-
-          <!-- Lock Ready Line -->
-          <polyline
-            fill="none"
-            stroke="#10b981"
-            stroke-width="2.25"
-            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.lockReady / 220) * 112}`).join(' ')}
-          />
-          <!-- Conditional Line -->
-          <polyline
-            fill="none"
-            stroke="#3b82f6"
-            stroke-width="1.75"
-            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.conditional / 220) * 112}`).join(' ')}
-          />
-          <!-- Action Required Line -->
-          <polyline
-            fill="none"
-            stroke="#f59e0b"
-            stroke-width="1.75"
-            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.actionReq / 220) * 112}`).join(' ')}
-          />
-          <!-- Hard Blocked Line -->
-          <polyline
-            fill="none"
-            stroke="#f43f5e"
-            stroke-width="2"
-            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.hardBlocked / 220) * 112}`).join(' ')}
-          />
-
-          {#each STATUS_OVER_TIME as pt, i}
-            {@const x = 46 + i * 64}
-            <line x1={x} y1="14" x2={x} y2="126" stroke={hoveredTimeIdx === i ? '#cbd5e1' : 'transparent'} stroke-dasharray="3 2" />
-            <circle cx={x} cy={126 - (pt.lockReady / 220) * 112} r={hoveredTimeIdx === i ? 4.5 : 3} fill="#10b981" stroke="#fff" stroke-width="1" />
-            <circle cx={x} cy={126 - (pt.hardBlocked / 220) * 112} r={hoveredTimeIdx === i ? 4.5 : 3} fill="#f43f5e" stroke="#fff" stroke-width="1" />
-            <text x={x} y="142" text-anchor="middle" font-size="8.5" font-weight={pt.label === 'Current' ? '700' : '500'} fill={pt.label === 'Current' ? '#0f172a' : '#64748b'}>{pt.label}</text>
-            <rect
-              x={x - 28}
-              y="10"
-              width="56"
-              height="120"
-              fill="transparent"
-              role="presentation"
-              class="cursor-pointer"
-              on:mouseenter={() => (hoveredTimeIdx = i)}
+            <polyline
+              fill="none"
+              stroke="#10b981"
+              stroke-width="2.25"
+              points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.lockReady / 220) * 112}`).join(' ')}
             />
-          {/each}
-        </svg>
+            <polyline
+              fill="none"
+              stroke="#3b82f6"
+              stroke-width="1.75"
+              points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.conditional / 220) * 112}`).join(' ')}
+            />
+            <polyline
+              fill="none"
+              stroke="#f59e0b"
+              stroke-width="1.75"
+              points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.actionReq / 220) * 112}`).join(' ')}
+            />
+            <polyline
+              fill="none"
+              stroke="#f43f5e"
+              stroke-width="2"
+              points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.hardBlocked / 220) * 112}`).join(' ')}
+            />
 
-        {#if hoveredTimeIdx !== null && STATUS_OVER_TIME[hoveredTimeIdx]}
-          {@const pt = STATUS_OVER_TIME[hoveredTimeIdx]}
-          <div class="absolute top-1 right-1 bg-slate-900/95 text-white rounded-lg px-2.5 py-1.5 text-[10px] shadow-md pointer-events-none space-y-0.5">
-            <div class="font-bold text-slate-200">{pt.label}</div>
-            <div class="text-emerald-300">Lock Ready: <strong>{pt.lockReady}</strong></div>
-            <div class="text-blue-300">Conditional: <strong>{pt.conditional}</strong></div>
-            <div class="text-amber-300">Action Req: <strong>{pt.actionReq}</strong></div>
-            <div class="text-rose-300">Hard Blocked: <strong>{pt.hardBlocked}</strong></div>
-          </div>
-        {/if}
-      </div>
+            {#each STATUS_OVER_TIME as pt, i}
+              {@const x = 46 + i * 64}
+              <line x1={x} y1="14" x2={x} y2="126" stroke={hoveredTimeIdx === i ? '#cbd5e1' : 'transparent'} stroke-dasharray="3 2" />
+              <circle cx={x} cy={126 - (pt.lockReady / 220) * 112} r={hoveredTimeIdx === i ? 4.5 : 3} fill="#10b981" stroke="#fff" stroke-width="1" />
+              <circle cx={x} cy={126 - (pt.hardBlocked / 220) * 112} r={hoveredTimeIdx === i ? 4.5 : 3} fill="#f43f5e" stroke="#fff" stroke-width="1" />
+              <text x={x} y="142" text-anchor="middle" font-size="8.5" font-weight={pt.label === 'Current' ? '700' : '500'} fill={pt.label === 'Current' ? '#0f172a' : '#64748b'}>{pt.label}</text>
+              <rect
+                x={x - 28}
+                y="10"
+                width="56"
+                height="120"
+                fill="transparent"
+                role="presentation"
+                class="cursor-pointer"
+                on:mouseenter={() => (hoveredTimeIdx = i)}
+              />
+            {/each}
+          </svg>
+
+          {#if hoveredTimeIdx !== null && STATUS_OVER_TIME[hoveredTimeIdx]}
+            {@const pt = STATUS_OVER_TIME[hoveredTimeIdx]}
+            <div class="absolute top-1 right-1 bg-slate-900/95 text-white rounded-lg px-2.5 py-1.5 text-[10px] shadow-md pointer-events-none space-y-0.5">
+              <div class="font-bold text-slate-200">{pt.label}</div>
+              <div class="text-emerald-300">Lock Ready: <strong>{pt.lockReady}</strong></div>
+              <div class="text-blue-300">Conditional: <strong>{pt.conditional}</strong></div>
+              <div class="text-amber-300">Action Req: <strong>{pt.actionReq}</strong></div>
+              <div class="text-rose-300">Hard Blocked: <strong>{pt.hardBlocked}</strong></div>
+            </div>
+          {/if}
+        </div>
+      {:else if statusChartTab === 'stacked'}
+        <div class="flex flex-wrap items-center gap-3 text-[10px] font-semibold mb-2">
+          <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Lock Ready</span>
+          <span class="inline-flex items-center gap-1 text-blue-700"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Conditional</span>
+          <span class="inline-flex items-center gap-1 text-amber-700"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Action Req</span>
+          <span class="inline-flex items-center gap-1 text-rose-700"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Hard Blocked</span>
+        </div>
+        <div class="grid grid-cols-7 gap-2 items-end h-[156px] pt-3">
+          {#each STATUS_OVER_TIME as pt}
+            <div class="flex flex-col items-center h-full justify-end" title="{pt.label}: {pt.lockReady} Lock Ready, {pt.conditional} Conditional, {pt.actionReq} Action Req, {pt.hardBlocked} Hard Blocked">
+              <span class="text-[10px] font-mono font-bold text-emerald-700 mb-1">{Math.round((pt.lockReady / 220) * 100)}%</span>
+              <div class="w-full max-w-[34px] h-[112px] rounded-md overflow-hidden flex flex-col-reverse bg-slate-100 border border-slate-200/70">
+                <div class="bg-emerald-500 transition-all" style="height:{(pt.lockReady / 220) * 100}%"></div>
+                <div class="bg-blue-500 transition-all" style="height:{(pt.conditional / 220) * 100}%"></div>
+                <div class="bg-amber-500 transition-all" style="height:{(pt.actionReq / 220) * 100}%"></div>
+                <div class="bg-rose-500 transition-all" style="height:{(pt.hardBlocked / 220) * 100}%"></div>
+              </div>
+              <span class="text-[10px] mt-1 {pt.label === 'Current' ? 'font-bold text-slate-900' : 'text-slate-500'}">{pt.label}</span>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <div class="flex items-center justify-between text-[10px] text-slate-500 mb-2">
+          <span>Interval Lock-Ready Gain (+subjects) vs Remaining Blockers</span>
+          <span class="font-semibold text-emerald-700">Target: 214/220 by DBL</span>
+        </div>
+        <div class="grid grid-cols-7 gap-2 items-end h-[156px] pt-3">
+          {#each STATUS_VELOCITY as v}
+            <div class="flex flex-col items-center h-full justify-end">
+              <span class="text-[10px] font-mono font-bold text-emerald-700 mb-1">+{v.gained}</span>
+              <div class="w-full max-w-[32px] rounded-t-md bg-gradient-to-t from-blue-600 to-emerald-500 transition-all" style="height:{Math.max(16, (v.gained / 30) * 90)}px"></div>
+              <span class="text-[9px] font-mono text-rose-600 mt-1">{v.blockers} blk</span>
+              <span class="text-[10px] {v.label === 'Current' ? 'font-bold text-slate-900' : 'text-slate-500'}">{v.label}</span>
+            </div>
+          {/each}
+        </div>
+      {/if}
     </div>
 
-    <!-- Right 6 cols: Interactive Subject Readiness Donut -->
+    <!-- Right 6 cols: Interactive Readiness Distribution (3 chart tabs) -->
     <div
       class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between"
       role="presentation"
       on:mouseleave={() => (hoveredDonutIdx = null)}
     >
-      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
         <div>
           <h3 class="text-xs font-bold text-slate-900">Readiness Distribution</h3>
-          <p class="text-[10px] text-slate-500">Click slices or legend to multi-filter classifications</p>
+          <p class="text-[10px] text-slate-500">
+            {distChartTab === 'donut' ? 'Click slices or legend to multi-filter classifications' : distChartTab === 'histogram' ? 'Subject count across readiness score bands' : 'Criticality tier vs readiness classification breakdown'}
+          </p>
         </div>
-        {#if classificationFilters.length > 0}
-          <button
-            type="button"
-            on:click={() => { classificationFilters = []; currentPage = 1; }}
-            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] font-semibold text-blue-700 cursor-pointer"
-          >
-            {classificationFilters.length} selected <X size={10} />
-          </button>
-        {:else}
-          <span class="text-[10px] font-semibold text-slate-400">Click slices to filter</span>
-        {/if}
-      </div>
-
-      <div class="flex items-center gap-5 flex-1">
-        <svg viewBox="0 0 110 110" class="w-28 h-28 shrink-0 overflow-visible">
-          <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
-          {#each donutArcs as arc, idx}
-            {@const isHovered = hoveredDonutIdx === idx}
-            {@const isSelected = classificationFilters.includes(arc.label)}
-            {@const isActive = isHovered || isSelected}
-            {@const hasFocus = hoveredDonutIdx !== null || classificationFilters.length > 0}
-            <circle
-              cx="55"
-              cy="55"
-              r={R}
-              fill="none"
-              stroke={arc.color}
-              stroke-width={isActive ? 17 : 14}
-              stroke-dasharray={arc.dasharray}
-              stroke-dashoffset={arc.dashoffset}
-              opacity={hasFocus && !isActive ? 0.3 : 1}
-              transform="rotate(-90 55 55)"
-              class="cursor-pointer transition-all duration-150"
-              role="button"
-              tabindex="0"
-              on:mouseenter={() => (hoveredDonutIdx = idx)}
-              on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; }}
-              on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; } }}
-            />
-          {/each}
-          <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{V3_SUBJECT_ROWS.length}</text>
-          <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">Subjects</text>
-        </svg>
-
-        <div class="space-y-1.5 flex-1 min-w-0">
-          {#each subjectDonut as seg, idx}
-            {@const isSel = classificationFilters.includes(seg.label)}
+        <div class="flex items-center gap-1.5">
+          {#if classificationFilters.length > 0 && distChartTab === 'donut'}
             <button
               type="button"
-              on:mouseenter={() => (hoveredDonutIdx = idx)}
-              on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, seg.label); currentPage = 1; }}
-              class="w-full flex items-center justify-between text-xs px-2 py-1 rounded cursor-pointer transition-colors {isSel ? 'bg-blue-50 font-bold text-blue-800' : 'hover:bg-slate-50 text-slate-700'}"
+              on:click={() => { classificationFilters = []; currentPage = 1; }}
+              class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] font-semibold text-blue-700 cursor-pointer"
             >
-              <span class="inline-flex items-center gap-2 truncate">
-                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{seg.color}"></span>
-                <span class="truncate">{seg.label}</span>
-              </span>
-              <span class="font-mono font-bold text-slate-900 shrink-0">{seg.count} <span class="font-normal text-slate-400">({seg.pct}%)</span></span>
+              {classificationFilters.length} <X size={10} />
+            </button>
+          {/if}
+          <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-[10px] font-semibold">
+            <button
+              type="button"
+              on:click={() => (distChartTab = 'donut')}
+              class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {distChartTab === 'donut' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+            >Donut</button>
+            <button
+              type="button"
+              on:click={() => (distChartTab = 'histogram')}
+              class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {distChartTab === 'histogram' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+            >Score Bands</button>
+            <button
+              type="button"
+              on:click={() => (distChartTab = 'matrix')}
+              class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {distChartTab === 'matrix' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+            >Criticality</button>
+          </div>
+        </div>
+      </div>
+
+      {#if distChartTab === 'donut'}
+        <div class="flex items-center gap-5 flex-1">
+          <svg viewBox="0 0 110 110" class="w-28 h-28 shrink-0 overflow-visible">
+            <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
+            {#each donutArcs as arc, idx}
+              {@const isHovered = hoveredDonutIdx === idx}
+              {@const isSelected = classificationFilters.includes(arc.label)}
+              {@const isActive = isHovered || isSelected}
+              {@const hasFocus = hoveredDonutIdx !== null || classificationFilters.length > 0}
+              <circle
+                cx="55"
+                cy="55"
+                r={R}
+                fill="none"
+                stroke={arc.color}
+                stroke-width={isActive ? 17 : 14}
+                stroke-dasharray={arc.dasharray}
+                stroke-dashoffset={arc.dashoffset}
+                opacity={hasFocus && !isActive ? 0.3 : 1}
+                transform="rotate(-90 55 55)"
+                class="cursor-pointer transition-all duration-150"
+                role="button"
+                tabindex="0"
+                on:mouseenter={() => (hoveredDonutIdx = idx)}
+                on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; }}
+                on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; } }}
+              />
+            {/each}
+            <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{V3_SUBJECT_ROWS.length}</text>
+            <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">Subjects</text>
+          </svg>
+
+          <div class="space-y-1.5 flex-1 min-w-0">
+            {#each subjectDonut as seg, idx}
+              {@const isSel = classificationFilters.includes(seg.label)}
+              <button
+                type="button"
+                on:mouseenter={() => (hoveredDonutIdx = idx)}
+                on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, seg.label); currentPage = 1; }}
+                class="w-full flex items-center justify-between text-xs px-2 py-1 rounded cursor-pointer transition-colors {isSel ? 'bg-blue-50 font-bold text-blue-800' : 'hover:bg-slate-50 text-slate-700'}"
+              >
+                <span class="inline-flex items-center gap-2 truncate">
+                  <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{seg.color}"></span>
+                  <span class="truncate">{seg.label}</span>
+                </span>
+                <span class="font-mono font-bold text-slate-900 shrink-0">{seg.count} <span class="font-normal text-slate-400">({seg.pct}%)</span></span>
+              </button>
+            {/each}
+          </div>
+        </div>
+      {:else if distChartTab === 'histogram'}
+        <div class="grid grid-cols-5 gap-3 items-end h-[170px] pt-4 px-2 flex-1">
+          {#each readinessBuckets as b}
+            <div class="flex flex-col items-center justify-end h-full">
+              <span class="text-[11px] font-mono font-bold {b.text} mb-1">{b.count}</span>
+              <div class="w-full max-w-[44px] rounded-t-lg {b.color} transition-all" style="height:{Math.max(12, (b.count / maxBucketCount) * 108)}px"></div>
+              <span class="text-[10px] font-semibold text-slate-700 mt-1.5">{b.label}</span>
+              <span class="text-[9px] text-slate-400">{b.pct}%</span>
+            </div>
+          {/each}
+        </div>
+      {:else}
+        <div class="space-y-2 flex-1 flex flex-col justify-center">
+          {#each criticalityMatrix as row}
+            {@const total = Math.max(1, row.total)}
+            <button
+              type="button"
+              on:click={() => { criticalityFilters = toggleArrayItem(criticalityFilters, row.crit); currentPage = 1; }}
+              class="w-full grid grid-cols-12 items-center gap-2 text-[11px] px-2 py-1 rounded-lg border transition-colors cursor-pointer {criticalityFilters.includes(row.crit) ? 'border-blue-400 bg-blue-50/50' : 'border-slate-100 hover:bg-slate-50'}"
+            >
+              <span class="col-span-3 text-left font-bold {row.crit === 'Critical' ? 'text-rose-600' : row.crit === 'High' ? 'text-amber-600' : 'text-slate-700'}">{row.crit}</span>
+              <div class="col-span-7 h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
+                <div class="bg-emerald-500 h-full" style="width:{(row.lockReady / total) * 100}%" title="Lock Ready: {row.lockReady}"></div>
+                <div class="bg-blue-500 h-full" style="width:{(row.conditional / total) * 100}%" title="Conditional: {row.conditional}"></div>
+                <div class="bg-amber-500 h-full" style="width:{(row.actionReq / total) * 100}%" title="Action Req: {row.actionReq}"></div>
+                <div class="bg-rose-500 h-full" style="width:{(row.hardBlocked / total) * 100}%" title="Hard Blocked: {row.hardBlocked}"></div>
+              </div>
+              <span class="col-span-2 text-right font-mono font-bold text-slate-800">{row.total}</span>
             </button>
           {/each}
         </div>
-      </div>
+      {/if}
     </div>
   </div>
 

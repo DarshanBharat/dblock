@@ -26,6 +26,8 @@
   export let onSelectTab: (tab: string) => void;
   export let onSelectSite: (siteId: string) => void = () => {};
 
+  let activeSubTab: 'actions' | 'simulations' = 'actions';
+
   // Multi-select filter state
   let searchQuery = '';
   let statusFilters: string[] = [];
@@ -309,81 +311,98 @@
     </div>
   {/if}
 
-  <!-- 6 Balanced KPI Cards -->
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        <span>Open Actions</span>
-        <CheckCircle2 size={13} class="text-blue-600" />
-      </div>
-      <div class="mt-1 flex items-baseline gap-1.5">
-        <span class="text-xl font-extrabold text-slate-900">{filteredActions.length}</span>
-        <span class="text-[10px] text-slate-400">/ {localActions.length}</span>
-      </div>
-      <div class="mt-1 text-[10px] text-slate-500">Across {domains.length} domains</div>
+  <!-- Sub-tabs: Actions Directory vs DBL Simulations -->
+  <div class="bg-white rounded-xl border border-slate-200/80 px-3.5 py-2 shadow-xs flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2 text-xs font-semibold">
+      <button
+        type="button"
+        on:click={() => (activeSubTab = 'actions')}
+        class="px-3 py-1.5 rounded-lg border transition-colors cursor-pointer inline-flex items-center gap-1.5 {activeSubTab === 'actions' ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}"
+      >
+        <span>Actions Directory</span>
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {activeSubTab === 'actions' ? 'bg-white/20 text-white' : 'bg-slate-200/80 text-slate-600'}">{localActions.length}</span>
+      </button>
+      <button
+        type="button"
+        on:click={() => (activeSubTab = 'simulations')}
+        class="px-3 py-1.5 rounded-lg border transition-colors cursor-pointer inline-flex items-center gap-1.5 {activeSubTab === 'simulations' ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}"
+      >
+        <Sparkles size={12} />
+        <span>Simulations</span>
+        <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {activeSubTab === 'simulations' ? 'bg-white/20 text-white' : 'bg-emerald-100 text-emerald-700'}">-{simOutput.daysRecovered}d</span>
+      </button>
     </div>
-
-    <button
-      type="button"
-      on:click={() => { statusFilters = toggleArrayItem(statusFilters, 'Overdue'); actionPage = 1; }}
-      class="text-left bg-white rounded-xl border p-3 shadow-xs hover:shadow-sm transition-all cursor-pointer {statusFilters.includes('Overdue') ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200/80'}"
-    >
-      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-rose-600">
-        <span>Overdue</span>
-        <AlertTriangle size={13} />
-      </div>
-      <div class="mt-1 flex items-baseline gap-1.5">
-        <span class="text-xl font-extrabold text-rose-700">{statusCounts.Overdue}</span>
-        <span class="text-[10px] font-bold text-rose-600">{Math.round((statusCounts.Overdue / Math.max(1, localActions.length)) * 100)}%</span>
-      </div>
-      <div class="mt-1 text-[10px] text-rose-600/80">Click to filter</div>
-    </button>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-        <span>Days Recoverable</span>
-        <Sparkles size={13} />
-      </div>
-      <div class="mt-1 text-xl font-extrabold text-emerald-700">{simOutput.daysRecovered} days</div>
-      <div class="mt-1 text-[10px] text-slate-500">From selected scenarios</div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        <span>Current P80 DBL</span>
-        <Calendar size={13} class="text-rose-500" />
-      </div>
-      <div class="mt-1 text-base font-extrabold text-slate-900">{V3_STUDY_META.predictedDbl}</div>
-      <div class="mt-1 text-[10px] font-bold text-rose-600">+{simOutput.baselineVarianceDays}d vs target</div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
-        <span>Simulated DBL</span>
-        <Clock size={13} />
-      </div>
-      <div class="mt-1 text-base font-extrabold text-emerald-700">{formatShortDate(simOutput.simulatedDblDate)}</div>
-      <div class="mt-1 text-[10px] font-bold text-emerald-600">-{simOutput.daysRecovered}d recovered</div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
-        <span>DBL Probability</span>
-        <TrendingUp size={13} class="text-emerald-600" />
-      </div>
-      <div class="mt-1 flex items-baseline gap-1">
-        <span class="text-base font-extrabold text-rose-600">{simOutput.baselineProbPct}%</span>
-        <span class="text-slate-400 text-xs">→</span>
-        <span class="text-base font-extrabold text-emerald-600">{simOutput.simulatedProbPct}%</span>
-      </div>
-      <div class="mt-1 text-[10px] text-slate-500">Monte Carlo P80</div>
-    </div>
+    <span class="text-[11px] text-slate-500">
+      {activeSubTab === 'actions' ? 'Operational action tracking & site escalation queue' : 'Monte Carlo P80 what-if recovery scenarios'}
+    </span>
   </div>
 
-  <!-- Main Workspace: Actions Directory (8 cols) + What-If Simulation (4 cols) -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
-    <!-- Left 8 cols: Recommended Actions Directory -->
-    <div class="lg:col-span-8 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
+  {#if activeSubTab === 'actions'}
+    <!-- Actions KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <span>Open Actions</span>
+          <CheckCircle2 size={13} class="text-blue-600" />
+        </div>
+        <div class="mt-1 flex items-baseline gap-1.5">
+          <span class="text-xl font-extrabold text-slate-900">{filteredActions.length}</span>
+          <span class="text-[10px] text-slate-400">/ {localActions.length}</span>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-500">Across {domains.length} domains</div>
+      </div>
+
+      <button
+        type="button"
+        on:click={() => { statusFilters = toggleArrayItem(statusFilters, 'Overdue'); actionPage = 1; }}
+        class="text-left bg-white rounded-xl border p-3 shadow-xs hover:shadow-sm transition-all cursor-pointer {statusFilters.includes('Overdue') ? 'border-rose-400 ring-2 ring-rose-100' : 'border-slate-200/80'}"
+      >
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-rose-600">
+          <span>Overdue</span>
+          <AlertTriangle size={13} />
+        </div>
+        <div class="mt-1 flex items-baseline gap-1.5">
+          <span class="text-xl font-extrabold text-rose-700">{statusCounts.Overdue}</span>
+          <span class="text-[10px] font-bold text-rose-600">{Math.round((statusCounts.Overdue / Math.max(1, localActions.length)) * 100)}%</span>
+        </div>
+        <div class="mt-1 text-[10px] text-rose-600/80">Click to filter</div>
+      </button>
+
+      <button
+        type="button"
+        on:click={() => { statusFilters = toggleArrayItem(statusFilters, 'In Progress'); actionPage = 1; }}
+        class="text-left bg-white rounded-xl border p-3 shadow-xs hover:shadow-sm transition-all cursor-pointer {statusFilters.includes('In Progress') ? 'border-amber-400 ring-2 ring-amber-100' : 'border-slate-200/80'}"
+      >
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-amber-600">
+          <span>In Progress</span>
+          <Clock size={13} />
+        </div>
+        <div class="mt-1 flex items-baseline gap-1.5">
+          <span class="text-xl font-extrabold text-amber-700">{statusCounts['In Progress']}</span>
+          <span class="text-[10px] font-bold text-amber-600">{Math.round((statusCounts['In Progress'] / Math.max(1, localActions.length)) * 100)}%</span>
+        </div>
+        <div class="mt-1 text-[10px] text-amber-600/80">Click to filter</div>
+      </button>
+
+      <button
+        type="button"
+        on:click={() => { statusFilters = toggleArrayItem(statusFilters, 'Open'); actionPage = 1; }}
+        class="text-left bg-white rounded-xl border p-3 shadow-xs hover:shadow-sm transition-all cursor-pointer {statusFilters.includes('Open') ? 'border-blue-400 ring-2 ring-blue-100' : 'border-slate-200/80'}"
+      >
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-blue-600">
+          <span>Open Queue</span>
+          <TrendingUp size={13} />
+        </div>
+        <div class="mt-1 flex items-baseline gap-1.5">
+          <span class="text-xl font-extrabold text-blue-700">{statusCounts.Open}</span>
+          <span class="text-[10px] font-bold text-blue-600">{Math.round((statusCounts.Open / Math.max(1, localActions.length)) * 100)}%</span>
+        </div>
+        <div class="mt-1 text-[10px] text-blue-600/80">Click to filter</div>
+      </button>
+    </div>
+
+    <!-- Full-Width Recommended Actions Directory -->
+    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
         <div class="flex items-center gap-2">
           <h3 class="text-xs font-bold text-slate-900">Recommended Actions Directory</h3>
@@ -522,162 +541,209 @@
       </div>
     </div>
 
-    <!-- Right 4 cols: What-If Simulation Panel -->
-    <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs space-y-3">
-      <div class="pb-2 border-b border-slate-100">
-        <h2 class="text-xs font-bold text-slate-900">What-If DBL Simulation</h2>
-        <p class="text-[11px] text-slate-500 mt-0.5">Toggle scenarios to simulate P80 predicted DBL recovery.</p>
+    <!-- Actions Breakdown: By Owner + By Domain -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-900">Actions by Owner</h3>
+          {#if ownerFilters.length > 0}<button type="button" on:click={() => (ownerFilters = [])} class="text-[10px] text-blue-600 font-semibold cursor-pointer">Clear</button>{/if}
+        </div>
+        <div class="space-y-1.5">
+          {#each ownerBars as b}
+            {@const active = ownerFilters.includes(b.label)}
+            <button
+              type="button"
+              on:click={() => { ownerFilters = toggleArrayItem(ownerFilters, b.label); actionPage = 1; }}
+              class="w-full grid grid-cols-12 items-center gap-1.5 text-[11px] px-1 py-0.5 rounded cursor-pointer {active ? 'bg-blue-50 ring-1 ring-blue-200 font-bold' : 'hover:bg-slate-50'}"
+            >
+              <span class="col-span-5 text-left text-slate-700 truncate">{b.label}</span>
+              <div class="col-span-6 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="width:{(b.count / Math.max(1, localActions.length)) * 100 * 2.5}%; background:{b.color}"></div>
+              </div>
+              <span class="col-span-1 text-right font-bold text-slate-900">{b.count}</span>
+            </button>
+          {/each}
+        </div>
       </div>
 
-      <div class="space-y-2 text-xs">
-        {#each scenarios as sc}
-          <label class="flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-colors {sc.enabled ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50/50 border-slate-100 hover:bg-slate-50'}">
-            <input type="checkbox" checked={sc.enabled} on:change={() => toggleScenario(sc.id)} class="mt-0.5 rounded border-slate-300 text-blue-600" />
-            <span class="flex-1 text-slate-700">{sc.label}</span>
-            <span class="font-mono font-bold text-emerald-600 shrink-0">-{sc.daysSaved}d</span>
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between mb-2">
+          <h3 class="text-xs font-bold text-slate-900">Actions by Domain</h3>
+          {#if domainFilters.length > 0}<button type="button" on:click={() => (domainFilters = [])} class="text-[10px] text-blue-600 font-semibold cursor-pointer">Clear</button>{/if}
+        </div>
+        <div class="space-y-1.5">
+          {#each domainBars as b}
+            {@const active = domainFilters.includes(b.label)}
+            <button
+              type="button"
+              on:click={() => { domainFilters = toggleArrayItem(domainFilters, b.label); actionPage = 1; }}
+              class="w-full grid grid-cols-12 items-center gap-1.5 text-[11px] px-1 py-0.5 rounded cursor-pointer {active ? 'bg-blue-50 ring-1 ring-blue-200 font-bold' : 'hover:bg-slate-50'}"
+            >
+              <span class="col-span-5 text-left text-slate-700 truncate">{b.label}</span>
+              <div class="col-span-6 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full rounded-full" style="width:{(b.count / Math.max(1, localActions.length)) * 100 * 2.5}%; background:{b.color}"></div>
+              </div>
+              <span class="col-span-1 text-right font-bold text-slate-900">{b.count}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    </div>
+  {:else}
+    <!-- 4 Simulation KPI Cards on Top -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+          <span>Days Recoverable</span>
+          <Sparkles size={13} />
+        </div>
+        <div class="mt-1 text-xl font-extrabold text-emerald-700">{simOutput.daysRecovered} days</div>
+        <div class="mt-1 text-[10px] text-slate-500">From selected scenarios</div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <span>Current P80 DBL</span>
+          <Calendar size={13} class="text-rose-500" />
+        </div>
+        <div class="mt-1 text-xl font-extrabold text-slate-900">{V3_STUDY_META.predictedDbl}</div>
+        <div class="mt-1 text-[10px] font-bold text-rose-600">+{simOutput.baselineVarianceDays}d vs target</div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-emerald-700">
+          <span>Simulated DBL</span>
+          <Clock size={13} />
+        </div>
+        <div class="mt-1 text-xl font-extrabold text-emerald-700">{formatShortDate(simOutput.simulatedDblDate)}</div>
+        <div class="mt-1 text-[10px] font-bold text-emerald-600">-{simOutput.daysRecovered}d recovered</div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+          <span>DBL Probability</span>
+          <TrendingUp size={13} class="text-emerald-600" />
+        </div>
+        <div class="mt-1 flex items-baseline gap-1.5">
+          <span class="text-xl font-extrabold text-rose-600">{simOutput.baselineProbPct}%</span>
+          <span class="text-slate-400 text-xs">→</span>
+          <span class="text-xl font-extrabold text-emerald-600">{simOutput.simulatedProbPct}%</span>
+        </div>
+        <div class="mt-1 text-[10px] text-slate-500">Monte Carlo P80</div>
+      </div>
+    </div>
+
+    <!-- Simulation Workspace: What-If Controls (Left) + Forecast & Waterfall (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+      <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs space-y-3">
+        <div class="pb-2 border-b border-slate-100">
+          <h2 class="text-xs font-bold text-slate-900">What-If DBL Simulation</h2>
+          <p class="text-[11px] text-slate-500 mt-0.5">Toggle scenarios to simulate P80 predicted DBL recovery.</p>
+        </div>
+
+        <div class="space-y-2 text-xs">
+          {#each scenarios as sc}
+            <label class="flex items-start gap-2 p-2 rounded-lg border cursor-pointer transition-colors {sc.enabled ? 'bg-blue-50/50 border-blue-200' : 'bg-slate-50/50 border-slate-100 hover:bg-slate-50'}">
+              <input type="checkbox" checked={sc.enabled} on:change={() => toggleScenario(sc.id)} class="mt-0.5 rounded border-slate-300 text-blue-600" />
+              <span class="flex-1 text-slate-700">{sc.label}</span>
+              <span class="font-mono font-bold text-emerald-600 shrink-0">-{sc.daysSaved}d</span>
+            </label>
+          {/each}
+          <label class="flex items-center gap-2 cursor-pointer text-slate-600 pt-1 border-t border-slate-100">
+            <input type="checkbox" bind:checked={ignoreNonCritical} class="rounded border-slate-300 text-blue-600" />
+            <span>Ignore non-critical items</span>
           </label>
-        {/each}
-        <label class="flex items-center gap-2 cursor-pointer text-slate-600 pt-1 border-t border-slate-100">
-          <input type="checkbox" bind:checked={ignoreNonCritical} class="rounded border-slate-300 text-blue-600" />
-          <span>Ignore non-critical items</span>
-        </label>
-        <label class="flex items-center gap-2 cursor-pointer text-slate-600">
-          <input type="checkbox" bind:checked={includeContingency} class="rounded border-slate-300 text-blue-600" />
-          <span>Include 2-day operational contingency</span>
-        </label>
-      </div>
+          <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+            <input type="checkbox" bind:checked={includeContingency} class="rounded border-slate-300 text-blue-600" />
+            <span>Include 2-day operational contingency</span>
+          </label>
+        </div>
 
-      <button
-        type="button"
-        on:click={triggerSimulation}
-        class="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer shadow-xs"
-      >
-        <Play size={13} /> Run Simulation
-      </button>
+        <button
+          type="button"
+          on:click={triggerSimulation}
+          class="w-full inline-flex items-center justify-center gap-1.5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer shadow-xs"
+        >
+          <Play size={13} /> Run Simulation
+        </button>
 
-      <!-- Simulation Result -->
-      <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
-        <div class="text-xs font-bold text-slate-900">Simulation Result</div>
-        <div class="flex items-baseline justify-between">
-          <div>
-            <div class="text-[10px] text-slate-500">Predicted DBL Date (P80)</div>
-            <div class="text-base font-extrabold text-slate-900">{formatShortDate(simOutput.simulatedDblDate)}</div>
-          </div>
-          <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
-            -{simOutput.daysRecovered} days
-          </span>
-        </div>
-        <div class="flex items-center justify-between text-xs pt-1 border-t border-emerald-200/60">
-          <span class="text-slate-600">Probability of Target DBL</span>
-          <span class="font-bold text-emerald-700">{simOutput.baselineProbPct}% → {simOutput.simulatedProbPct}%</span>
-        </div>
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-slate-600">Expected Readiness at DBL</span>
-          <span class="font-bold text-slate-900">{simOutput.simulatedReadinessPct}%</span>
-        </div>
-        <div class="text-[10px] text-slate-500 pt-1 border-t border-emerald-200/60">
-          Monte Carlo: <span class="font-semibold">P50 {formatShortDate(simOutput.p50Date)}</span> · P80 {formatShortDate(simOutput.p80Date)} · P90 {formatShortDate(simOutput.p90Date)}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Visual Row: Forecast & Waterfall + Interactive Owner/Domain Bars -->
-  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <h3 class="text-xs font-bold text-slate-900 mb-3">DBL Forecast – Current vs After</h3>
-      <div class="space-y-3 text-xs">
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="font-medium text-slate-700">Current P80</span>
-            <span class="font-bold text-rose-600">{V3_STUDY_META.predictedDbl} (+{simOutput.baselineVarianceDays}d)</span>
-          </div>
-          <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-rose-500 rounded-full" style="width: 92%"></div></div>
-        </div>
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="font-medium text-slate-700">Post Actions</span>
-            <span class="font-bold text-emerald-700">{formatShortDate(simOutput.simulatedDblDate)} (-{simOutput.daysRecovered}d)</span>
-          </div>
-          <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-emerald-500 rounded-full transition-all" style="width: {Math.max(45, 92 - simOutput.daysRecovered * 7)}%"></div></div>
-        </div>
-        <div>
-          <div class="flex justify-between mb-1">
-            <span class="font-medium text-slate-700">Target DBL</span>
-            <span class="font-bold text-blue-700">{V3_STUDY_META.targetDbl}</span>
-          </div>
-          <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-blue-600 rounded-full" style="width: 60%"></div></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <h3 class="text-xs font-bold text-slate-900 mb-2">Cumulative Impact (Waterfall)</h3>
-      <div class="grid grid-cols-5 gap-1.5 items-end h-32 pt-4 text-center text-[10px]">
-        <div class="flex flex-col items-center justify-end h-full">
-          <span class="font-bold text-rose-600 mb-1">21 Dec</span>
-          <div class="w-8 rounded-t bg-rose-500" style="height: 70px"></div>
-          <span class="text-slate-500 mt-1 leading-tight">Current</span>
-        </div>
-        {#each scenarios as sc}
-          <div class="flex flex-col items-center justify-end h-full">
-            <span class="font-bold {sc.enabled ? 'text-emerald-700' : 'text-slate-400'} mb-1">{sc.enabled ? `-${sc.daysSaved}d` : '0d'}</span>
-            <div class="w-8 rounded-t transition-all {sc.enabled ? 'bg-emerald-500' : 'bg-slate-200'}" style="height: {sc.enabled ? Math.max(14, sc.daysSaved * 13) : 8}px"></div>
-            <span class="text-slate-500 mt-1 leading-tight truncate w-full">{sc.id.replace('sim-', '').toUpperCase()}</span>
-          </div>
-        {/each}
-        <div class="flex flex-col items-center justify-end h-full">
-          <span class="font-bold text-blue-700 mb-1">{formatShortDate(simOutput.simulatedDblDate).slice(0, 6)}</span>
-          <div class="w-8 rounded-t bg-blue-600 transition-all" style="height: {Math.max(20, 70 - simOutput.daysRecovered * 7)}px"></div>
-          <span class="text-slate-500 mt-1 leading-tight">Post</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-xs font-bold text-slate-900">Actions by Owner</h3>
-        {#if ownerFilters.length > 0}<button type="button" on:click={() => (ownerFilters = [])} class="text-[10px] text-blue-600 font-semibold cursor-pointer">Clear</button>{/if}
-      </div>
-      <div class="space-y-1.5">
-        {#each ownerBars as b}
-          {@const active = ownerFilters.includes(b.label)}
-          <button
-            type="button"
-            on:click={() => { ownerFilters = toggleArrayItem(ownerFilters, b.label); actionPage = 1; }}
-            class="w-full grid grid-cols-12 items-center gap-1.5 text-[11px] px-1 py-0.5 rounded cursor-pointer {active ? 'bg-blue-50 ring-1 ring-blue-200 font-bold' : 'hover:bg-slate-50'}"
-          >
-            <span class="col-span-5 text-left text-slate-700 truncate">{b.label}</span>
-            <div class="col-span-6 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" style="width:{(b.count / Math.max(1, localActions.length)) * 100 * 2.5}%; background:{b.color}"></div>
+        <!-- Simulation Result -->
+        <div class="rounded-xl border border-emerald-200 bg-emerald-50/50 p-3 space-y-2">
+          <div class="text-xs font-bold text-slate-900">Simulation Result</div>
+          <div class="flex items-baseline justify-between">
+            <div>
+              <div class="text-[10px] text-slate-500">Predicted DBL Date (P80)</div>
+              <div class="text-base font-extrabold text-slate-900">{formatShortDate(simOutput.simulatedDblDate)}</div>
             </div>
-            <span class="col-span-1 text-right font-bold text-slate-900">{b.count}</span>
-          </button>
-        {/each}
+            <span class="px-2 py-0.5 rounded text-xs font-bold bg-emerald-100 text-emerald-800">
+              -{simOutput.daysRecovered} days
+            </span>
+          </div>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-emerald-200/60">
+            <span class="text-slate-600">Probability of Target DBL</span>
+            <span class="font-bold text-emerald-700">{simOutput.baselineProbPct}% → {simOutput.simulatedProbPct}%</span>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-600">Expected Readiness at DBL</span>
+            <span class="font-bold text-slate-900">{simOutput.simulatedReadinessPct}%</span>
+          </div>
+          <div class="text-[10px] text-slate-500 pt-1 border-t border-emerald-200/60">
+            Monte Carlo: <span class="font-semibold">P50 {formatShortDate(simOutput.p50Date)}</span> · P80 {formatShortDate(simOutput.p80Date)} · P90 {formatShortDate(simOutput.p90Date)}
+          </div>
+        </div>
       </div>
-    </div>
 
-    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex items-center justify-between mb-2">
-        <h3 class="text-xs font-bold text-slate-900">Actions by Domain</h3>
-        {#if domainFilters.length > 0}<button type="button" on:click={() => (domainFilters = [])} class="text-[10px] text-blue-600 font-semibold cursor-pointer">Clear</button>{/if}
-      </div>
-      <div class="space-y-1.5">
-        {#each domainBars as b}
-          {@const active = domainFilters.includes(b.label)}
-          <button
-            type="button"
-            on:click={() => { domainFilters = toggleArrayItem(domainFilters, b.label); actionPage = 1; }}
-            class="w-full grid grid-cols-12 items-center gap-1.5 text-[11px] px-1 py-0.5 rounded cursor-pointer {active ? 'bg-blue-50 ring-1 ring-blue-200 font-bold' : 'hover:bg-slate-50'}"
-          >
-            <span class="col-span-5 text-left text-slate-700 truncate">{b.label}</span>
-            <div class="col-span-6 h-2 bg-slate-100 rounded-full overflow-hidden">
-              <div class="h-full rounded-full" style="width:{(b.count / Math.max(1, localActions.length)) * 100 * 2.5}%; background:{b.color}"></div>
+      <div class="lg:col-span-7 space-y-3">
+        <div class="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs">
+          <h3 class="text-xs font-bold text-slate-900 mb-3">DBL Forecast – Current vs After</h3>
+          <div class="space-y-3 text-xs">
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="font-medium text-slate-700">Current P80</span>
+                <span class="font-bold text-rose-600">{V3_STUDY_META.predictedDbl} (+{simOutput.baselineVarianceDays}d)</span>
+              </div>
+              <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-rose-500 rounded-full" style="width: 92%"></div></div>
             </div>
-            <span class="col-span-1 text-right font-bold text-slate-900">{b.count}</span>
-          </button>
-        {/each}
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="font-medium text-slate-700">Post Actions</span>
+                <span class="font-bold text-emerald-700">{formatShortDate(simOutput.simulatedDblDate)} (-{simOutput.daysRecovered}d)</span>
+              </div>
+              <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-emerald-500 rounded-full transition-all" style="width: {Math.max(45, 92 - simOutput.daysRecovered * 7)}%"></div></div>
+            </div>
+            <div>
+              <div class="flex justify-between mb-1">
+                <span class="font-medium text-slate-700">Target DBL</span>
+                <span class="font-bold text-blue-700">{V3_STUDY_META.targetDbl}</span>
+              </div>
+              <div class="h-2.5 w-full rounded-full bg-slate-100 overflow-hidden"><div class="h-full bg-blue-600 rounded-full" style="width: 60%"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs">
+          <h3 class="text-xs font-bold text-slate-900 mb-2">Cumulative Impact (Waterfall)</h3>
+          <div class="grid grid-cols-5 gap-1.5 items-end h-36 pt-4 text-center text-[10px]">
+            <div class="flex flex-col items-center justify-end h-full">
+              <span class="font-bold text-rose-600 mb-1">21 Dec</span>
+              <div class="w-10 rounded-t bg-rose-500" style="height: 82px"></div>
+              <span class="text-slate-500 mt-1 leading-tight">Current</span>
+            </div>
+            {#each scenarios as sc}
+              <div class="flex flex-col items-center justify-end h-full">
+                <span class="font-bold {sc.enabled ? 'text-emerald-700' : 'text-slate-400'} mb-1">{sc.enabled ? `-${sc.daysSaved}d` : '0d'}</span>
+                <div class="w-10 rounded-t transition-all {sc.enabled ? 'bg-emerald-500' : 'bg-slate-200'}" style="height: {sc.enabled ? Math.max(16, sc.daysSaved * 15) : 8}px"></div>
+                <span class="text-slate-500 mt-1 leading-tight truncate w-full">{sc.id.replace('sim-', '').toUpperCase()}</span>
+              </div>
+            {/each}
+            <div class="flex flex-col items-center justify-end h-full">
+              <span class="font-bold text-blue-700 mb-1">{formatShortDate(simOutput.simulatedDblDate).slice(0, 6)}</span>
+              <div class="w-10 rounded-t bg-blue-600 transition-all" style="height: {Math.max(22, 82 - simOutput.daysRecovered * 7)}px"></div>
+              <span class="text-slate-500 mt-1 leading-tight">Post</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  {/if}
 </div>

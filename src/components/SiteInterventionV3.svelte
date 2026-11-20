@@ -111,6 +111,7 @@
   });
 
   // Subject table tabs, filters & sorting
+  let rightPanelTab: 'risks' | 'actions' = 'risks';
   let patientTab: 'readiness' | 'domain_tracker' = 'readiness';
   const DOMAIN_COLUMNS = [
     { match: 'EDC Data Cleaning', short: 'EDC Data Cleaning' },
@@ -460,91 +461,107 @@
       </div>
     </div>
 
-    <!-- Col 3 (3 cols): Why at Risk & What-If Recovery Levers -->
+    <!-- Col 3 (3 cols): Tabbed Risk Drivers & What-If / Prioritised Action Plan -->
     <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
       <div>
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-          <h3 class="text-xs font-bold text-slate-900">Risk Drivers & What-If</h3>
-          <Sparkles size={13} class="text-blue-600" />
-        </div>
-        <div class="space-y-1.5 mb-3">
-          {#if site.riskDrivers.length === 0}
-            <div class="flex items-start gap-1.5 text-[11px] text-emerald-800 bg-emerald-50/70 border border-emerald-200/60 rounded-lg px-2 py-1.5">
-              <CheckCircle2 size={12} class="text-emerald-600 shrink-0 mt-0.5" />
-              <span>{site.primaryDriver}</span>
-            </div>
-          {:else}
-            {#each site.riskDrivers as drv}
-              <div class="flex items-start gap-1.5 text-[11px] text-slate-700 bg-rose-50/60 border border-rose-200/60 rounded-lg px-2 py-1.5">
-                <AlertTriangle size={12} class="text-rose-500 shrink-0 mt-0.5" />
-                <div class="leading-snug">
-                  <span class="font-bold text-slate-900">{drv.title}</span>
-                  <span class="text-rose-600 font-semibold"> (+{drv.impactDays}d)</span>
-                  <div class="text-[10px] text-slate-600">{drv.detail}</div>
-                </div>
-              </div>
-            {/each}
-          {/if}
-        </div>
-      </div>
-
-      <div class="pt-2 border-t border-slate-100 space-y-1.5">
-        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Test Recovery Levers</div>
-        {#each WHAT_IF_LEVERS as lever}
-          {@const checked = whatIfSelected.includes(lever.id)}
-          <label class="flex items-center justify-between gap-2 p-1.5 rounded-lg border text-[11px] cursor-pointer transition-colors {checked ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900' : 'bg-slate-50/70 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'}">
-            <span class="flex items-center gap-1.5 min-w-0">
-              <input
-                type="checkbox"
-                checked={checked}
-                on:change={() => toggleWhatIf(lever.id)}
-                class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-              />
-              <span class="truncate font-medium">{lever.label}</span>
-            </span>
-            <span class="font-mono font-bold text-emerald-700 shrink-0">+{lever.gain}%</span>
-          </label>
-        {/each}
-      </div>
-    </div>
-  </div>
-
-  <!-- Prioritised Site Action Plan -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2">
-    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
-      <div class="flex items-center gap-2">
-        <h3 class="text-xs font-bold text-slate-900">Prioritised Site Action Plan</h3>
-        <span class="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">{siteActions.length} actions</span>
-      </div>
-      <button
-        type="button"
-        on:click={() => onSelectTab('actions_sim')}
-        class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
-      >
-        Open Action Workbench <ChevronRight size={12} />
-      </button>
-    </div>
-
-    {#if siteActions.length === 0}
-      <div class="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
-        <CheckCircle2 size={14} class="text-emerald-500" /> No escalated site-level actions pending.
-      </div>
-    {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-        {#each siteActions as act}
-          <div class="p-2.5 rounded-lg border border-slate-200/80 bg-slate-50/60 hover:bg-white transition-colors flex flex-col justify-between gap-1.5">
-            <div class="flex items-start justify-between gap-2">
-              <span class="text-xs font-bold text-slate-900 leading-snug">{act.title}</span>
-              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 {act.status === 'Overdue' ? 'bg-rose-100 text-rose-700' : act.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}">{act.status}</span>
-            </div>
-            <div class="flex items-center justify-between text-[10px] text-slate-500">
-              <span>Owner: <strong class="text-slate-700">{act.owner}</strong></span>
-              <span>Due: <strong class="text-slate-700">{act.dueDate}</strong> · <strong class="text-rose-600">+{act.estDblImpactDays}d</strong></span>
-            </div>
+        <div class="flex items-center justify-between gap-1 pb-2 mb-2 border-b border-slate-100">
+          <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-[10px] font-semibold">
+            <button
+              type="button"
+              on:click={() => (rightPanelTab = 'risks')}
+              class="px-2 py-0.5 rounded-md cursor-pointer transition-colors {rightPanelTab === 'risks' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+            >
+              Risk Drivers
+            </button>
+            <button
+              type="button"
+              on:click={() => (rightPanelTab = 'actions')}
+              class="px-2 py-0.5 rounded-md cursor-pointer transition-colors inline-flex items-center gap-1 {rightPanelTab === 'actions' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600 hover:text-slate-900'}"
+            >
+              <span>Action Plan</span>
+              <span class="px-1 rounded-full text-[9px] font-bold {rightPanelTab === 'actions' ? 'bg-amber-100 text-amber-800' : 'bg-slate-200/80 text-slate-600'}">{siteActions.length}</span>
+            </button>
           </div>
-        {/each}
+          <Sparkles size={13} class="text-blue-600 shrink-0" />
+        </div>
+
+        {#if rightPanelTab === 'risks'}
+          <div class="space-y-1.5 mb-3">
+            {#if site.riskDrivers.length === 0}
+              <div class="flex items-start gap-1.5 text-[11px] text-emerald-800 bg-emerald-50/70 border border-emerald-200/60 rounded-lg px-2 py-1.5">
+                <CheckCircle2 size={12} class="text-emerald-600 shrink-0 mt-0.5" />
+                <span>{site.primaryDriver}</span>
+              </div>
+            {:else}
+              {#each site.riskDrivers as drv}
+                <div class="flex items-start gap-1.5 text-[11px] text-slate-700 bg-rose-50/60 border border-rose-200/60 rounded-lg px-2 py-1.5">
+                  <AlertTriangle size={12} class="text-rose-500 shrink-0 mt-0.5" />
+                  <div class="leading-snug">
+                    <span class="font-bold text-slate-900">{drv.title}</span>
+                    <span class="text-rose-600 font-semibold"> (+{drv.impactDays}d)</span>
+                    <div class="text-[10px] text-slate-600">{drv.detail}</div>
+                  </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        {:else}
+          <div class="space-y-1.5 mb-2 max-h-[210px] overflow-y-auto pr-0.5">
+            {#if siteActions.length === 0}
+              <div class="py-6 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-1.5">
+                <CheckCircle2 size={16} class="text-emerald-500" />
+                <span>No escalated site-level actions pending.</span>
+              </div>
+            {:else}
+              {#each siteActions as act}
+                <div class="p-2 rounded-lg border border-slate-200/80 bg-slate-50/60 hover:bg-white transition-colors space-y-1">
+                  <div class="flex items-start justify-between gap-1.5">
+                    <span class="text-[11px] font-bold text-slate-900 leading-snug">{act.title}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 {act.status === 'Overdue' ? 'bg-rose-100 text-rose-700' : act.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}">{act.status}</span>
+                  </div>
+                  <div class="flex items-center justify-between text-[10px] text-slate-500">
+                    <span>{act.owner}</span>
+                    <span>Due {act.dueDate} · <strong class="text-rose-600">+{act.estDblImpactDays}d</strong></span>
+                  </div>
+                </div>
+              {/each}
+            {/if}
+          </div>
+        {/if}
       </div>
-    {/if}
+
+      {#if rightPanelTab === 'risks'}
+        <div class="pt-2 border-t border-slate-100 space-y-1.5">
+          <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Test Recovery Levers</div>
+          {#each WHAT_IF_LEVERS as lever}
+            {@const checked = whatIfSelected.includes(lever.id)}
+            <label class="flex items-center justify-between gap-2 p-1.5 rounded-lg border text-[11px] cursor-pointer transition-colors {checked ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900' : 'bg-slate-50/70 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'}">
+              <span class="flex items-center gap-1.5 min-w-0">
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  on:change={() => toggleWhatIf(lever.id)}
+                  class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                />
+                <span class="truncate font-medium">{lever.label}</span>
+              </span>
+              <span class="font-mono font-bold text-emerald-700 shrink-0">+{lever.gain}%</span>
+            </label>
+          {/each}
+        </div>
+      {:else}
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+          <span class="text-[10px] text-slate-400">Prioritised by DBL impact</span>
+          <button
+            type="button"
+            on:click={() => onSelectTab('actions_sim')}
+            class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+          >
+            Open Action Workbench <ChevronRight size={12} />
+          </button>
+        </div>
+      {/if}
+    </div>
   </div>
 
   <!-- Patient Readiness & 8-Domain Patient Tracker -->
