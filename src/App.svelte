@@ -185,7 +185,7 @@
   <Header {activeTab} onSelectTab={handleSelectTab} />
 
   <!-- Main View Container -->
-  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 {activeTab === 'clinical_domains' ? 'py-2' : 'py-6'}">
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 {activeTab === 'clinical_domains' || activeTab === 'command_centre' ? 'py-2' : 'py-6'}">
     
     {#if activeTab === 'portfolio'}
       <!-- Screen 1: Full Portfolio View -->
