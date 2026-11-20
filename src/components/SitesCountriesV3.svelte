@@ -329,13 +329,6 @@
               <RotateCcw size={12} /> Reset Filters
             </button>
           {/if}
-          <button
-            type="button"
-            on:click={() => onSelectTab('actions_sim')}
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
-          >
-            <SlidersHorizontal size={12} /> Simulate DBL Impact
-          </button>
         </div>
         <span class="text-[10px] text-slate-400">Last refreshed: {V3_STUDY_META.lastRefreshed}</span>
       </div>

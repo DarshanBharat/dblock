@@ -19,7 +19,7 @@
     { id: 'clinical_domains', label: 'Clinical Domains', icon: CheckSquare },
     { id: 'sites_countries', label: 'Sites & Countries', icon: MapPin, matchIds: ['sites_countries', 'risk_matrix'] },
     { id: 'subjects', label: 'Subjects', icon: CheckCircle2 },
-    { id: 'actions_sim', label: 'Actions & Simulation', icon: Sliders, matchIds: ['actions_sim', 'action_workbench', 'simulator', 'forecast_scenarios'] }
+    { id: 'actions_sim', label: 'Actions', icon: Sliders, matchIds: ['actions_sim', 'action_workbench', 'simulator', 'forecast_scenarios'] }
   ];
 
   function switchVersion(event: Event) {

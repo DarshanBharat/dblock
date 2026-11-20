@@ -41,11 +41,22 @@
   let sortCol: SortCol = 'readiness';
   let sortDir: 'asc' | 'desc' = 'asc';
   let currentPage = 1;
-  let pageSize = 25;
+  let pageSize = 10;
 
   let hoveredDonutIdx: number | null = null;
+  let hoveredTimeIdx: number | null = null;
   let rightCardTab: 'sites' | 'insights' = 'sites';
   let drawerSubjectIndex: number | null = null;
+
+  const STATUS_OVER_TIME = [
+    { label: 'D-60', lockReady: 92, conditional: 48, actionReq: 46, hardBlocked: 34 },
+    { label: 'D-45', lockReady: 112, conditional: 44, actionReq: 38, hardBlocked: 26 },
+    { label: 'D-30', lockReady: 130, conditional: 40, actionReq: 31, hardBlocked: 19 },
+    { label: 'D-15', lockReady: 146, conditional: 36, actionReq: 24, hardBlocked: 14 },
+    { label: 'Current', lockReady: 158, conditional: 32, actionReq: 20, hardBlocked: 10 },
+    { label: 'LSLV', lockReady: 184, conditional: 22, actionReq: 10, hardBlocked: 4 },
+    { label: 'DBL', lockReady: 214, conditional: 6, actionReq: 0, hardBlocked: 0 },
+  ];
 
   const DOMAIN_COLUMNS = [
     { match: 'EDC Data Cleaning', short: 'EDC Cleaning' },
@@ -585,30 +596,130 @@
     </div>
   </div>
 
-  <!-- 7-Card Country Subject Risk Strip (Multi-Select) -->
-  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-    {#each V3_COUNTRY_SUMMARY as c}
-      {@const countrySubjs = V3_SUBJECT_ROWS.filter((s) => s.country === c.country)}
-      {@const notReadyCount = countrySubjs.filter((s) => s.classification !== 'Lock Ready').length}
-      {@const isSelected = countryFilters.includes(c.country)}
-      <button
-        type="button"
-        on:click={() => { countryFilters = toggleArrayItem(countryFilters, c.country); currentPage = 1; }}
-        class="text-left bg-white rounded-xl border p-2.5 shadow-xs hover:shadow-sm transition-all cursor-pointer {isSelected ? 'border-blue-500 ring-2 ring-blue-100 bg-blue-50/30' : 'border-slate-200/80 hover:border-slate-300'}"
-      >
-        <div class="flex items-center justify-between gap-1">
-          <span class="text-xs font-bold text-slate-900 truncate">{c.flag} {c.country}</span>
-          <span class="text-[10px] font-bold {c.readiness >= 80 ? 'text-emerald-600' : c.readiness >= 65 ? 'text-amber-600' : 'text-rose-600'}">{c.readiness}%</span>
+  <!-- 2-Column Row: Subjects by Status Over Time & Subjects by Country -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+    <!-- Left 6 cols: Subjects by Status Over Time -->
+    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
+      <div class="flex flex-wrap items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
+        <div>
+          <h3 class="text-xs font-bold text-slate-900">Subjects by Status Over Time</h3>
+          <p class="text-[10px] text-slate-500">Progression from D-60 through Current to Target DBL (n=220)</p>
         </div>
-        <div class="mt-1 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
-          <div class="h-full rounded-full {barColor(c.readiness)}" style="width:{c.readiness}%"></div>
+        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold">
+          <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-2 rounded-full bg-emerald-500"></span>Lock Ready</span>
+          <span class="inline-flex items-center gap-1 text-blue-700"><span class="w-2 h-2 rounded-full bg-blue-500"></span>Conditional</span>
+          <span class="inline-flex items-center gap-1 text-amber-700"><span class="w-2 h-2 rounded-full bg-amber-500"></span>Action Req</span>
+          <span class="inline-flex items-center gap-1 text-rose-700"><span class="w-2 h-2 rounded-full bg-rose-500"></span>Hard Blocked</span>
         </div>
-        <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-500">
-          <span>{countrySubjs.length} subj</span>
-          <span class="{notReadyCount > 0 ? 'text-rose-600 font-semibold' : ''}">{notReadyCount} not ready</span>
+      </div>
+
+      <div class="relative h-[165px]" role="presentation" on:mouseleave={() => (hoveredTimeIdx = null)}>
+        <svg viewBox="0 0 460 150" class="w-full h-full overflow-visible">
+          {#each [0, 55, 110, 165, 220] as tick}
+            {@const gy = 126 - (tick / 220) * 112}
+            <line x1="34" y1={gy} x2="446" y2={gy} stroke="#f1f5f9" stroke-width="1" />
+            <text x="28" y={gy + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}</text>
+          {/each}
+
+          <!-- Lock Ready Line -->
+          <polyline
+            fill="none"
+            stroke="#10b981"
+            stroke-width="2.25"
+            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.lockReady / 220) * 112}`).join(' ')}
+          />
+          <!-- Conditional Line -->
+          <polyline
+            fill="none"
+            stroke="#3b82f6"
+            stroke-width="1.75"
+            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.conditional / 220) * 112}`).join(' ')}
+          />
+          <!-- Action Required Line -->
+          <polyline
+            fill="none"
+            stroke="#f59e0b"
+            stroke-width="1.75"
+            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.actionReq / 220) * 112}`).join(' ')}
+          />
+          <!-- Hard Blocked Line -->
+          <polyline
+            fill="none"
+            stroke="#f43f5e"
+            stroke-width="2"
+            points={STATUS_OVER_TIME.map((p, i) => `${46 + i * 64},${126 - (p.hardBlocked / 220) * 112}`).join(' ')}
+          />
+
+          {#each STATUS_OVER_TIME as pt, i}
+            {@const x = 46 + i * 64}
+            <line x1={x} y1="14" x2={x} y2="126" stroke={hoveredTimeIdx === i ? '#cbd5e1' : 'transparent'} stroke-dasharray="3 2" />
+            <circle cx={x} cy={126 - (pt.lockReady / 220) * 112} r={hoveredTimeIdx === i ? 4.5 : 3} fill="#10b981" stroke="#fff" stroke-width="1" />
+            <circle cx={x} cy={126 - (pt.hardBlocked / 220) * 112} r={hoveredTimeIdx === i ? 4.5 : 3} fill="#f43f5e" stroke="#fff" stroke-width="1" />
+            <text x={x} y="142" text-anchor="middle" font-size="8.5" font-weight={pt.label === 'Current' ? '700' : '500'} fill={pt.label === 'Current' ? '#0f172a' : '#64748b'}>{pt.label}</text>
+            <rect
+              x={x - 28}
+              y="10"
+              width="56"
+              height="120"
+              fill="transparent"
+              role="presentation"
+              class="cursor-pointer"
+              on:mouseenter={() => (hoveredTimeIdx = i)}
+            />
+          {/each}
+        </svg>
+
+        {#if hoveredTimeIdx !== null && STATUS_OVER_TIME[hoveredTimeIdx]}
+          {@const pt = STATUS_OVER_TIME[hoveredTimeIdx]}
+          <div class="absolute top-1 right-1 bg-slate-900/95 text-white rounded-lg px-2.5 py-1.5 text-[10px] shadow-md pointer-events-none space-y-0.5">
+            <div class="font-bold text-slate-200">{pt.label}</div>
+            <div class="text-emerald-300">Lock Ready: <strong>{pt.lockReady}</strong></div>
+            <div class="text-blue-300">Conditional: <strong>{pt.conditional}</strong></div>
+            <div class="text-amber-300">Action Req: <strong>{pt.actionReq}</strong></div>
+            <div class="text-rose-300">Hard Blocked: <strong>{pt.hardBlocked}</strong></div>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Right 6 cols: Subjects by Country (Stacked Interactive Bars) -->
+    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
+      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+        <div>
+          <h3 class="text-xs font-bold text-slate-900">Subjects by Country</h3>
+          <p class="text-[10px] text-slate-500">Click any country bar to multi-filter the subject table</p>
         </div>
-      </button>
-    {/each}
+        {#if countryFilters.length > 0}
+          <button type="button" on:click={() => { countryFilters = []; currentPage = 1; }} class="text-[10px] font-semibold text-blue-600 hover:underline cursor-pointer">Clear</button>
+        {/if}
+      </div>
+
+      <div class="space-y-1.5 flex-1 flex flex-col justify-center">
+        {#each V3_COUNTRY_SUMMARY as c}
+          {@const subjs = V3_SUBJECT_ROWS.filter((s) => s.country === c.country)}
+          {@const total = Math.max(1, subjs.length)}
+          {@const lr = subjs.filter((s) => s.classification === 'Lock Ready').length}
+          {@const cr = subjs.filter((s) => s.classification === 'Conditionally Ready').length}
+          {@const ar = subjs.filter((s) => s.classification === 'Action Required').length}
+          {@const hb = subjs.filter((s) => s.classification === 'Hard Blocked').length}
+          {@const isSelected = countryFilters.includes(c.country)}
+          <button
+            type="button"
+            on:click={() => { countryFilters = toggleArrayItem(countryFilters, c.country); currentPage = 1; }}
+            class="w-full grid grid-cols-12 items-center gap-2 text-[11px] px-2 py-1 rounded-lg border transition-all cursor-pointer {isSelected ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-200' : 'border-transparent hover:bg-slate-50'}"
+          >
+            <span class="col-span-4 text-left font-semibold text-slate-800 truncate">{c.flag} {c.country}</span>
+            <div class="col-span-6 h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
+              <div class="bg-emerald-500 h-full" style="width:{(lr / total) * 100}%" title="Lock Ready: {lr}"></div>
+              <div class="bg-blue-500 h-full" style="width:{(cr / total) * 100}%" title="Conditional: {cr}"></div>
+              <div class="bg-amber-500 h-full" style="width:{(ar / total) * 100}%" title="Action Required: {ar}"></div>
+              <div class="bg-rose-500 h-full" style="width:{(hb / total) * 100}%" title="Hard Blocked: {hb}"></div>
+            </div>
+            <span class="col-span-2 text-right font-mono font-bold text-slate-700">{subjs.length} <span class="text-[10px] font-normal text-rose-600">({ar + hb})</span></span>
+          </button>
+        {/each}
+      </div>
+    </div>
   </div>
 
   <!-- Full-Width Subject Directory & 8-Domain Tracker -->
