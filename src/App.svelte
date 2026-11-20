@@ -3,7 +3,6 @@
   import dblockData from './data/dblock_data.json';
   import { demoSubjects, demoQueries, additionalSnapshotQueries, supplementSnapshotSubject } from './data/cleanPatientDemo';
   import Header from './components/Header.svelte';
-  import DataHealthModal from './components/DataHealthModal.svelte';
   import PortfolioView from './components/PortfolioView.svelte';
   import ExecutiveCommandCentre from './components/ExecutiveCommandCentre.svelte';
   import ReadinessDigitalTwin from './components/ReadinessDigitalTwin.svelte';
@@ -21,18 +20,7 @@
   import PortfolioViewV3 from './components/PortfolioViewV3.svelte';
   import SiteInterventionV3 from './components/SiteInterventionV3.svelte';
 
-  import { workflow, initialize, resetDemo } from './lib/workflow';
-  import {
-    LayoutDashboard,
-    MapPin,
-    CheckSquare,
-    CheckCircle2,
-    Sliders,
-    TrendingUp,
-    Sparkles,
-    ArrowRight,
-    RotateCcw
-  } from '@lucide/svelte';
+  import { initialize } from './lib/workflow';
 
   // Active top-level tab
   let activeTab = 'portfolio';
@@ -42,9 +30,6 @@
   let openWeightConfigOnLoad = false;
   let selectedDomainId: string = 'edc';
   let selectedCountryFilter: string = 'all';
-
-  // Modals state
-  let showDataHealth = false;
 
   // Selected Study ID (default: CA-209-301)
   let currentStudyId = 'CA-209-301';
@@ -185,7 +170,7 @@
   <Header {activeTab} onSelectTab={handleSelectTab} />
 
   <!-- Main View Container -->
-  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 {activeTab === 'clinical_domains' || activeTab === 'command_centre' || (activeTab === 'sites_countries' && !selectedSiteId) ? 'py-2' : 'py-6'}">
+  <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-2">
     
     {#if activeTab === 'portfolio'}
       <!-- Screen 1: Full Portfolio View -->
@@ -194,11 +179,7 @@
       />
     {:else}
       <!-- Full-Width Operational Study Workspace -->
-      <div class="space-y-4">
-        <!-- ================================================================= -->
-        <!-- STUDY MAIN CONTENT VIEW (Full Width)                              -->
-        <!-- ================================================================= -->
-        <div class="min-w-0 w-full">
+      <div class="min-w-0 w-full">
           
           {#if activeTab === 'command_centre'}
             <StudyOverviewV3
@@ -316,44 +297,9 @@
             />
           {/if}
 
-        </div>
-
       </div>
     {/if}
 
   </main>
-
-  <!-- App Global Footer -->
-  <footer class="bg-white border-t border-slate-200 mt-12 py-5 px-4 sm:px-6 text-xs text-slate-500">
-    <div class="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-      <div class="flex items-center space-x-3">
-        <button
-          class="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer flex items-center space-x-1"
-          on:click={() => resetDemo(actions)}
-        >
-          <RotateCcw size={12} />
-          <span>Reset demo state</span>
-        </button>
-        <span>&middot;</span>
-        <button
-          on:click={() => showDataHealth = true}
-          class="hover:underline font-medium text-slate-600"
-        >
-          Integration Health Check
-        </button>
-      </div>
-
-      <div class="text-slate-400 text-[11px] text-center sm:text-right">
-        DBLock AI &middot; Clinical Data Science Workbench &middot; 21 CFR Part 11 Electronic Records Compliant
-      </div>
-    </div>
-  </footer>
-
-  <!-- Data Health Modal -->
-  <DataHealthModal
-    show={showDataHealth}
-    onClose={() => showDataHealth = false}
-    {dataHealth}
-  />
 
 </div>

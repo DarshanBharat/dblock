@@ -701,7 +701,7 @@
   })();
 </script>
 
-<div class="flex flex-col gap-2.5 lg:h-[calc(100vh-77px)] lg:overflow-hidden">
+<div class="flex flex-col gap-2.5 lg:h-[calc(100vh-4.85rem)] lg:overflow-hidden">
   <!-- Frozen Top Header -->
   <div class="shrink-0 bg-white rounded-xl border border-slate-200/80 px-3.5 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
     <div>
@@ -1347,7 +1347,7 @@
                 type="text"
                 bind:value={searchQuery}
                 on:input={() => { subjectPage = 1; pendingPage = 1; }}
-                placeholder={subTab === 'subject' ? 'Search subject ID, site, country, owner...' : subTab === 'details' ? 'Search subject, site, form, issue, owner...' : 'Search site ID or country / source...'}
+                placeholder={subTab === 'subject' ? 'Search subject ID, site, country, owner...' : subTab === 'details' ? 'Search subject, site, form, issue, owner...' : 'Search site ID or country...'}
                 class="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               />
               {#if searchQuery}
@@ -1445,7 +1445,7 @@
               <thead class="bg-slate-50/90 border-b border-slate-200/80">
                 <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   {#each [
-                    { col: 'country' as SiteSortCol, label: 'Country / Source', align: 'left' },
+                    { col: 'country' as SiteSortCol, label: 'Country', align: 'left' },
                     { col: 'siteId' as SiteSortCol, label: 'Site ID', align: 'left' },
                     { col: 'subjects' as SiteSortCol, label: 'Subjects', align: 'right' },
                     { col: 'complete' as SiteSortCol, label: 'Complete / Exp', align: 'right' },

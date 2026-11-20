@@ -346,7 +346,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-2.5 lg:h-[calc(100vh-77px)] lg:overflow-hidden">
+<div class="flex flex-col gap-2.5 lg:h-[calc(100vh-4.85rem)] lg:overflow-hidden">
   <!-- Frozen Top Header -->
   <div class="shrink-0 bg-white rounded-xl border border-slate-200/80 px-3.5 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
     <div>
@@ -524,19 +524,25 @@
 
     <!-- Scrollable Right Content -->
     <div class="lg:col-span-9 lg:h-full lg:overflow-y-auto lg:pr-0.5 space-y-2.5">
-      <!-- 6 KPI Strip (Dynamic & Compact per PDF Page 37) -->
+      <!-- 6 KPI Strip (Dynamic, Hoverable & Interactive) -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-        <div class="bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs">
+        <button
+          type="button"
+          on:click={resetAllFilters}
+          title="Show all sites"
+          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer {activeFilterCount === 0 ? 'border-blue-300 ring-1 ring-blue-100' : 'border-slate-200/80 hover:border-blue-300'}"
+        >
           <div class="text-[10px] font-medium text-slate-500">Total Sites</div>
           <div class="mt-0.5 flex items-baseline gap-1.5">
             <span class="text-xl font-bold text-slate-900">{totalSitesCount}</span>
             <span class="text-[10px] text-slate-400">{V3_COUNTRY_SUMMARY.length} countries</span>
           </div>
-        </div>
+        </button>
         <button
           type="button"
           on:click={() => { riskFilter = riskFilter === 'On track' ? 'all' : 'On track'; currentPage = 1; }}
-          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-colors cursor-pointer {riskFilter === 'On track' ? 'border-emerald-400 ring-1 ring-emerald-200' : 'border-slate-200/80 hover:border-emerald-300'}"
+          title="Filter On Track sites"
+          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer {riskFilter === 'On track' ? 'border-emerald-400 ring-1 ring-emerald-200 bg-emerald-50/30' : 'border-slate-200/80 hover:border-emerald-300'}"
         >
           <div class="text-[10px] font-medium text-slate-500">Sites On Track</div>
           <div class="mt-0.5 flex items-baseline gap-1.5">
@@ -547,7 +553,8 @@
         <button
           type="button"
           on:click={() => { riskFilter = riskFilter === 'At risk' ? 'all' : 'At risk'; currentPage = 1; }}
-          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-colors cursor-pointer {riskFilter === 'At risk' ? 'border-amber-400 ring-1 ring-amber-200' : 'border-slate-200/80 hover:border-amber-300'}"
+          title="Filter At Risk sites"
+          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer {riskFilter === 'At risk' ? 'border-amber-400 ring-1 ring-amber-200 bg-amber-50/30' : 'border-slate-200/80 hover:border-amber-300'}"
         >
           <div class="text-[10px] font-medium text-slate-500">At Risk Sites</div>
           <div class="mt-0.5 flex items-baseline gap-1.5">
@@ -558,7 +565,8 @@
         <button
           type="button"
           on:click={() => { riskFilter = riskFilter === 'High risk' ? 'all' : 'High risk'; currentPage = 1; }}
-          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-colors cursor-pointer {riskFilter === 'High risk' ? 'border-rose-400 ring-1 ring-rose-200' : 'border-slate-200/80 hover:border-rose-300'}"
+          title="Filter High Risk sites"
+          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer {riskFilter === 'High risk' ? 'border-rose-400 ring-1 ring-rose-200 bg-rose-50/30' : 'border-slate-200/80 hover:border-rose-300'}"
         >
           <div class="text-[10px] font-medium text-slate-500">High Risk Sites</div>
           <div class="mt-0.5 flex items-baseline gap-1.5">
@@ -566,17 +574,23 @@
             <span class="text-[11px] font-semibold text-rose-600">{Math.round((highRiskCount / totalSitesCount) * 100)}%</span>
           </div>
         </button>
-        <div class="bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs">
+        <button
+          type="button"
+          on:click={() => onSelectTab('subjects')}
+          title="Open Subjects Workspace"
+          class="text-left bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 hover:border-blue-300 cursor-pointer"
+        >
           <div class="text-[10px] font-medium text-slate-500">Total Subjects</div>
           <div class="mt-0.5 flex items-baseline gap-1.5">
             <span class="text-xl font-bold text-slate-900">{totalEnrolledCount}</span>
-            <span class="text-[10px] text-slate-400">enrolled</span>
+            <span class="text-[10px] text-blue-600 font-medium">view all →</span>
           </div>
-        </div>
+        </button>
         <button
           type="button"
           on:click={() => { quickFilter = quickFilter === 'dbl_delay' ? 'all' : 'dbl_delay'; currentPage = 1; }}
-          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-colors cursor-pointer {quickFilter === 'dbl_delay' ? 'border-rose-400 ring-1 ring-rose-200' : 'border-slate-200/80 hover:border-rose-300'}"
+          title="Filter sites causing DBL delay"
+          class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer {quickFilter === 'dbl_delay' ? 'border-rose-400 ring-1 ring-rose-200 bg-rose-50/30' : 'border-slate-200/80 hover:border-rose-300'}"
         >
           <div class="text-[10px] font-medium text-slate-500">Not Lock Ready</div>
           <div class="mt-0.5 flex items-baseline gap-1.5">
@@ -746,7 +760,13 @@
           <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
             <div class="flex items-center justify-between mb-1.5">
               <h3 class="text-xs font-bold text-slate-900">Site Readiness Distribution</h3>
-              {#if readinessBand !== 'all'}
+              {#if hoveredDistIdx !== null && distBuckets[hoveredDistIdx]}
+                {@const hb = distBuckets[hoveredDistIdx]}
+                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700">
+                  <span class="w-1.5 h-1.5 rounded-full" style="background:{hb.color}"></span>
+                  {hb.count} sites ({Math.round((hb.count / totalSitesCount) * 100)}%)
+                </span>
+              {:else if readinessBand !== 'all'}
                 <button
                   type="button"
                   on:click={() => { readinessBand = 'all'; currentPage = 1; }}
@@ -767,7 +787,7 @@
                   on:mouseenter={() => (hoveredDistIdx = idx)}
                   on:mouseleave={() => (hoveredDistIdx = null)}
                   on:click={() => { readinessBand = readinessBand === b.key ? 'all' : b.key; currentPage = 1; }}
-                  class="flex flex-col items-center h-full justify-end rounded-lg px-1 py-1 transition-all cursor-pointer {isSel ? 'bg-blue-50/90 ring-1 ring-blue-300' : isHov ? 'bg-slate-50' : ''}"
+                  class="flex flex-col items-center h-full justify-end rounded-lg px-1 py-1 transition-all duration-150 cursor-pointer {isSel ? 'bg-blue-50/90 ring-1 ring-blue-300 shadow-2xs' : isHov ? 'bg-slate-100/80 -translate-y-0.5' : ''}"
                 >
                   <span class="text-[11px] font-bold text-slate-900 mb-0.5">{b.count}</span>
                   <div
@@ -785,7 +805,7 @@
           <div class="flex-1 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
             <div class="flex items-center justify-between mb-1.5">
               <h3 class="text-xs font-bold text-slate-900">Top 5 Sites by DB Lock Impact</h3>
-              <span class="text-[10px] text-slate-400">Ranked by DBL impact</span>
+              <span class="text-[10px] text-slate-400">Click row for root cause</span>
             </div>
             <table class="w-full text-xs">
               <thead>
@@ -799,7 +819,7 @@
               </thead>
               <tbody class="divide-y divide-slate-100">
                 {#each normalizedSites.slice(0, 5) as s}
-                  <tr class="hover:bg-blue-50/50 cursor-pointer" on:click={() => (quickDrawerSite = s)}>
+                  <tr class="hover:bg-blue-50/50 cursor-pointer transition-colors" on:click={() => (quickDrawerSite = s)}>
                     <td class="py-1 font-mono font-bold text-blue-700">{s.id}</td>
                     <td class="py-1 text-slate-700">{s.country}</td>
                     <td class="py-1 text-right font-semibold text-slate-900">{s.readiness}%</td>
@@ -815,25 +835,32 @@
         </div>
       </div>
 
-      <!-- Horizontal Country Risk Strip (PDF Page 37 & Page 6: Readiness, Trend, High-Risk Split, Blockers, Worst Site) -->
+      <!-- Horizontal Country Risk Strip (Interactive Cards per PDF Page 37 & Page 6) -->
       <div class="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
         {#each V3_COUNTRY_SUMMARY as c}
           {@const isSelected = countryFilter === c.country}
           <button
             type="button"
             on:click={() => { countryFilter = isSelected ? 'all' : c.country; currentPage = 1; }}
-            class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all cursor-pointer {isSelected ? 'border-blue-400 bg-blue-50/60 ring-1 ring-blue-200' : 'border-slate-200/80 hover:border-slate-300 hover:bg-slate-50/60'}"
+            title="{c.country}: {c.readiness}% ready · {c.subjectsNotReady} subjects not ready · {c.driver}"
+            class="text-left bg-white rounded-xl border p-2.5 shadow-xs transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 cursor-pointer {isSelected ? 'border-blue-400 bg-blue-50/60 ring-1 ring-blue-200' : 'border-slate-200/80 hover:border-blue-300'}"
           >
             <div class="flex items-center justify-between gap-1 text-xs">
               <span class="font-bold text-slate-900 truncate">{c.flag} {c.country}</span>
               <span class="font-bold shrink-0 {c.readiness < 70 ? 'text-rose-600' : c.readiness < 80 ? 'text-amber-600' : 'text-emerald-600'}">{c.readiness}%</span>
             </div>
+            <div class="mt-1 h-1 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div
+                class="h-full rounded-full {c.readiness < 70 ? 'bg-rose-500' : c.readiness < 80 ? 'bg-amber-500' : 'bg-emerald-500'}"
+                style="width: {c.readiness}%"
+              ></div>
+            </div>
             <div class="flex items-center justify-between text-[10px] text-slate-500 mt-1">
               <span>{c.sites} sites · {c.highRiskSites > 0 ? `${c.highRiskSites} high` : `${c.onTrackSites} ok`}</span>
               <span class="font-semibold {c.forecastDays > 0 ? 'text-rose-600' : 'text-emerald-600'}">{c.forecastDays > 0 ? `+${c.forecastDays}d` : '0d'}</span>
             </div>
-            <div class="text-[10px] text-slate-400 mt-0.5 truncate" title="{c.worstSite} · {c.driver}">
-              {c.criticalBlockers} blockers · {c.worstSite}
+            <div class="text-[10px] text-slate-400 mt-0.5 truncate">
+              {c.subjectsNotReady} subj · {c.worstSite}
             </div>
           </button>
         {/each}
