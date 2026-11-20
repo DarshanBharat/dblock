@@ -190,11 +190,23 @@
             />
 
           {:else if activeTab === 'clinical_domains'}
-            <ClinicalDomainDrilldownV3
-              bind:selectedDomainId
-              onSelectTab={handleSelectTab}
-              onSelectSite={handleSelectSite}
-            />
+            {#if selectedSubjectId}
+              <SubjectDetailV3
+                subjectId={selectedSubjectId}
+                onBack={() => (selectedSubjectId = null)}
+                onSelectSubject={handleSelectSubject}
+                onSelectSite={handleSelectSite}
+                onSelectDomain={handleSelectDomain}
+                onSelectTab={handleSelectTab}
+              />
+            {:else}
+              <ClinicalDomainDrilldownV3
+                bind:selectedDomainId
+                onSelectTab={handleSelectTab}
+                onSelectSite={handleSelectSite}
+                onSelectSubject={handleSelectSubject}
+              />
+            {/if}
 
           {:else if activeTab === 'sites_countries'}
             {#if selectedSubjectId}

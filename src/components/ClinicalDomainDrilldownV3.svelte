@@ -14,6 +14,7 @@
   export let selectedDomainId: string = 'edc';
   export let onSelectTab: (tab: string) => void;
   export let onSelectSite: (siteId: string) => void;
+  export let onSelectSubject: (subjectId: string) => void = () => {};
 
   let subTab: 'site' | 'subject' | 'details' = 'site';
   let searchQuery = '';
@@ -1569,7 +1570,7 @@
                 {#each visibleSubjects as item}
                   <tr
                     class="hover:bg-blue-50/50 transition-colors cursor-pointer"
-                    on:click={() => (drawerSubjectId = item.subj.id)}
+                    on:click={() => onSelectSubject(item.subj.id)}
                   >
                     <td class="px-3 py-2.5 font-mono font-bold text-blue-700 whitespace-nowrap">{item.subj.id}</td>
                     <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">
@@ -1719,7 +1720,7 @@
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
                 {#each (subTab === 'details' ? pagedPendingRecords : allDomainPendingRecords.slice(0, 10)) as item}
-                  <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer" on:click={() => (drawerSubjectId = item.subjectId)}>
+                  <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer" on:click={() => onSelectSubject(item.subjectId)}>
                     <td class="px-3 py-2 font-mono font-bold text-blue-700 whitespace-nowrap">{item.subjectId}</td>
                     <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{item.siteId}</td>
                     <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{item.visit}</td>

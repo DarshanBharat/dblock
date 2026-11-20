@@ -289,174 +289,183 @@
     </div>
   </div>
 
-  <!-- 3-Column DBL Intelligence Row -->
+  <!-- Row 1: Visit Timeline (6) + DBL Risks (3) + Next Best Actions (3) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-    <!-- Left 5 cols: Domain Readiness for This Subject (Interactive + Drill-down Links) -->
-    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
-      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-        <div>
-          <h3 class="text-xs font-bold text-slate-900">Domain Readiness for This Subject</h3>
-          <p class="text-[10px] text-slate-500">Click any domain to open its drill-down page, or check "Sim. Clear"</p>
-        </div>
-        {#if simulatedClearedDomains.length > 0}
-          <button
-            type="button"
-            on:click={() => (simulatedClearedDomains = [])}
-            class="text-[10px] font-semibold text-blue-600 hover:underline cursor-pointer"
-          >Reset Sim</button>
-        {/if}
+    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
+        <h3 class="text-xs font-bold text-slate-900">Subject Visit & Casebook Freeze Timeline</h3>
+        <span class="text-[10px] font-semibold text-slate-400">Milestone Gate</span>
       </div>
-
-      <div class="space-y-1.5 flex-1">
-        {#each subject.domainBreakdown as row}
-          {@const isSimCleared = simulatedClearedDomains.includes(row.domain)}
-          {@const isDone = row.status === 'Complete' || isSimCleared}
-          {@const domId = DOMAIN_ID_MAP[row.domain] || 'edc'}
-          <div class="flex items-center justify-between gap-2 p-2 rounded-lg border text-xs {isDone ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/70'}">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-1.5">
-                {#if isDone}
-                  <CheckCircle2 size={13} class="text-emerald-600 shrink-0" />
-                {:else}
-                  <AlertTriangle size={13} class="text-rose-500 shrink-0" />
-                {/if}
-                <button
-                  type="button"
-                  on:click={() => onSelectDomain(domId)}
-                  class="font-bold text-blue-700 hover:underline truncate cursor-pointer text-left inline-flex items-center gap-1"
-                  title="Open {row.domain} drill-down page"
-                >
-                  <span class="truncate">{row.domain}</span>
-                  <ExternalLink size={10} class="shrink-0 opacity-75" />
-                </button>
-                <span class="font-mono text-[10px] font-bold {isDone ? 'text-emerald-700' : 'text-rose-700'}">
-                  {isSimCleared ? '100%' : `${row.completion}%`}
-                </span>
-              </div>
-              <div class="text-[10px] text-slate-500 ml-5 truncate">
-                {isSimCleared ? 'Simulated resolved for DBL' : row.details}
-              </div>
-            </div>
-
-            {#if row.status !== 'Complete'}
-              <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-semibold text-slate-700 cursor-pointer shrink-0 hover:border-emerald-400">
-                <input
-                  type="checkbox"
-                  checked={isSimCleared}
-                  on:change={() => toggleSimDomain(row.domain)}
-                  class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                <span>Sim. Clear</span>
-              </label>
-            {:else}
-              <button
-                type="button"
-                on:click={() => onSelectDomain(domId)}
-                class="px-1.5 py-0.5 rounded bg-emerald-100/80 hover:bg-emerald-200/80 text-emerald-800 text-[10px] font-bold shrink-0 cursor-pointer"
-              >Passed</button>
-            {/if}
+      <div class="grid grid-cols-4 gap-2 text-center">
+        {#each subject.timeline as step}
+          <div class="flex flex-col items-center p-2 rounded-lg bg-slate-50/70 border border-slate-100">
+            <span class="w-3 h-3 rounded-full {step.state === 'completed' ? 'bg-emerald-500' : step.state === 'in_progress' ? 'bg-amber-400' : step.state === 'missed' ? 'bg-rose-500' : 'bg-slate-300'}"></span>
+            <span class="text-[10px] font-bold text-slate-800 mt-1 leading-tight">{step.label}</span>
+            <span class="text-[9px] text-slate-400 mt-0.5">{step.date}</span>
           </div>
         {/each}
+        <div class="flex flex-col items-center p-2 rounded-lg border {isFreezeEligible ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}">
+          <span class="w-3 h-3 rounded-full {isFreezeEligible ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
+          <span class="text-[10px] font-bold text-slate-900 mt-1 leading-tight">Freeze</span>
+          <span class="text-[9px] text-slate-500 mt-0.5">{isFreezeEligible ? 'Ready' : 'Blocked'}</span>
+        </div>
+        <div class="flex flex-col items-center p-2 rounded-lg bg-slate-50/70 border border-slate-100">
+          <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+          <span class="text-[10px] font-bold text-slate-800 mt-1 leading-tight">DBL Lock</span>
+          <span class="text-[9px] text-slate-400 mt-0.5">{V3_STUDY_META.targetDbl}</span>
+        </div>
       </div>
     </div>
 
-    <!-- Middle 4 cols: Subject Visit & Freeze Milestone Timeline + Risks -->
-    <div class="lg:col-span-4 space-y-3 flex flex-col">
-      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-        <div class="flex items-center justify-between pb-2 mb-3 border-b border-slate-100">
-          <h3 class="text-xs font-bold text-slate-900">Visit & Casebook Freeze Timeline</h3>
-          <span class="text-[10px] font-semibold text-slate-400">Milestone Gate</span>
+    <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+        <h3 class="text-xs font-bold text-slate-900">DBL Risks & Impact</h3>
+        <Sparkles size={13} class="text-amber-500" />
+      </div>
+      {#if subject.risksAndImpact.length === 0}
+        <div class="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50/60 border border-emerald-200/60 rounded-lg p-2.5">
+          <CheckCircle2 size={14} /> No active DBL risks for this subject.
         </div>
-        <div class="grid grid-cols-4 gap-2 text-center">
-          {#each subject.timeline as step}
-            <div class="flex flex-col items-center p-1.5 rounded-lg bg-slate-50/70 border border-slate-100">
-              <span class="w-3 h-3 rounded-full {step.state === 'completed' ? 'bg-emerald-500' : step.state === 'in_progress' ? 'bg-amber-400' : step.state === 'missed' ? 'bg-rose-500' : 'bg-slate-300'}"></span>
-              <span class="text-[10px] font-bold text-slate-800 mt-1 leading-tight">{step.label}</span>
-              <span class="text-[9px] text-slate-400 mt-0.5">{step.date}</span>
+      {:else}
+        <div class="space-y-1.5">
+          {#each subject.risksAndImpact as r}
+            <div class="flex items-start gap-2 text-[11px] p-2 rounded-lg bg-rose-50/60 border border-rose-200/60">
+              {#if r.level === 'Critical'}
+                <AlertTriangle size={13} class="text-rose-600 shrink-0 mt-0.5" />
+              {:else}
+                <Info size={13} class="text-amber-600 shrink-0 mt-0.5" />
+              {/if}
+              <span class="text-slate-700 leading-snug">{r.text}</span>
             </div>
           {/each}
-          <div class="flex flex-col items-center p-1.5 rounded-lg border {isFreezeEligible ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50/60 border-rose-200'}">
-            <span class="w-3 h-3 rounded-full {isFreezeEligible ? 'bg-emerald-500' : 'bg-rose-500'}"></span>
-            <span class="text-[10px] font-bold text-slate-900 mt-1 leading-tight">Freeze</span>
-            <span class="text-[9px] text-slate-500 mt-0.5">{isFreezeEligible ? 'Ready' : 'Blocked'}</span>
-          </div>
-          <div class="flex flex-col items-center p-1.5 rounded-lg bg-slate-50/70 border border-slate-100">
-            <span class="w-3 h-3 rounded-full bg-blue-500"></span>
-            <span class="text-[10px] font-bold text-slate-800 mt-1 leading-tight">DBL Lock</span>
-            <span class="text-[9px] text-slate-400 mt-0.5">{V3_STUDY_META.targetDbl}</span>
-          </div>
         </div>
-      </div>
-
-      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex-1">
-        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-          <h3 class="text-xs font-bold text-slate-900">DBL Risks & Impact</h3>
-          <Sparkles size={13} class="text-amber-500" />
-        </div>
-        {#if subject.risksAndImpact.length === 0}
-          <div class="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50/60 border border-emerald-200/60 rounded-lg p-2.5">
-            <CheckCircle2 size={14} /> No active DBL risks for this subject.
-          </div>
-        {:else}
-          <div class="space-y-1.5">
-            {#each subject.risksAndImpact as r}
-              <div class="flex items-start gap-2 text-[11px] p-2 rounded-lg bg-rose-50/60 border border-rose-200/60">
-                {#if r.level === 'Critical'}
-                  <AlertTriangle size={13} class="text-rose-600 shrink-0 mt-0.5" />
-                {:else}
-                  <Info size={13} class="text-amber-600 shrink-0 mt-0.5" />
-                {/if}
-                <span class="text-slate-700 leading-snug">{r.text}</span>
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
+      {/if}
     </div>
 
-    <!-- Right 3 cols: Next Best DBL Actions -->
     <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
       <div>
         <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
           <h3 class="text-xs font-bold text-slate-900">Next Best DBL Actions</h3>
           <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 text-[10px] font-bold">{subject.nextBestActions.length}</span>
         </div>
-
         {#if subject.nextBestActions.length === 0}
           <div class="p-3 rounded-lg bg-emerald-50/60 border border-emerald-200/60 text-xs text-emerald-800 flex items-center gap-2">
             <CheckCircle2 size={14} /> Ready for casebook freeze.
           </div>
         {:else}
-          <div class="space-y-2">
+          <div class="space-y-1.5">
             {#each subject.nextBestActions as a}
-              <div class="p-2.5 rounded-lg border border-slate-200/80 bg-slate-50/70 space-y-1">
+              <div class="p-2 rounded-lg border border-slate-200/80 bg-slate-50/70 space-y-1">
                 <div class="flex items-start justify-between gap-2">
-                  <div class="text-xs font-bold text-slate-900 leading-snug">{a.action}</div>
-                  <span class="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 {a.status === 'In Progress' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-700'}">{a.status}</span>
+                  <div class="text-[11px] font-bold text-slate-900 leading-snug">{a.action}</div>
+                  <span class="px-1.5 py-0.5 rounded text-[9px] font-bold shrink-0 {a.status === 'In Progress' ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-700'}">{a.status}</span>
                 </div>
-                <div class="text-[10px] text-slate-500">Owner: <strong class="text-slate-700">{a.owner}</strong> · Due: <strong class="text-slate-700">{a.targetDate}</strong></div>
+                <div class="text-[10px] text-slate-500">{a.owner} · Due {a.targetDate}</div>
               </div>
             {/each}
           </div>
         {/if}
       </div>
-
-      <div class="pt-3 mt-3 border-t border-slate-100 space-y-1.5">
+      <div class="pt-2 mt-2 border-t border-slate-100 flex items-center gap-1.5">
         <button
           type="button"
           on:click={() => onSelectSite(subject.siteId)}
-          class="w-full px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer"
-        >
-          Inspect Site {subject.siteId} Workspace
-        </button>
+          class="flex-1 px-2 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-700 cursor-pointer"
+        >Site {subject.siteId}</button>
         <button
           type="button"
           on:click={() => onSelectTab('actions_sim')}
-          class="w-full px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer"
-        >
-          Escalate in Action Workbench
-        </button>
+          class="flex-1 px-2 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold cursor-pointer"
+        >Actions</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Full-Width Domain Readiness for This Subject Table -->
+  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+      <div>
+        <h3 class="text-xs font-bold text-slate-900">Domain Readiness for This Subject (8 Clinical Domains)</h3>
+        <p class="text-[10px] text-slate-500">Click any domain to open its Clinical Domain drill-down page, or toggle "Sim. Clear" to test freeze eligibility</p>
+      </div>
+      {#if simulatedClearedDomains.length > 0}
+        <button
+          type="button"
+          on:click={() => (simulatedClearedDomains = [])}
+          class="px-2.5 py-1 rounded-lg border border-blue-200 bg-blue-50 text-[11px] font-semibold text-blue-700 cursor-pointer"
+        >Reset Simulation ({simulatedClearedDomains.length})</button>
+      {/if}
+    </div>
+
+    <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <tr>
+            <th class="px-3 py-2 text-left">Domain</th>
+            <th class="px-3 py-2 text-left">Status</th>
+            <th class="px-3 py-2 text-left">Details</th>
+            <th class="px-3 py-2 text-left">Completion</th>
+            <th class="px-3 py-2 text-center">What-If Gate</th>
+            <th class="px-3 py-2 text-right">Drill Down</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          {#each subject.domainBreakdown as row}
+            {@const isSimCleared = simulatedClearedDomains.includes(row.domain)}
+            {@const isDone = row.status === 'Complete' || isSimCleared}
+            {@const pct = isSimCleared ? 100 : row.completion}
+            {@const domId = DOMAIN_ID_MAP[row.domain] || 'edc'}
+            <tr class="hover:bg-blue-50/30 transition-colors">
+              <td class="px-3 py-2">
+                <button
+                  type="button"
+                  on:click={() => onSelectDomain(domId)}
+                  class="font-bold text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1"
+                >
+                  <span>{row.domain}</span>
+                  <ExternalLink size={11} class="opacity-75" />
+                </button>
+              </td>
+              <td class="px-3 py-2">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border {isDone ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}">
+                  {isDone ? 'Complete' : 'Action Required'}
+                </span>
+              </td>
+              <td class="px-3 py-2 text-slate-600">{isSimCleared ? 'Simulated resolved for DBL' : row.details}</td>
+              <td class="px-3 py-2">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono font-bold text-slate-900 w-9">{pct}%</span>
+                  <div class="w-20 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                    <div class="h-full rounded-full {barColor(pct)}" style="width:{pct}%"></div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-3 py-2 text-center">
+                {#if row.status !== 'Complete'}
+                  <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-semibold text-slate-700 cursor-pointer hover:border-emerald-400">
+                    <input
+                      type="checkbox"
+                      checked={isSimCleared}
+                      on:change={() => toggleSimDomain(row.domain)}
+                      class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span>Sim. Clear</span>
+                  </label>
+                {:else}
+                  <span class="text-[10px] font-semibold text-emerald-600">Passed</span>
+                {/if}
+              </td>
+              <td class="px-3 py-2 text-right">
+                <button
+                  type="button"
+                  on:click={() => onSelectDomain(domId)}
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
+                >Open Domain <ChevronRight size={11} /></button>
+              </td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
     </div>
   </div>
 
