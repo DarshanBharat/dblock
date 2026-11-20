@@ -22,7 +22,19 @@
   export let onBack: () => void;
   export let onSelectSubject: (id: string) => void;
   export let onSelectSite: (siteId: string) => void;
+  export let onSelectDomain: (domainId: string) => void = () => {};
   export let onSelectTab: (tab: string) => void;
+
+  const DOMAIN_ID_MAP: Record<string, string> = {
+    'EDC Data Cleaning': 'edc',
+    'Query Resolution': 'queries',
+    'External Data Reconciliation': 'external_data',
+    'Safety Reconciliation': 'safety',
+    'Medical Coding': 'coding',
+    'PI Signatures': 'pi_signatures',
+    'Protocol Deviations': 'deviations',
+    'SDV / SDR': 'sdv',
+  };
 
   $: subjectIndex = Math.max(
     0,
@@ -279,12 +291,12 @@
 
   <!-- 3-Column DBL Intelligence Row -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-    <!-- Left 5 cols: Interactive 8-Domain Lock Gate Checklist -->
+    <!-- Left 5 cols: Domain Readiness for This Subject (Interactive + Drill-down Links) -->
     <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
       <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
         <div>
-          <h3 class="text-xs font-bold text-slate-900">8-Domain Lock Gate Checklist</h3>
-          <p class="text-[10px] text-slate-500">Check "Sim. Clear" on open gates to test casebook freeze eligibility</p>
+          <h3 class="text-xs font-bold text-slate-900">Domain Readiness for This Subject</h3>
+          <p class="text-[10px] text-slate-500">Click any domain to open its drill-down page, or check "Sim. Clear"</p>
         </div>
         {#if simulatedClearedDomains.length > 0}
           <button
@@ -299,6 +311,7 @@
         {#each subject.domainBreakdown as row}
           {@const isSimCleared = simulatedClearedDomains.includes(row.domain)}
           {@const isDone = row.status === 'Complete' || isSimCleared}
+          {@const domId = DOMAIN_ID_MAP[row.domain] || 'edc'}
           <div class="flex items-center justify-between gap-2 p-2 rounded-lg border text-xs {isDone ? 'bg-emerald-50/40 border-emerald-200/60' : 'bg-rose-50/40 border-rose-200/70'}">
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1.5">
@@ -307,7 +320,15 @@
                 {:else}
                   <AlertTriangle size={13} class="text-rose-500 shrink-0" />
                 {/if}
-                <span class="font-bold text-slate-900 truncate">{row.domain}</span>
+                <button
+                  type="button"
+                  on:click={() => onSelectDomain(domId)}
+                  class="font-bold text-blue-700 hover:underline truncate cursor-pointer text-left inline-flex items-center gap-1"
+                  title="Open {row.domain} drill-down page"
+                >
+                  <span class="truncate">{row.domain}</span>
+                  <ExternalLink size={10} class="shrink-0 opacity-75" />
+                </button>
                 <span class="font-mono text-[10px] font-bold {isDone ? 'text-emerald-700' : 'text-rose-700'}">
                   {isSimCleared ? '100%' : `${row.completion}%`}
                 </span>
@@ -328,7 +349,11 @@
                 <span>Sim. Clear</span>
               </label>
             {:else}
-              <span class="px-1.5 py-0.5 rounded bg-emerald-100/80 text-emerald-800 text-[10px] font-bold shrink-0">Passed</span>
+              <button
+                type="button"
+                on:click={() => onSelectDomain(domId)}
+                class="px-1.5 py-0.5 rounded bg-emerald-100/80 hover:bg-emerald-200/80 text-emerald-800 text-[10px] font-bold shrink-0 cursor-pointer"
+              >Passed</button>
             {/if}
           </div>
         {/each}

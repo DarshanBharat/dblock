@@ -427,75 +427,42 @@
 
   <!-- 3-Column Visual Intelligence Row (Full Width, No Sidebar) -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
-    <!-- Col 1 (4 cols): Interactive Subject Readiness Donut -->
-    <div
-      class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between"
-      role="presentation"
-      on:mouseleave={() => (hoveredDonutIdx = null)}
-    >
+    <!-- Col 1 (4 cols): Subjects by Country (Stacked Interactive Bars) -->
+    <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
       <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-        <h3 class="text-xs font-bold text-slate-900">Readiness Distribution</h3>
-        {#if classificationFilters.length > 0}
-          <button
-            type="button"
-            on:click={() => { classificationFilters = []; currentPage = 1; }}
-            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] font-semibold text-blue-700 cursor-pointer"
-          >
-            {classificationFilters.length} selected <X size={10} />
-          </button>
-        {:else}
-          <span class="text-[10px] font-semibold text-slate-400">Click slices to filter</span>
+        <div>
+          <h3 class="text-xs font-bold text-slate-900">Subjects by Country</h3>
+          <p class="text-[10px] text-slate-500">Click country bar to multi-filter</p>
+        </div>
+        {#if countryFilters.length > 0}
+          <button type="button" on:click={() => { countryFilters = []; currentPage = 1; }} class="text-[10px] font-semibold text-blue-600 hover:underline cursor-pointer">Clear</button>
         {/if}
       </div>
 
-      <div class="flex items-center gap-3 flex-1">
-        <svg viewBox="0 0 110 110" class="w-24 h-24 shrink-0 overflow-visible">
-          <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
-          {#each donutArcs as arc, idx}
-            {@const isHovered = hoveredDonutIdx === idx}
-            {@const isSelected = classificationFilters.includes(arc.label)}
-            {@const isActive = isHovered || isSelected}
-            {@const hasFocus = hoveredDonutIdx !== null || classificationFilters.length > 0}
-            <circle
-              cx="55"
-              cy="55"
-              r={R}
-              fill="none"
-              stroke={arc.color}
-              stroke-width={isActive ? 17 : 14}
-              stroke-dasharray={arc.dasharray}
-              stroke-dashoffset={arc.dashoffset}
-              opacity={hasFocus && !isActive ? 0.3 : 1}
-              transform="rotate(-90 55 55)"
-              class="cursor-pointer transition-all duration-150"
-              role="button"
-              tabindex="0"
-              on:mouseenter={() => (hoveredDonutIdx = idx)}
-              on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; }}
-              on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; } }}
-            />
-          {/each}
-          <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{V3_SUBJECT_ROWS.length}</text>
-          <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">Subjects</text>
-        </svg>
-
-        <div class="space-y-1 flex-1 min-w-0">
-          {#each subjectDonut as seg, idx}
-            {@const isSel = classificationFilters.includes(seg.label)}
-            <button
-              type="button"
-              on:mouseenter={() => (hoveredDonutIdx = idx)}
-              on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, seg.label); currentPage = 1; }}
-              class="w-full flex items-center justify-between text-[11px] px-1.5 py-0.5 rounded cursor-pointer transition-colors {isSel ? 'bg-blue-50 font-bold text-blue-800' : 'hover:bg-slate-50 text-slate-700'}"
-            >
-              <span class="inline-flex items-center gap-1.5 truncate">
-                <span class="w-2 h-2 rounded-full shrink-0" style="background:{seg.color}"></span>
-                <span class="truncate">{seg.label}</span>
-              </span>
-              <span class="font-mono font-bold text-slate-900 shrink-0">{seg.count}</span>
-            </button>
-          {/each}
-        </div>
+      <div class="space-y-1 flex-1 flex flex-col justify-center">
+        {#each V3_COUNTRY_SUMMARY as c}
+          {@const subjs = V3_SUBJECT_ROWS.filter((s) => s.country === c.country)}
+          {@const total = Math.max(1, subjs.length)}
+          {@const lr = subjs.filter((s) => s.classification === 'Lock Ready').length}
+          {@const cr = subjs.filter((s) => s.classification === 'Conditionally Ready').length}
+          {@const ar = subjs.filter((s) => s.classification === 'Action Required').length}
+          {@const hb = subjs.filter((s) => s.classification === 'Hard Blocked').length}
+          {@const isSelected = countryFilters.includes(c.country)}
+          <button
+            type="button"
+            on:click={() => { countryFilters = toggleArrayItem(countryFilters, c.country); currentPage = 1; }}
+            class="w-full grid grid-cols-12 items-center gap-1.5 text-[11px] px-1.5 py-0.5 rounded-lg border transition-all cursor-pointer {isSelected ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-200' : 'border-transparent hover:bg-slate-50'}"
+          >
+            <span class="col-span-5 text-left font-semibold text-slate-800 truncate">{c.flag} {c.country}</span>
+            <div class="col-span-5 h-2 rounded-full bg-slate-100 overflow-hidden flex">
+              <div class="bg-emerald-500 h-full" style="width:{(lr / total) * 100}%" title="Lock Ready: {lr}"></div>
+              <div class="bg-blue-500 h-full" style="width:{(cr / total) * 100}%" title="Conditional: {cr}"></div>
+              <div class="bg-amber-500 h-full" style="width:{(ar / total) * 100}%" title="Action Required: {ar}"></div>
+              <div class="bg-rose-500 h-full" style="width:{(hb / total) * 100}%" title="Hard Blocked: {hb}"></div>
+            </div>
+            <span class="col-span-2 text-right font-mono font-bold text-slate-700">{subjs.length}</span>
+          </button>
+        {/each}
       </div>
     </div>
 
@@ -682,42 +649,78 @@
       </div>
     </div>
 
-    <!-- Right 6 cols: Subjects by Country (Stacked Interactive Bars) -->
-    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
+    <!-- Right 6 cols: Interactive Subject Readiness Donut -->
+    <div
+      class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between"
+      role="presentation"
+      on:mouseleave={() => (hoveredDonutIdx = null)}
+    >
       <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
         <div>
-          <h3 class="text-xs font-bold text-slate-900">Subjects by Country</h3>
-          <p class="text-[10px] text-slate-500">Click any country bar to multi-filter the subject table</p>
+          <h3 class="text-xs font-bold text-slate-900">Readiness Distribution</h3>
+          <p class="text-[10px] text-slate-500">Click slices or legend to multi-filter classifications</p>
         </div>
-        {#if countryFilters.length > 0}
-          <button type="button" on:click={() => { countryFilters = []; currentPage = 1; }} class="text-[10px] font-semibold text-blue-600 hover:underline cursor-pointer">Clear</button>
+        {#if classificationFilters.length > 0}
+          <button
+            type="button"
+            on:click={() => { classificationFilters = []; currentPage = 1; }}
+            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] font-semibold text-blue-700 cursor-pointer"
+          >
+            {classificationFilters.length} selected <X size={10} />
+          </button>
+        {:else}
+          <span class="text-[10px] font-semibold text-slate-400">Click slices to filter</span>
         {/if}
       </div>
 
-      <div class="space-y-1.5 flex-1 flex flex-col justify-center">
-        {#each V3_COUNTRY_SUMMARY as c}
-          {@const subjs = V3_SUBJECT_ROWS.filter((s) => s.country === c.country)}
-          {@const total = Math.max(1, subjs.length)}
-          {@const lr = subjs.filter((s) => s.classification === 'Lock Ready').length}
-          {@const cr = subjs.filter((s) => s.classification === 'Conditionally Ready').length}
-          {@const ar = subjs.filter((s) => s.classification === 'Action Required').length}
-          {@const hb = subjs.filter((s) => s.classification === 'Hard Blocked').length}
-          {@const isSelected = countryFilters.includes(c.country)}
-          <button
-            type="button"
-            on:click={() => { countryFilters = toggleArrayItem(countryFilters, c.country); currentPage = 1; }}
-            class="w-full grid grid-cols-12 items-center gap-2 text-[11px] px-2 py-1 rounded-lg border transition-all cursor-pointer {isSelected ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-200' : 'border-transparent hover:bg-slate-50'}"
-          >
-            <span class="col-span-4 text-left font-semibold text-slate-800 truncate">{c.flag} {c.country}</span>
-            <div class="col-span-6 h-2.5 rounded-full bg-slate-100 overflow-hidden flex">
-              <div class="bg-emerald-500 h-full" style="width:{(lr / total) * 100}%" title="Lock Ready: {lr}"></div>
-              <div class="bg-blue-500 h-full" style="width:{(cr / total) * 100}%" title="Conditional: {cr}"></div>
-              <div class="bg-amber-500 h-full" style="width:{(ar / total) * 100}%" title="Action Required: {ar}"></div>
-              <div class="bg-rose-500 h-full" style="width:{(hb / total) * 100}%" title="Hard Blocked: {hb}"></div>
-            </div>
-            <span class="col-span-2 text-right font-mono font-bold text-slate-700">{subjs.length} <span class="text-[10px] font-normal text-rose-600">({ar + hb})</span></span>
-          </button>
-        {/each}
+      <div class="flex items-center gap-5 flex-1">
+        <svg viewBox="0 0 110 110" class="w-28 h-28 shrink-0 overflow-visible">
+          <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
+          {#each donutArcs as arc, idx}
+            {@const isHovered = hoveredDonutIdx === idx}
+            {@const isSelected = classificationFilters.includes(arc.label)}
+            {@const isActive = isHovered || isSelected}
+            {@const hasFocus = hoveredDonutIdx !== null || classificationFilters.length > 0}
+            <circle
+              cx="55"
+              cy="55"
+              r={R}
+              fill="none"
+              stroke={arc.color}
+              stroke-width={isActive ? 17 : 14}
+              stroke-dasharray={arc.dasharray}
+              stroke-dashoffset={arc.dashoffset}
+              opacity={hasFocus && !isActive ? 0.3 : 1}
+              transform="rotate(-90 55 55)"
+              class="cursor-pointer transition-all duration-150"
+              role="button"
+              tabindex="0"
+              on:mouseenter={() => (hoveredDonutIdx = idx)}
+              on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; }}
+              on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); classificationFilters = toggleArrayItem(classificationFilters, arc.label); currentPage = 1; } }}
+            />
+          {/each}
+          <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{V3_SUBJECT_ROWS.length}</text>
+          <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">Subjects</text>
+        </svg>
+
+        <div class="space-y-1.5 flex-1 min-w-0">
+          {#each subjectDonut as seg, idx}
+            {@const isSel = classificationFilters.includes(seg.label)}
+            <button
+              type="button"
+              on:mouseenter={() => (hoveredDonutIdx = idx)}
+              on:click={() => { classificationFilters = toggleArrayItem(classificationFilters, seg.label); currentPage = 1; }}
+              class="w-full flex items-center justify-between text-xs px-2 py-1 rounded cursor-pointer transition-colors {isSel ? 'bg-blue-50 font-bold text-blue-800' : 'hover:bg-slate-50 text-slate-700'}"
+            >
+              <span class="inline-flex items-center gap-2 truncate">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{seg.color}"></span>
+                <span class="truncate">{seg.label}</span>
+              </span>
+              <span class="font-mono font-bold text-slate-900 shrink-0">{seg.count} <span class="font-normal text-slate-400">({seg.pct}%)</span></span>
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
   </div>

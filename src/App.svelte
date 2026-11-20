@@ -203,6 +203,7 @@
                 onBack={() => (selectedSubjectId = null)}
                 onSelectSubject={handleSelectSubject}
                 onSelectSite={handleSelectSite}
+                onSelectDomain={handleSelectDomain}
                 onSelectTab={handleSelectTab}
               />
             {:else if selectedSiteId}
@@ -227,6 +228,7 @@
                 onBack={() => (selectedSubjectId = null)}
                 onSelectSubject={handleSelectSubject}
                 onSelectSite={handleSelectSite}
+                onSelectDomain={handleSelectDomain}
                 onSelectTab={handleSelectTab}
               />
             {:else}
