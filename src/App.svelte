@@ -195,48 +195,6 @@
     {:else}
       <!-- Full-Width Operational Study Workspace -->
       <div class="space-y-4">
-
-        <!-- Persistent Study Context & 5-Step Investigative Flow Bar -->
-        <div class="bg-white rounded-xl border border-slate-200/80 px-4 py-2.5 shadow-2xs flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div class="flex flex-wrap items-center gap-1.5">
-            <button type="button" on:click={() => handleSelectTab('portfolio')} class="text-slate-500 hover:text-blue-600 font-medium cursor-pointer">
-              Portfolio
-            </button>
-            <span class="text-slate-300">/</span>
-            <button type="button" on:click={() => handleSelectTab('command_centre')} class="font-bold text-slate-900 hover:text-blue-600 cursor-pointer">
-              {currentStudyId}
-            </button>
-            {#if selectedSiteId && activeTab === 'sites_countries'}
-              <span class="text-slate-300">/</span>
-              <span class="font-semibold text-blue-700">Site {selectedSiteId}</span>
-            {/if}
-            <span class="hidden sm:inline-block ml-2 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-semibold">
-              72% Ready (-8%) · P80 DBL 21 Dec (+6d)
-            </span>
-          </div>
-
-          <nav class="flex flex-wrap items-center gap-1" aria-label="Study investigation flow">
-            {#each [
-              { id: 'command_centre', step: '1. Overview' },
-              { id: 'clinical_domains', step: '2. Domains' },
-              { id: 'sites_countries', step: '3. Sites' },
-              { id: 'subjects', step: '4. Subjects' },
-              { id: 'actions_sim', step: '5. Actions & Sim' },
-            ] as flowStep, i}
-              {#if i > 0}
-                <ArrowRight size={11} class="text-slate-300 hidden sm:inline" />
-              {/if}
-              <button
-                type="button"
-                on:click={() => handleSelectTab(flowStep.id)}
-                class="px-2.5 py-1 rounded-md font-semibold transition-colors cursor-pointer {activeTab === flowStep.id ? 'bg-blue-600 text-white' : 'text-slate-600 hover:bg-slate-100'}"
-              >
-                {flowStep.step}
-              </button>
-            {/each}
-          </nav>
-        </div>
-
         <!-- ================================================================= -->
         <!-- STUDY MAIN CONTENT VIEW (Full Width)                              -->
         <!-- ================================================================= -->

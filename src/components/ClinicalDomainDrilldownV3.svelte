@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronRight, ChevronLeft, Search, Info, SlidersHorizontal, RotateCcw } from '@lucide/svelte';
+  import { ArrowLeft, ChevronRight, ChevronLeft, Search, Info, SlidersHorizontal, RotateCcw, Filter, X, ArrowUpDown } from '@lucide/svelte';
   import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS } from '../data/v3Data';
   import {
     v3DomainWeights,
@@ -18,12 +18,39 @@
   let searchQuery = '';
   let statusFilter = 'all';
   let criticalityFilter = 'all';
+  let countryFilter = 'all';
+  let siteFilter = 'all';
+  let ownerFilter = 'all';
+  let classificationFilter = 'all';
+  let agingFilter: 'all' | 'overdue' | 'escalated' | 'recent' = 'all';
+  let onlyCriticalSites = false;
+  let siteSort: 'pct_asc' | 'incomplete_desc' | 'critical_desc' | 'country_asc' = 'pct_asc';
+  let subjectSort: 'pct_asc' | 'days_desc' | 'id_asc' = 'pct_asc';
+  let pendingSort: 'crit_desc' | 'days_desc' | 'site_asc' | 'subject_asc' = 'crit_desc';
   let drawerSubjectId: string | null = null;
   let showWeightConfig = false;
   let subjectPage = 1;
   let subjectPageSize = 15;
   let pendingPage = 1;
   let pendingPageSize = 15;
+  let hoveredTrendIdx: number | null = null;
+  let hoveredDonutIdx: number | null = null;
+
+  function resetTableFilters() {
+    searchQuery = '';
+    statusFilter = 'all';
+    criticalityFilter = 'all';
+    countryFilter = 'all';
+    siteFilter = 'all';
+    ownerFilter = 'all';
+    classificationFilter = 'all';
+    agingFilter = 'all';
+    onlyCriticalSites = false;
+    subjectPage = 1;
+    pendingPage = 1;
+    hoveredTrendIdx = null;
+    hoveredDonutIdx = null;
+  }
 
   const DOMAIN_CATEGORY_MAP: Record<string, string[]> = {
     edc: ['edc data cleaning', 'edc'],
@@ -119,17 +146,34 @@
 
   $: currentDomain = V3_DOMAINS.find((d) => d.id === selectedDomainId) || V3_DOMAINS[0];
 
-  $: filteredBreakdown = currentDomain.breakdownRows.filter((r) => {
-    const q = searchQuery.trim().toLowerCase();
-    const matchesSearch =
-      !q ||
-      r.country.toLowerCase().includes(q) ||
-      r.siteId.toLowerCase().includes(q);
-    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  $: breakdownCountries = Array.from(new Set(currentDomain.breakdownRows.map((r) => r.country))).sort();
+  $: siteStatusCounts = {
+    all: currentDomain.breakdownRows.length,
+    'High risk': currentDomain.breakdownRows.filter((r) => r.status === 'High risk').length,
+    'At risk': currentDomain.breakdownRows.filter((r) => r.status === 'At risk').length,
+    'On track': currentDomain.breakdownRows.filter((r) => r.status === 'On track').length,
+  };
 
-  $: filteredSubjects = V3_SUBJECT_ROWS.map((subj) => {
+  $: filteredBreakdown = currentDomain.breakdownRows
+    .filter((r) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        r.country.toLowerCase().includes(q) ||
+        r.siteId.toLowerCase().includes(q);
+      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+      const matchesCountry = countryFilter === 'all' || r.country === countryFilter;
+      const matchesCritical = !onlyCriticalSites || r.criticalItems > 0;
+      return matchesSearch && matchesStatus && matchesCountry && matchesCritical;
+    })
+    .sort((a, b) => {
+      if (siteSort === 'incomplete_desc') return b.incomplete - a.incomplete || a.pctComplete - b.pctComplete;
+      if (siteSort === 'critical_desc') return b.criticalItems - a.criticalItems || a.pctComplete - b.pctComplete;
+      if (siteSort === 'country_asc') return a.country.localeCompare(b.country) || a.siteId.localeCompare(b.siteId);
+      return a.pctComplete - b.pctComplete || b.incomplete - a.incomplete;
+    });
+
+  $: allDomainSubjects = V3_SUBJECT_ROWS.map((subj) => {
     const domEntry =
       subj.domainBreakdown.find(
         (b) => b.domain.toLowerCase() === currentDomain.name.toLowerCase()
@@ -143,7 +187,18 @@
       completion,
       domainStatus,
     };
-  })
+  });
+
+  $: subjectCountries = Array.from(new Set(V3_SUBJECT_ROWS.map((s) => s.country))).sort();
+  $: subjectOwners = Array.from(new Set(V3_SUBJECT_ROWS.map((s) => s.owner).filter((o) => o && o !== '—'))).sort();
+  $: subjectStatusCounts = {
+    all: allDomainSubjects.length,
+    'High risk': allDomainSubjects.filter((s) => s.domainStatus === 'High risk').length,
+    'At risk': allDomainSubjects.filter((s) => s.domainStatus === 'At risk').length,
+    'On track': allDomainSubjects.filter((s) => s.domainStatus === 'On track').length,
+  };
+
+  $: filteredSubjects = allDomainSubjects
     .filter(({ subj, domEntry, domainStatus }) => {
       const q = searchQuery.trim().toLowerCase();
       const matchesSearch =
@@ -154,9 +209,16 @@
         subj.owner.toLowerCase().includes(q) ||
         (domEntry?.details || '').toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || domainStatus === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesCountry = countryFilter === 'all' || subj.country === countryFilter;
+      const matchesClass = classificationFilter === 'all' || subj.classification === classificationFilter;
+      const matchesOwner = ownerFilter === 'all' || subj.owner === ownerFilter;
+      return matchesSearch && matchesStatus && matchesCountry && matchesClass && matchesOwner;
     })
-    .sort((a, b) => a.completion - b.completion || b.subj.daysOpen - a.subj.daysOpen);
+    .sort((a, b) => {
+      if (subjectSort === 'days_desc') return b.subj.daysOpen - a.subj.daysOpen || a.completion - b.completion;
+      if (subjectSort === 'id_asc') return a.subj.id.localeCompare(b.subj.id);
+      return a.completion - b.completion || b.subj.daysOpen - a.subj.daysOpen;
+    });
 
   $: totalSubjectPages = Math.max(1, Math.ceil(filteredSubjects.length / subjectPageSize));
   $: if (subjectPage > totalSubjectPages) subjectPage = 1;
@@ -300,18 +362,64 @@
     });
   })();
 
-  $: filteredPendingRecords = allDomainPendingRecords.filter((r) => {
-    const q = searchQuery.trim().toLowerCase();
-    const matchesSearch =
-      !q ||
-      r.subjectId.toLowerCase().includes(q) ||
-      r.siteId.toLowerCase().includes(q) ||
-      r.form.toLowerCase().includes(q) ||
-      r.issue.toLowerCase().includes(q) ||
-      r.owner.toLowerCase().includes(q);
-    const matchesCrit = criticalityFilter === 'all' || r.criticality === criticalityFilter;
-    return matchesSearch && matchesCrit;
-  });
+  $: pendingSites = Array.from(new Set(allDomainPendingRecords.map((r) => r.siteId))).sort();
+  $: pendingOwners = Array.from(new Set(allDomainPendingRecords.map((r) => r.owner).filter(Boolean))).sort();
+  $: pendingCritCounts = {
+    all: allDomainPendingRecords.length,
+    Critical: allDomainPendingRecords.filter((r) => r.criticality === 'Critical').length,
+    High: allDomainPendingRecords.filter((r) => r.criticality === 'High').length,
+    Medium: allDomainPendingRecords.filter((r) => r.criticality === 'Medium').length,
+  };
+
+  $: filteredPendingRecords = allDomainPendingRecords
+    .filter((r) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        r.subjectId.toLowerCase().includes(q) ||
+        r.siteId.toLowerCase().includes(q) ||
+        r.visit.toLowerCase().includes(q) ||
+        r.form.toLowerCase().includes(q) ||
+        r.issue.toLowerCase().includes(q) ||
+        r.owner.toLowerCase().includes(q);
+      const matchesCrit = criticalityFilter === 'all' || r.criticality === criticalityFilter;
+      const matchesSite = siteFilter === 'all' || r.siteId === siteFilter;
+      const matchesOwner = ownerFilter === 'all' || r.owner === ownerFilter;
+      const matchesAging =
+        agingFilter === 'all' ||
+        (agingFilter === 'escalated' && r.daysOpen >= 10) ||
+        (agingFilter === 'overdue' && r.daysOpen > 7) ||
+        (agingFilter === 'recent' && r.daysOpen <= 7);
+      return matchesSearch && matchesCrit && matchesSite && matchesOwner && matchesAging;
+    })
+    .sort((a, b) => {
+      if (pendingSort === 'days_desc') return b.daysOpen - a.daysOpen;
+      if (pendingSort === 'site_asc') return a.siteId.localeCompare(b.siteId) || b.daysOpen - a.daysOpen;
+      if (pendingSort === 'subject_asc') return a.subjectId.localeCompare(b.subjectId);
+      const rank: Record<string, number> = { Critical: 3, High: 2, Medium: 1 };
+      return (rank[b.criticality] || 0) - (rank[a.criticality] || 0) || b.daysOpen - a.daysOpen;
+    });
+
+  $: activeFilterCount = (() => {
+    let n = 0;
+    if (searchQuery.trim()) n++;
+    if (subTab === 'site') {
+      if (statusFilter !== 'all') n++;
+      if (countryFilter !== 'all') n++;
+      if (onlyCriticalSites) n++;
+    } else if (subTab === 'subject') {
+      if (statusFilter !== 'all') n++;
+      if (countryFilter !== 'all') n++;
+      if (classificationFilter !== 'all') n++;
+      if (ownerFilter !== 'all') n++;
+    } else {
+      if (criticalityFilter !== 'all') n++;
+      if (siteFilter !== 'all') n++;
+      if (ownerFilter !== 'all') n++;
+      if (agingFilter !== 'all') n++;
+    }
+    return n;
+  })();
 
   $: totalPendingPages = Math.max(1, Math.ceil(filteredPendingRecords.length / pendingPageSize));
   $: if (pendingPage > totalPendingPages) pendingPage = 1;
@@ -509,7 +617,7 @@
             <div class="flex items-center justify-between gap-1 text-xs">
               <button
                 type="button"
-                on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; criticalityFilter = 'all'; subjectPage = 1; pendingPage = 1; }}
+                on:click={() => { selectedDomainId = dom.id; resetTableFilters(); }}
                 class="font-semibold text-slate-800 hover:text-blue-700 truncate text-left cursor-pointer"
               >
                 {dom.name}
@@ -547,7 +655,7 @@
         {@const w = $v3DomainWeights[dom.id] ?? 0}
         <button
           type="button"
-          on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; criticalityFilter = 'all'; subjectPage = 1; pendingPage = 1; }}
+          on:click={() => { selectedDomainId = dom.id; resetTableFilters(); }}
           class="w-full text-left px-3 py-2.5 rounded-lg border transition-colors flex items-center justify-between cursor-pointer {active ? 'bg-blue-50/90 border-blue-300 shadow-2xs' : 'bg-white border-transparent hover:bg-slate-50'}"
         >
           <div>
@@ -640,69 +748,206 @@
               <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 border-t border-dashed border-emerald-500 inline-block"></span> Fcst</span>
             </div>
           </div>
-          <div class="flex-1 flex items-center">
-            <svg viewBox="0 0 {W} {H}" class="w-full h-auto">
+          <div
+            class="flex-1 flex items-center relative"
+            role="presentation"
+            on:mouseleave={() => (hoveredTrendIdx = null)}
+          >
+            <svg viewBox="0 0 {W} {H}" class="w-full h-auto overflow-visible">
               {#each trendYBounds.ticks as tick}
                 <line x1={PAD_L} y1={yPos(tick)} x2={W - PAD_R} y2={yPos(tick)} stroke="#e2e8f0" stroke-width="1" />
                 <text x={PAD_L - 5} y={yPos(tick) + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}%</text>
               {/each}
+
+              <!-- Vertical hover crosshair -->
+              {#if hoveredTrendIdx !== null && currentDomain.trendSeries[hoveredTrendIdx]}
+                <line
+                  x1={xPos(hoveredTrendIdx)}
+                  y1={PAD_T}
+                  x2={xPos(hoveredTrendIdx)}
+                  y2={H - PAD_B}
+                  stroke="#94a3b8"
+                  stroke-width="1"
+                  stroke-dasharray="2 2"
+                />
+              {/if}
+
               <polyline fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="3 3" points={expectedPoints} />
               <polyline fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3 2" points={forecastPoints} />
               <polyline fill="none" stroke="#2563eb" stroke-width="2.2" points={actualPoints} />
+
               {#each currentDomain.trendSeries as p, i}
-                <circle cx={xPos(i)} cy={yPos(p.expected)} r="2" fill="#94a3b8">
-                  <title>{p.label} Expected: {p.expected}%</title>
-                </circle>
+                {@const isHovered = hoveredTrendIdx === i}
+                {@const colW = plotW / Math.max(1, currentDomain.trendSeries.length - 1)}
+
+                <!-- Expected point -->
+                <circle
+                  cx={xPos(i)}
+                  cy={yPos(p.expected)}
+                  r={isHovered ? 3.5 : 2}
+                  fill={isHovered ? '#475569' : '#94a3b8'}
+                  class="transition-all duration-150"
+                />
+
+                <!-- Forecast point -->
+                {#if p.forecast !== null}
+                  <circle
+                    cx={xPos(i)}
+                    cy={yPos(p.forecast)}
+                    r={isHovered ? 3.8 : 2.2}
+                    fill="#10b981"
+                    class="transition-all duration-150"
+                  />
+                {/if}
+
+                <!-- Actual point + value label -->
                 {#if p.actual !== null}
                   {@const labelBelow = p.expected >= p.actual}
-                  <circle cx={xPos(i)} cy={yPos(p.actual)} r="3" fill="#2563eb">
-                    <title>{p.label} Actual: {p.actual}% (Expected: {p.expected}%)</title>
-                  </circle>
+                  {#if isHovered}
+                    <circle cx={xPos(i)} cy={yPos(p.actual)} r="7" fill="#2563eb" opacity="0.18" />
+                  {/if}
+                  <circle
+                    cx={xPos(i)}
+                    cy={yPos(p.actual)}
+                    r={isHovered ? 4.2 : 3}
+                    fill="#2563eb"
+                    stroke="#ffffff"
+                    stroke-width={isHovered ? 1.5 : 0}
+                    class="transition-all duration-150"
+                  />
                   <text
                     x={xPos(i)}
                     y={labelBelow ? yPos(p.actual) + 12 : yPos(p.actual) - 6}
                     text-anchor="middle"
-                    font-size="8"
+                    font-size={isHovered ? 8.5 : 8}
                     font-weight="700"
-                    fill="#1e293b"
+                    fill={isHovered ? '#1d4ed8' : '#1e293b'}
                   >{p.actual}%</text>
                 {/if}
-                <text x={xPos(i)} y={H - 8} text-anchor="middle" font-size="8" fill="#64748b">{p.label}</text>
+
+                <!-- X-axis milestone label -->
+                <text
+                  x={xPos(i)}
+                  y={H - 8}
+                  text-anchor="middle"
+                  font-size="8"
+                  font-weight={isHovered ? '700' : '400'}
+                  fill={isHovered ? '#0f172a' : '#64748b'}
+                >{p.label}</text>
+
+                <!-- Invisible full-height hover column -->
+                <rect
+                  x={Math.max(PAD_L - 6, xPos(i) - colW / 2)}
+                  y={PAD_T - 4}
+                  width={colW}
+                  height={plotH + 14}
+                  fill="transparent"
+                  class="cursor-crosshair"
+                  role="presentation"
+                  on:mouseenter={() => (hoveredTrendIdx = i)}
+                />
               {/each}
             </svg>
+
+            <!-- Floating Interactive Tooltip -->
+            {#if hoveredTrendIdx !== null && currentDomain.trendSeries[hoveredTrendIdx]}
+              {@const pt = currentDomain.trendSeries[hoveredTrendIdx]}
+              {@const variance = pt.actual !== null ? pt.actual - pt.expected : null}
+              {@const flipLeft = hoveredTrendIdx >= Math.ceil(currentDomain.trendSeries.length / 2)}
+              <div
+                class="pointer-events-none absolute top-1 z-20 rounded-lg bg-slate-900/95 text-white px-2.5 py-2 shadow-lg border border-slate-700/80 text-[11px] min-w-[132px] transition-all duration-100 {flipLeft ? 'left-8' : 'right-2'}"
+              >
+                <div class="flex items-center justify-between gap-2 pb-1 mb-1 border-b border-slate-700/80">
+                  <span class="font-bold text-slate-100">{pt.label}</span>
+                  {#if variance !== null}
+                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold {variance >= 0 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}">
+                      {variance >= 0 ? `+${variance}%` : `${variance}%`} vs Exp
+                    </span>
+                  {/if}
+                </div>
+                <div class="space-y-0.5">
+                  {#if pt.actual !== null}
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="inline-flex items-center gap-1.5 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>Actual</span>
+                      <span class="font-mono font-bold text-white">{pt.actual}%</span>
+                    </div>
+                  {/if}
+                  <div class="flex items-center justify-between gap-3">
+                    <span class="inline-flex items-center gap-1.5 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>Expected</span>
+                    <span class="font-mono font-semibold text-slate-200">{pt.expected}%</span>
+                  </div>
+                  {#if pt.forecast !== null}
+                    <div class="flex items-center justify-between gap-3">
+                      <span class="inline-flex items-center gap-1.5 text-slate-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Forecast</span>
+                      <span class="font-mono font-bold text-emerald-300">{pt.forecast}%</span>
+                    </div>
+                  {/if}
+                </div>
+              </div>
+            {/if}
           </div>
         </div>
 
         <!-- Donut Chart -->
-        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
+        <div
+          class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between"
+          role="presentation"
+          on:mouseleave={() => (hoveredDonutIdx = null)}
+        >
           <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.donutTitle}</h3>
-            <span class="text-[10px] font-semibold text-slate-400 shrink-0">Distribution</span>
+            {#if hoveredDonutIdx !== null && currentDomain.donutSegments[hoveredDonutIdx]}
+              {@const activeSeg = currentDomain.donutSegments[hoveredDonutIdx]}
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700 shrink-0 max-w-[130px] truncate">
+                <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:{activeSeg.color}"></span>
+                <span class="truncate">{activeSeg.label}</span>
+              </span>
+            {:else}
+              <span class="text-[10px] font-semibold text-slate-400 shrink-0">Distribution</span>
+            {/if}
           </div>
           <div class="flex-1 flex items-center gap-4">
-            <svg viewBox="0 0 110 110" class="w-24 h-24 shrink-0">
+            <svg viewBox="0 0 110 110" class="w-24 h-24 shrink-0 overflow-visible">
               <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
-              {#each donutArcs as arc}
+              {#each donutArcs as arc, idx}
+                {@const isHovered = hoveredDonutIdx === idx}
+                {@const isDimmed = hoveredDonutIdx !== null && !isHovered}
                 <circle
                   cx="55"
                   cy="55"
                   r={R}
                   fill="none"
                   stroke={arc.color}
-                  stroke-width="14"
+                  stroke-width={isHovered ? 17 : 14}
                   stroke-dasharray={arc.dasharray}
                   stroke-dashoffset={arc.dashoffset}
+                  opacity={isDimmed ? 0.35 : 1}
                   transform="rotate(-90 55 55)"
+                  class="cursor-pointer transition-all duration-150"
+                  role="presentation"
+                  on:mouseenter={() => (hoveredDonutIdx = idx)}
                 />
               {/each}
-              <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{currentDomain.donutCenterValue}</text>
-              <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">{currentDomain.donutCenterLabel}</text>
+              {#if hoveredDonutIdx !== null && currentDomain.donutSegments[hoveredDonutIdx]}
+                {@const activeSeg = currentDomain.donutSegments[hoveredDonutIdx]}
+                <text x="55" y="52" text-anchor="middle" font-size="13" font-weight="800" fill={activeSeg.color}>{activeSeg.count}</text>
+                <text x="55" y="64" text-anchor="middle" font-size="8" font-weight="700" fill="#475569">{activeSeg.pct}% share</text>
+              {:else}
+                <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{currentDomain.donutCenterValue}</text>
+                <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">{currentDomain.donutCenterLabel}</text>
+              {/if}
             </svg>
-            <div class="space-y-2 flex-1 min-w-0">
-              {#each currentDomain.donutSegments as seg}
-                <div class="flex items-center justify-between text-[11px] gap-2">
-                  <span class="inline-flex items-center gap-1.5 truncate text-slate-700">
-                    <span class="w-2 h-2 rounded-full shrink-0" style="background:{seg.color}"></span>
+            <div class="space-y-1 flex-1 min-w-0">
+              {#each currentDomain.donutSegments as seg, idx}
+                {@const isHovered = hoveredDonutIdx === idx}
+                {@const isDimmed = hoveredDonutIdx !== null && !isHovered}
+                <div
+                  role="presentation"
+                  on:mouseenter={() => (hoveredDonutIdx = idx)}
+                  class="flex items-center justify-between text-[11px] gap-2 px-1.5 py-1 rounded-md cursor-pointer transition-all duration-150 {isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200/80' : 'hover:bg-slate-50'} {isDimmed ? 'opacity-50' : 'opacity-100'}"
+                >
+                  <span class="inline-flex items-center gap-1.5 truncate {isHovered ? 'text-slate-900 font-semibold' : 'text-slate-700'}">
+                    <span class="w-2 h-2 rounded-full shrink-0 transition-transform duration-150 {isHovered ? 'scale-125' : ''}" style="background:{seg.color}"></span>
                     <span class="truncate">{seg.label}</span>
                   </span>
                   <span class="font-semibold text-slate-900 shrink-0">{seg.count} <span class="text-slate-400 font-normal">({seg.pct}%)</span></span>
@@ -716,10 +961,10 @@
         <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
           <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900">Key Insights</h3>
-            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">{currentDomain.insights.length} signals</span>
+            <span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">{Math.min(3, currentDomain.insights.length)} signals</span>
           </div>
           <ol class="flex-1 flex flex-col justify-center space-y-2">
-            {#each currentDomain.insights as ins, idx}
+            {#each currentDomain.insights.slice(0, 3) as ins, idx}
               <li class="flex items-start gap-2 text-[11px] text-slate-700 leading-snug rounded-lg bg-slate-50/80 border border-slate-100 px-2.5 py-2">
                 <span class="w-4 h-4 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
                 <span>{ins}</span>
@@ -731,45 +976,234 @@
 
       <!-- Breakdown Section -->
       <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+        <!-- Sub-tabs & Sort Header -->
         <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
           <div class="flex items-center gap-4 text-xs font-semibold">
-            <button type="button" on:click={() => (subTab = 'site')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+            <button
+              type="button"
+              on:click={() => { subTab = 'site'; countryFilter = 'all'; }}
+              class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
+            >
               <span>{currentDomain.breakdownTitle}</span>
               <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'site' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredBreakdown.length}</span>
             </button>
-            <button type="button" on:click={() => (subTab = 'subject')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'subject' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+            <button
+              type="button"
+              on:click={() => { subTab = 'subject'; countryFilter = 'all'; ownerFilter = 'all'; subjectPage = 1; }}
+              class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {subTab === 'subject' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
+            >
               <span>Subject Breakdown</span>
               <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'subject' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredSubjects.length}</span>
             </button>
-            <button type="button" on:click={() => (subTab = 'details')} class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 {subTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}">
+            <button
+              type="button"
+              on:click={() => { subTab = 'details'; ownerFilter = 'all'; pendingPage = 1; }}
+              class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {subTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
+            >
               <span>Pending Records</span>
               <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {subTab === 'details' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredPendingRecords.length}</span>
             </button>
           </div>
+
           <div class="flex items-center gap-2">
-            <div class="relative">
-              <Search size={12} class="absolute left-2.5 top-2 text-slate-400" />
+            {#if activeFilterCount > 0}
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-bold text-blue-700">
+                <Filter size={10} /> {activeFilterCount} active
+              </span>
+              <button
+                type="button"
+                on:click={resetTableFilters}
+                class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-600 hover:text-slate-900 cursor-pointer transition-colors"
+              >
+                <RotateCcw size={11} /> Reset
+              </button>
+            {/if}
+            <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 bg-slate-50/80 text-[11px] text-slate-600">
+              <ArrowUpDown size={11} class="text-slate-400 shrink-0" />
+              {#if subTab === 'site'}
+                <select bind:value={siteSort} class="bg-transparent text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer">
+                  <option value="pct_asc">Sort: Lowest % Complete</option>
+                  <option value="incomplete_desc">Sort: Most Incomplete</option>
+                  <option value="critical_desc">Sort: Most Critical</option>
+                  <option value="country_asc">Sort: Country / Source</option>
+                </select>
+              {:else if subTab === 'subject'}
+                <select bind:value={subjectSort} on:change={() => (subjectPage = 1)} class="bg-transparent text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer">
+                  <option value="pct_asc">Sort: Lowest Domain %</option>
+                  <option value="days_desc">Sort: Most Days Open</option>
+                  <option value="id_asc">Sort: Subject ID</option>
+                </select>
+              {:else}
+                <select bind:value={pendingSort} on:change={() => (pendingPage = 1)} class="bg-transparent text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer">
+                  <option value="crit_desc">Sort: Highest Criticality</option>
+                  <option value="days_desc">Sort: Oldest First</option>
+                  <option value="site_asc">Sort: Site ID</option>
+                  <option value="subject_asc">Sort: Subject ID</option>
+                </select>
+              {/if}
+            </div>
+          </div>
+        </div>
+
+        <!-- Polished Top Filter Bar -->
+        <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2.5">
+          <!-- Row 1: Quick Status / Criticality Segmented Pills -->
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                <Filter size={11} />
+                {subTab === 'details' ? 'Criticality' : 'Status'}
+              </span>
+
+              {#if subTab === 'details'}
+                {#each [
+                  { key: 'all', label: 'All', count: pendingCritCounts.all, dot: '' },
+                  { key: 'Critical', label: 'Critical', count: pendingCritCounts.Critical, dot: 'bg-rose-500' },
+                  { key: 'High', label: 'High', count: pendingCritCounts.High, dot: 'bg-amber-500' },
+                  { key: 'Medium', label: 'Medium', count: pendingCritCounts.Medium, dot: 'bg-slate-400' },
+                ] as pill}
+                  <button
+                    type="button"
+                    on:click={() => { criticalityFilter = pill.key; pendingPage = 1; }}
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {criticalityFilter === pill.key ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                  >
+                    {#if pill.dot}
+                      <span class="w-1.5 h-1.5 rounded-full {pill.dot}"></span>
+                    {/if}
+                    <span>{pill.label}</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {criticalityFilter === pill.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pill.count}</span>
+                  </button>
+                {/each}
+              {:else}
+                {@const counts = subTab === 'site' ? siteStatusCounts : subjectStatusCounts}
+                {#each [
+                  { key: 'all', label: 'All', count: counts.all, dot: '' },
+                  { key: 'High risk', label: 'High risk', count: counts['High risk'], dot: 'bg-rose-500' },
+                  { key: 'At risk', label: 'At risk', count: counts['At risk'], dot: 'bg-amber-500' },
+                  { key: 'On track', label: 'On track', count: counts['On track'], dot: 'bg-emerald-500' },
+                ] as pill}
+                  <button
+                    type="button"
+                    on:click={() => { statusFilter = pill.key; subjectPage = 1; }}
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {statusFilter === pill.key ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                  >
+                    {#if pill.dot}
+                      <span class="w-1.5 h-1.5 rounded-full {pill.dot}"></span>
+                    {/if}
+                    <span>{pill.label}</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {statusFilter === pill.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pill.count}</span>
+                  </button>
+                {/each}
+              {/if}
+            </div>
+
+            {#if subTab === 'site'}
+              <button
+                type="button"
+                on:click={() => (onlyCriticalSites = !onlyCriticalSites)}
+                class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {onlyCriticalSites ? 'bg-rose-600 text-white border-rose-600 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-rose-300 hover:text-rose-700'}"
+              >
+                <span class="w-1.5 h-1.5 rounded-full {onlyCriticalSites ? 'bg-white' : 'bg-rose-500'}"></span>
+                Critical Items Only
+              </button>
+            {/if}
+          </div>
+
+          <!-- Row 2: Search + Context-Aware Dropdown Filters -->
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="relative flex-1 min-w-[200px]">
+              <Search size={13} class="absolute left-2.5 top-2 text-slate-400" />
               <input
                 type="text"
                 bind:value={searchQuery}
                 on:input={() => { subjectPage = 1; pendingPage = 1; }}
-                placeholder={subTab === 'subject' ? 'Search subject, site, country...' : subTab === 'details' ? 'Search subject, issue, owner...' : 'Search site or country...'}
-                class="pl-7 pr-2.5 py-1 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-hidden focus:border-blue-500"
+                placeholder={subTab === 'subject' ? 'Search subject ID, site, country, owner...' : subTab === 'details' ? 'Search subject, site, form, issue, owner...' : 'Search site ID or country / source...'}
+                class="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
               />
+              {#if searchQuery}
+                <button
+                  type="button"
+                  on:click={() => { searchQuery = ''; subjectPage = 1; pendingPage = 1; }}
+                  class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  aria-label="Clear search"
+                >
+                  <X size={13} />
+                </button>
+              {/if}
             </div>
-            {#if subTab === 'details'}
-              <select bind:value={criticalityFilter} on:change={() => (pendingPage = 1)} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
-                <option value="all">All Criticality</option>
-                <option value="Critical">Critical</option>
-                <option value="High">High</option>
-                <option value="Medium">Medium</option>
+
+            {#if subTab === 'site'}
+              <select
+                bind:value={countryFilter}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">{currentDomain.id === 'external_data' ? 'All Sources' : 'All Countries'} ({breakdownCountries.length})</option>
+                {#each breakdownCountries as c}
+                  <option value={c}>{c}</option>
+                {/each}
+              </select>
+            {:else if subTab === 'subject'}
+              <select
+                bind:value={countryFilter}
+                on:change={() => (subjectPage = 1)}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">All Countries ({subjectCountries.length})</option>
+                {#each subjectCountries as c}
+                  <option value={c}>{c}</option>
+                {/each}
+              </select>
+              <select
+                bind:value={classificationFilter}
+                on:change={() => (subjectPage = 1)}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">All Classifications</option>
+                <option value="Hard Blocked">Hard Blocked</option>
+                <option value="Action Required">Action Required</option>
+                <option value="Conditionally Ready">Conditionally Ready</option>
+                <option value="Lock Ready">Lock Ready</option>
+              </select>
+              <select
+                bind:value={ownerFilter}
+                on:change={() => (subjectPage = 1)}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">All Owners</option>
+                {#each subjectOwners as owner}
+                  <option value={owner}>{owner}</option>
+                {/each}
               </select>
             {:else}
-              <select bind:value={statusFilter} on:change={() => (subjectPage = 1)} class="text-xs border border-slate-200 rounded-lg px-2 py-1 bg-white">
-                <option value="all">All Status</option>
-                <option value="On track">On track</option>
-                <option value="At risk">At risk</option>
-                <option value="High risk">High risk</option>
+              <select
+                bind:value={siteFilter}
+                on:change={() => (pendingPage = 1)}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">All Sites ({pendingSites.length})</option>
+                {#each pendingSites as s}
+                  <option value={s}>Site {s}</option>
+                {/each}
+              </select>
+              <select
+                bind:value={ownerFilter}
+                on:change={() => (pendingPage = 1)}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">All Owners ({pendingOwners.length})</option>
+                {#each pendingOwners as owner}
+                  <option value={owner}>{owner}</option>
+                {/each}
+              </select>
+              <select
+                bind:value={agingFilter}
+                on:change={() => (pendingPage = 1)}
+                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
+              >
+                <option value="all">All Aging</option>
+                <option value="escalated">Escalated (≥ 10d)</option>
+                <option value="overdue">Overdue (&gt; 7d)</option>
+                <option value="recent">Recent (≤ 7d)</option>
               </select>
             {/if}
           </div>
@@ -837,6 +1271,13 @@
                       </span>
                     </td>
                   </tr>
+                {:else}
+                  <tr>
+                    <td colspan="9" class="py-8 text-center text-xs text-slate-400">
+                      No rows match the current filters.
+                      <button type="button" on:click={resetTableFilters} class="ml-1.5 text-blue-600 font-semibold hover:underline cursor-pointer">Reset filters</button>
+                    </td>
+                  </tr>
                 {/each}
               </tbody>
             </table>
@@ -893,6 +1334,13 @@
                         <span class="w-1.5 h-1.5 rounded-full {dotColor(item.domainStatus)}"></span>
                         {item.domainStatus}
                       </span>
+                    </td>
+                  </tr>
+                {:else}
+                  <tr>
+                    <td colspan="8" class="py-8 text-center text-xs text-slate-400">
+                      No subjects match the current filters.
+                      <button type="button" on:click={resetTableFilters} class="ml-1.5 text-blue-600 font-semibold hover:underline cursor-pointer">Reset filters</button>
                     </td>
                   </tr>
                 {/each}

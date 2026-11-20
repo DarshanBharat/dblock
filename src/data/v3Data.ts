@@ -1077,7 +1077,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '156 forms incomplete, of which 12 are endpoint-critical (8 subjects).',
       'Site 317 (DE) has 28% forms pending entry. No site activity in last 5 days.',
-      'Data entry velocity improved by 30% in the last 2 weeks.',
       'If current velocity sustains, domain is expected to complete by 11 Dec 2026 with no impact on DBL.',
     ],
     breakdownTitle: 'Site Breakdown',
@@ -1142,7 +1141,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '14 endpoint-critical queries remain open (8 subjects). Oldest is 16 days.',
       '28 queries are overdue (> 7 days).',
-      'Query closure velocity has improved by 25% in the last 2 weeks, but needs to be sustained to meet target.',
       'If all overdue queries are resolved by 5 Dec 2026, potential to recover 1 day from predicted DBL.',
     ],
     breakdownTitle: 'Site Breakdown',
@@ -1208,7 +1206,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       'Central lab data transfer is pending (expected 10 Dec 2026). 323 records affected (24 critical subjects).',
       '48 subject records have unresolved laboratory or imaging discrepancies.',
-      'eCOA data sync issues at Site 405 (KR) – 136 assessments pending.',
       'If lab file is received by 10 Dec and all critical discrepancies resolved by 14 Dec, potential to recover up to 4 days.',
     ],
     breakdownTitle: 'Source Breakdown',
@@ -1267,7 +1264,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '6 open SAE discrepancies remain, including 2 seriousness mismatches and 1 missing follow-up.',
       'Site 405 (KR) and Site 317 (DE) contribute to 60% of open safety discrepancies.',
-      'No new critical discrepancies in the last 7 days.',
       'If all SAE discrepancies are resolved by 5 Dec 2026, potential to recover 1 day from predicted DBL.',
     ],
     breakdownTitle: 'Site Breakdown',
@@ -1331,7 +1327,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '210 terms pending coding; 32 low-confidence auto-codes require manual review.',
       'AE terms contribute to 38% of the pending workload, mainly from Site 317 (DE) and 405 (KR).',
-      'Coding turnaround time has improved by 20% in the last 2 weeks.',
       'No critical coding backend issues. Domain expected to complete by 12 Dec 2026 with no impact on DBL.',
     ],
     breakdownTitle: 'Site Breakdown',
@@ -1395,7 +1390,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '55 subjects are pending investigator signature, of which 18 are otherwise clean.',
       'Site 317 (DE) has the highest pending signatures (16 subjects) with oldest pending 14 days.',
-      '12 subjects pending signature are in the lock population.',
       'If all pending signatures are obtained by 5 Dec 2026, potential to recover 2 days from predicted DBL.',
     ],
     breakdownTitle: 'Site Breakdown',
@@ -1458,7 +1452,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '6 major deviations are open, of which 2 may impact analysis population.',
       'Site 317 (DE) has the highest number of open deviations (8), mainly visit window and eligibility related.',
-      '80% of open deviations are under review and expected to close within 2 weeks.',
       'No significant impact on DBL currently, provided open major deviations are resolved by 12 Dec 2026.',
     ],
     breakdownTitle: 'Site Breakdown',
@@ -1522,7 +1515,6 @@ export const V3_DOMAINS: DomainSpec[] = [
     insights: [
       '520 source data items pending verification/review, including 22 critical items (endpoint and safety related).',
       'Site 317 (DE) and Site 405 (KR) have highest pending SDV items.',
-      'SDR closure velocity has improved by 18% in the last 2 weeks.',
       'If pending critical SDV items are completed by 5 Dec 2026, potential to recover 1 day from predicted DBL.',
     ],
     breakdownTitle: 'Site Breakdown',
