@@ -16,6 +16,7 @@
     ShieldAlert,
     Filter,
     ChevronRight,
+    ChevronLeft,
   } from '@lucide/svelte';
   import {
     V3_STUDY_META,
@@ -63,10 +64,11 @@
     countryFilter = synced;
   }
 
-  // Visual widget state
+  // Visual widget state & pagination
   let visualMode: 'map' | 'quadrant' | 'feeds' = 'map';
   let hoveredQuadrantSite: V3SiteSpec | null = null;
-  let quickDrawerSite: V3SiteSpec | null = null;
+  let sitePage = 1;
+  let sitePageSize = 10;
 
   // Sorting state
   type SortCol =
@@ -190,6 +192,17 @@
     }
     return cmp !== 0 ? cmp * dir : b.hardGateBlockers - a.hardGateBlockers;
   });
+
+  $: totalSitePages = Math.max(1, Math.ceil(filteredSites.length / sitePageSize));
+  $: if (sitePage > totalSitePages) sitePage = 1;
+  $: pagedSites = filteredSites.slice((sitePage - 1) * sitePageSize, sitePage * sitePageSize);
+  $: visibleSitePages = (() => {
+    const pages: number[] = [];
+    const start = Math.max(1, sitePage - 2);
+    const end = Math.min(totalSitePages, start + 4);
+    for (let p = Math.max(1, end - 4); p <= end; p++) pages.push(p);
+    return pages;
+  })();
 
   $: activeFilterCount =
     (searchQuery.trim() ? 1 : 0) +
@@ -691,9 +704,17 @@
         <h3 class="text-xs font-bold text-slate-900">Site Readiness Directory</h3>
         <span class="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">{filteredSites.length} of {V3_SITES.length}</span>
       </div>
-      <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-slate-200/80 bg-slate-50 text-[10px] font-medium text-slate-500">
-        <ArrowUpDown size={10} class="text-slate-400" /> Click any column to sort · Click row to open Site Workspace
-      </span>
+      <div class="flex items-center gap-2">
+        <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-slate-200/80 bg-slate-50 text-[10px] font-medium text-slate-500">
+          <ArrowUpDown size={10} class="text-slate-400" /> Click any column to sort · Click row to open Site Workspace
+        </span>
+        <select bind:value={sitePageSize} on:change={() => (sitePage = 1)} class="border border-slate-200 rounded-lg px-2 py-1 bg-white text-xs text-slate-700 cursor-pointer">
+          <option value={10}>10 / page</option>
+          <option value={25}>25 / page</option>
+          <option value={50}>50 / page</option>
+          <option value={V3_SITES.length}>All ({V3_SITES.length})</option>
+        </select>
+      </div>
     </div>
 
     <!-- Polished Multi-Select Filter Bar -->
@@ -842,7 +863,7 @@
               </td>
             </tr>
           {:else}
-            {#each filteredSites as site}
+            {#each pagedSites as site}
               <tr
                 on:click={() => onSelectSite(site.id)}
                 class="hover:bg-blue-50/40 cursor-pointer transition-colors group"
@@ -869,18 +890,11 @@
                 <td class="px-3 py-2 text-right font-mono font-semibold {site.dblImpactDays > 0 ? 'text-amber-700' : 'text-emerald-600'}">{site.dblImpactDays > 0 ? `+${site.dblImpactDays}d` : '0d'}</td>
                 <td class="px-3 py-2 text-slate-600 max-w-[200px] truncate">{site.primaryDriver}</td>
                 <td class="px-3 py-2 text-right" on:click|stopPropagation>
-                  <div class="inline-flex items-center gap-1">
-                    <button
-                      type="button"
-                      on:click={() => (quickDrawerSite = site)}
-                      class="px-2 py-1 rounded border border-slate-200 bg-white hover:bg-slate-50 text-[10px] font-semibold text-slate-600 cursor-pointer"
-                    >Quick View</button>
-                    <button
-                      type="button"
-                      on:click={() => onSelectSite(site.id)}
-                      class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
-                    >Open <ExternalLink size={10} /></button>
-                  </div>
+                  <button
+                    type="button"
+                    on:click={() => onSelectSite(site.id)}
+                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
+                  >Open <ExternalLink size={10} /></button>
                 </td>
               </tr>
             {/each}
@@ -888,74 +902,39 @@
         </tbody>
       </table>
     </div>
-  </div>
-</div>
 
-<!-- Quick Site Preview Drawer -->
-{#if quickDrawerSite}
-  <div class="fixed inset-0 z-50 flex justify-end bg-slate-900/35 backdrop-blur-[1px]" role="dialog" aria-modal="true">
-    <div class="w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col">
-      <div class="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-        <div>
-          <div class="text-xs font-bold text-slate-900">Site {quickDrawerSite.id} · {quickDrawerSite.country}</div>
-          <div class="text-[11px] text-slate-500">{quickDrawerSite.name}</div>
-        </div>
-        <button type="button" on:click={() => (quickDrawerSite = null)} class="p-1 rounded hover:bg-slate-200 text-slate-500 cursor-pointer">
-          <X size={16} />
+    <!-- Pagination Footer -->
+    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+      <span class="text-slate-500">
+        Showing {filteredSites.length === 0 ? 0 : (sitePage - 1) * sitePageSize + 1}–{Math.min(sitePage * sitePageSize, filteredSites.length)} of {filteredSites.length} sites · Page {sitePage} of {totalSitePages}
+      </span>
+      <div class="flex items-center gap-1.5">
+        <button
+          type="button"
+          disabled={sitePage <= 1}
+          on:click={() => (sitePage = Math.max(1, sitePage - 1))}
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50"
+        >
+          <ChevronLeft size={13} /> Prev
         </button>
-      </div>
-      <div class="p-4 space-y-4 flex-1 overflow-y-auto text-xs">
-        <div class="grid grid-cols-3 gap-2">
-          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
-            <div class="text-[10px] text-slate-500 font-semibold">Readiness</div>
-            <div class="text-lg font-extrabold text-slate-900">{quickDrawerSite.readiness}%</div>
-          </div>
-          <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200/80">
-            <div class="text-[10px] text-slate-500 font-semibold">DBL Impact</div>
-            <div class="text-lg font-extrabold text-amber-700">+{quickDrawerSite.dblImpactDays}d</div>
-          </div>
-          <div class="p-2.5 rounded-lg bg-rose-50/70 border border-rose-200/80">
-            <div class="text-[10px] text-rose-600 font-semibold">Hard Gates</div>
-            <div class="text-lg font-extrabold text-rose-700">{quickDrawerSite.hardGateBlockers}</div>
-          </div>
-        </div>
-
-        <div class="space-y-1.5">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Site Profile</div>
-          <div class="p-3 rounded-lg border border-slate-200/80 space-y-1">
-            <div class="flex justify-between"><span class="text-slate-500">Principal Investigator</span><span class="font-semibold text-slate-900">{quickDrawerSite.piName}</span></div>
-            <div class="flex justify-between"><span class="text-slate-500">Enrolled Subjects</span><span class="font-semibold text-slate-900">{quickDrawerSite.enrolled}</span></div>
-            <div class="flex justify-between"><span class="text-slate-500">Status</span><span class="font-bold text-slate-900">{quickDrawerSite.riskLevel}</span></div>
-          </div>
-        </div>
-
-        <div class="space-y-1.5">
-          <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Top Risk Drivers</div>
-          <ul class="space-y-1.5">
-            {#each quickDrawerSite.riskDrivers as drv}
-              <li class="flex items-start gap-2 p-2 rounded-lg bg-amber-50/60 border border-amber-200/70 text-slate-700">
-                <AlertTriangle size={13} class="text-amber-600 shrink-0 mt-0.5" />
-                <div>
-                  <div class="font-bold text-slate-900">{drv.title} <span class="text-rose-600">(+{drv.impactDays}d)</span></div>
-                  <div class="text-[11px] text-slate-600">{drv.detail}</div>
-                </div>
-              </li>
-            {/each}
-          </ul>
-        </div>
-      </div>
-      <div class="p-4 border-t border-slate-200 bg-slate-50 flex items-center gap-2">
+        {#each visibleSitePages as p}
+          <button
+            type="button"
+            on:click={() => (sitePage = p)}
+            class="px-2.5 py-1 rounded-lg border text-xs font-semibold cursor-pointer {sitePage === p ? 'bg-blue-600 text-white border-blue-600' : 'border-slate-200 text-slate-700 hover:bg-slate-50'}"
+          >
+            {p}
+          </button>
+        {/each}
         <button
           type="button"
-          on:click={() => (quickDrawerSite = null)}
-          class="px-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-700 cursor-pointer"
-        >Close</button>
-        <button
-          type="button"
-          on:click={() => { const id = quickDrawerSite?.id; quickDrawerSite = null; if (id) onSelectSite(id); }}
-          class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer"
-        >Open Full Site Workspace <ExternalLink size={12} /></button>
+          disabled={sitePage >= totalSitePages}
+          on:click={() => (sitePage = Math.min(totalSitePages, sitePage + 1))}
+          class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed hover:bg-slate-50"
+        >
+          Next <ChevronRight size={13} />
+        </button>
       </div>
     </div>
   </div>
-{/if}
+</div>

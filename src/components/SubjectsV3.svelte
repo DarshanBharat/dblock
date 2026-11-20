@@ -584,6 +584,32 @@
     </div>
   </div>
 
+  <!-- 7-Card Country Subject Risk Strip (Multi-Select) -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+    {#each V3_COUNTRY_SUMMARY as c}
+      {@const countrySubjs = V3_SUBJECT_ROWS.filter((s) => s.country === c.country)}
+      {@const notReadyCount = countrySubjs.filter((s) => s.classification !== 'Lock Ready').length}
+      {@const isSelected = countryFilters.includes(c.country)}
+      <button
+        type="button"
+        on:click={() => { countryFilters = toggleArrayItem(countryFilters, c.country); currentPage = 1; }}
+        class="text-left bg-white rounded-xl border p-2.5 shadow-xs hover:shadow-sm transition-all cursor-pointer {isSelected ? 'border-blue-500 ring-2 ring-blue-100 bg-blue-50/30' : 'border-slate-200/80 hover:border-slate-300'}"
+      >
+        <div class="flex items-center justify-between gap-1">
+          <span class="text-xs font-bold text-slate-900 truncate">{c.flag} {c.country}</span>
+          <span class="text-[10px] font-bold {c.readiness >= 80 ? 'text-emerald-600' : c.readiness >= 65 ? 'text-amber-600' : 'text-rose-600'}">{c.readiness}%</span>
+        </div>
+        <div class="mt-1 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+          <div class="h-full rounded-full {barColor(c.readiness)}" style="width:{c.readiness}%"></div>
+        </div>
+        <div class="mt-1.5 flex items-center justify-between text-[10px] text-slate-500">
+          <span>{countrySubjs.length} subj</span>
+          <span class="{notReadyCount > 0 ? 'text-rose-600 font-semibold' : ''}">{notReadyCount} not ready</span>
+        </div>
+      </button>
+    {/each}
+  </div>
+
   <!-- Full-Width Subject Directory & 8-Domain Tracker -->
   <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
     <!-- Sub-tabs & Page Size -->

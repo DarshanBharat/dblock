@@ -13,12 +13,19 @@
   let activeSubTab: 'overview' | 'domains' | 'open_items' = 'overview';
 </script>
 
-<div class="fixed inset-0 z-50 flex justify-end bg-slate-900/35 backdrop-blur-[1px]" role="dialog" aria-modal="true" aria-label="Subject Details">
-  <div class="w-full max-w-2xl bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col overflow-hidden">
-    <!-- Top Drawer Header -->
-    <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-      <div class="flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <span>Subject Details</span>
+<div
+  class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/45 backdrop-blur-xs"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Subject Details"
+  on:click|self={onClose}
+  on:keydown={(e) => { if (e.key === 'Escape') onClose(); }}
+>
+  <div class="w-full max-w-6xl h-[92vh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+    <!-- Top Modal Header -->
+    <div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/90">
+      <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+        <span>Subject Details Workspace</span>
       </div>
       <div class="flex items-center gap-2">
         <button type="button" on:click={onPrev} class="p-1 rounded hover:bg-slate-200 text-slate-600 cursor-pointer" aria-label="Previous subject">
