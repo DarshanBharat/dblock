@@ -28,12 +28,79 @@
   const DOMAIN_CATEGORY_MAP: Record<string, string[]> = {
     edc: ['edc data cleaning', 'edc'],
     queries: ['query resolution', 'query management'],
-    external: ['external data reconciliation', 'external data'],
+    external_data: ['external data reconciliation', 'external data'],
     safety: ['safety reconciliation'],
     coding: ['medical coding'],
-    pi_sig: ['pi signatures', 'pi signature'],
+    pi_signatures: ['pi signatures', 'pi signature'],
     deviations: ['protocol deviations'],
     sdv: ['sdv / sdr', 'sdv'],
+  };
+
+  interface DomainTemplateConfig {
+    prefix: string;
+    visits: string[];
+    forms: string[];
+    issues: string[];
+    owners: string[];
+  }
+
+  const DOMAIN_PENDING_TEMPLATES: Record<string, DomainTemplateConfig> = {
+    edc: {
+      prefix: 'EDC',
+      visits: ['Week 12', 'Week 24', 'Week 36', 'End of Study', 'Screening'],
+      forms: ['Tumor Assessment', 'Vital Signs', 'Concomitant Meds', 'Adverse Events', 'Labs', 'ePRO', 'ECG', 'Physical Exam'],
+      issues: ['Missing form entry', 'Incomplete fields (2)', 'Pending verification', 'Data entry not started', 'Collection date missing'],
+      owners: ['Site', 'Site / CRA', 'DM'],
+    },
+    queries: {
+      prefix: 'QRY',
+      visits: ['Week 12', 'Week 24', 'Week 36', 'End of Study'],
+      forms: ['Tumor Assessment / Assess Date', 'Labs / ALT', 'ePRO / Q3', 'Con Meds / Drug Start Date', 'Adverse Events', 'Vital Signs'],
+      issues: ['Value out of expected range, please verify', 'Source document date mismatch', 'Missing mandatory response', 'Relationship to study drug blank'],
+      owners: ['Site / CRA', 'DM', 'Site', 'CRA'],
+    },
+    external_data: {
+      prefix: 'EXT',
+      visits: ['Central Lab', 'Imaging', 'eCOA / ePRO', 'IRT / Drug Supply', 'Biomarkers'],
+      forms: ['Lab Result', 'CT Scan Read', 'ePRO Assessment', 'Drug Dispensation', 'ctDNA Panel'],
+      issues: ['Result not received from vendor', 'Value mismatch vs EDC (ALT/AST)', 'Image quality review pending', 'Missing ePRO sync record', 'Batch checksum reconciliation pending'],
+      owners: ['Lab Vendor', 'Vendor', 'Site', 'DM', 'Vendor Manager'],
+    },
+    safety: {
+      prefix: 'SAF',
+      visits: ['Seriousness', 'Outcome', 'Follow-up', 'Start Date', 'Causality'],
+      forms: ['Argus vs EDC (AE)', 'SAE Narrative', 'Concomitant Meds', 'Medical History', 'Safety Follow-up'],
+      issues: ['AE start date mismatch (Argus vs EDC)', 'Severity grade discrepancy', 'Outcome pending confirmation', 'Missing follow-up report', 'Causality assessment mismatch'],
+      owners: ['Safety Lead', 'DM', 'Site'],
+    },
+    coding: {
+      prefix: 'COD',
+      visits: ['AE', 'CM', 'MH', 'Procedures', 'Other'],
+      forms: ['MedDRA Verbatim Term', 'WHODrug Medication', 'Medical History Term', 'Procedure Term', 'Adverse Event Term'],
+      issues: ['Pending Coding (MedDRA)', 'Pending Review (WHODrug)', 'Low Confidence Auto-Code (<0.75)', 'Clarification query pending for coding'],
+      owners: ['Coder', 'Coding Lead', 'DM'],
+    },
+    pi_signatures: {
+      prefix: 'SIG',
+      visits: ['Week 24', 'Week 36', 'End of Study', 'Casebook'],
+      forms: ['Investigator Signature (Casebook)', 'Key Efficacy Forms', 'Safety Forms', 'End of Study Forms', 'Adverse Events'],
+      issues: ['Investigator signature pending', 'Investigator signature overdue (Completed)', 'Re-signature required post-query closure'],
+      owners: ['Site / CRA', 'Site', 'PI'],
+    },
+    deviations: {
+      prefix: 'PD',
+      visits: ['Visit Window', 'Eligibility', 'Concomitant Med', 'Procedure', 'Dosing'],
+      forms: ['Visit outside allowed window', 'Missed ECG / Lab assessment', 'Concomitant medication review', 'Study drug compliance check'],
+      issues: ['Important · Under CRA review', 'Minor · Awaiting classification', 'Major · Pending medical monitor review'],
+      owners: ['Clinical Ops', 'Medical Monitor', 'DM', 'CRA'],
+    },
+    sdv: {
+      prefix: 'SDV',
+      visits: ['Week 12', 'Week 24', 'Week 36', 'End of Study', 'Day 1'],
+      forms: ['Tumor Assessment', 'Adverse Events', 'Concomitant Meds', 'Labs', 'Vital Signs', 'Safety Follow-up'],
+      issues: ['SDV pending (On-site)', 'SDR pending (Remote)', 'Critical field SDV pending', 'Pending CRA verification'],
+      owners: ['CRA', 'DM', 'Site / CRA'],
+    },
   };
 
   $: readinessMetrics = computeCompositeReadiness(
@@ -106,26 +173,40 @@
   })();
 
   $: allDomainPendingRecords = (() => {
+    const targetCount = parseInt(currentDomain.kpi2Value.replace(/[^0-9]/g, ''), 10) || 0;
     const cats = DOMAIN_CATEGORY_MAP[currentDomain.id] || [currentDomain.name.toLowerCase()];
-    const records = currentDomain.topPendingRows.map((r) => ({ ...r }));
-    const seen = new Set(records.map((r) => `${r.subjectId}::${r.issue.toLowerCase()}`));
+    const curated = currentDomain.topPendingRows.map((r) => ({ ...r }));
+    const curatedIds = new Set(curated.map((r) => r.id));
+    const seen = new Set(curated.map((r) => `${r.subjectId}::${r.issue.toLowerCase()}`));
+    const extra: typeof curated = [];
 
-    for (const subj of V3_SUBJECT_ROWS) {
+    // Order subjects by urgency so highest-risk subjects appear first
+    const classRank: Record<string, number> = {
+      'Hard Blocked': 4,
+      'Action Required': 3,
+      'Conditionally Ready': 2,
+      'Lock Ready': 1,
+    };
+    const orderedSubjects = [...V3_SUBJECT_ROWS].sort(
+      (a, b) => (classRank[b.classification] || 0) - (classRank[a.classification] || 0) || b.daysOpen - a.daysOpen
+    );
+
+    for (const subj of orderedSubjects) {
       for (const oi of subj.openItems) {
         if (cats.some((c) => oi.category.toLowerCase().includes(c))) {
           const key = `${subj.id}::${oi.issue.toLowerCase()}`;
           if (!seen.has(key)) {
             seen.add(key);
-            records.push({
+            extra.push({
               id: oi.id,
               subjectId: subj.id,
-              siteId: `Site ${subj.siteId}`,
+              siteId: subj.siteId,
               visit: subj.timeline.find((t) => t.state === 'missed' || t.state === 'in_progress')?.label || 'Ongoing Visit',
               form: oi.id,
               issue: oi.issue,
               daysOpen: oi.daysOpen,
               criticality: oi.severity === 'Critical' ? 'Critical' : 'Medium',
-              owner: subj.owner,
+              owner: subj.owner === '—' ? 'Site / CRA' : subj.owner,
               status: oi.daysOpen >= 10 ? 'Escalated' : 'Open',
               actionLabel: 'Inspect',
             });
@@ -138,19 +219,21 @@
       );
       if (domEntry && domEntry.status === 'Action Required') {
         const key = `${subj.id}::${domEntry.details.toLowerCase()}`;
-        const hasAnyForSubj = records.some((r) => r.subjectId === subj.id);
+        const hasAnyForSubj =
+          curated.some((r) => r.subjectId === subj.id) ||
+          extra.some((r) => r.subjectId === subj.id);
         if (!hasAnyForSubj && !seen.has(key)) {
           seen.add(key);
-          records.push({
+          extra.push({
             id: `${currentDomain.id.toUpperCase()}-${subj.id}`,
             subjectId: subj.id,
-            siteId: `Site ${subj.siteId}`,
+            siteId: subj.siteId,
             visit: subj.timeline.find((t) => t.state === 'missed' || t.state === 'in_progress')?.label || 'Study Visit',
             form: currentDomain.name,
             issue: domEntry.details,
-            daysOpen: subj.daysOpen,
+            daysOpen: Math.max(2, subj.daysOpen),
             criticality: domEntry.completion < 65 ? 'Critical' : domEntry.completion < 80 ? 'High' : 'Medium',
-            owner: subj.owner,
+            owner: subj.owner === '—' ? 'Site / CRA' : subj.owner,
             status: subj.daysOpen >= 10 ? 'Escalated' : 'Open',
             actionLabel: 'Inspect',
           });
@@ -158,9 +241,62 @@
       }
     }
 
+    const critRank: Record<string, number> = { Critical: 3, High: 2, Medium: 1 };
+    extra.sort((a, b) => (critRank[b.criticality] || 0) - (critRank[a.criticality] || 0) || b.daysOpen - a.daysOpen);
+
+    let records = [...curated, ...extra];
+
+    // Reconcile count with top KPI card (currentDomain.kpi2Value)
+    if (targetCount > 0 && records.length > targetCount) {
+      records = records.slice(0, targetCount);
+    } else if (targetCount > 0 && records.length < targetCount) {
+      const tpl = DOMAIN_PENDING_TEMPLATES[currentDomain.id] || {
+        prefix: currentDomain.id.toUpperCase().slice(0, 3),
+        visits: ['Week 12', 'Week 24', 'Week 36', 'End of Study'],
+        forms: [currentDomain.name],
+        issues: ['Pending review'],
+        owners: ['Site / CRA', 'DM'],
+      };
+      const segments = currentDomain.donutSegments;
+      const needed = targetCount - records.length;
+
+      for (let i = 0; i < needed; i++) {
+        const subj = orderedSubjects[i % orderedSubjects.length];
+        const seg = segments.length ? segments[i % segments.length] : null;
+        const visit = tpl.visits[i % tpl.visits.length];
+        const form = tpl.forms[(i + Math.floor(i / tpl.visits.length)) % tpl.forms.length];
+        const baseIssue = tpl.issues[i % tpl.issues.length];
+        const issue = seg ? `${baseIssue} · ${seg.label}` : baseIssue;
+        const owner = tpl.owners[i % tpl.owners.length];
+        const daysOpen = Math.max(1, ((i * 7 + Number(subj.siteId)) % 14) + 1);
+        const criticality: 'Critical' | 'High' | 'Medium' =
+          i < Math.max(2, Math.round(needed * 0.1))
+            ? 'Critical'
+            : i < Math.round(needed * 0.4)
+            ? 'High'
+            : 'Medium';
+
+        records.push({
+          id: `${tpl.prefix}-${String(curated.length + extra.length + i + 1).padStart(4, '0')}`,
+          subjectId: subj.id,
+          siteId: subj.siteId,
+          visit,
+          form,
+          issue,
+          daysOpen,
+          criticality,
+          owner,
+          status: daysOpen >= 10 ? 'Escalated' : daysOpen >= 6 ? 'In Progress' : 'Open',
+          actionLabel: 'Inspect',
+        });
+      }
+    }
+
     return records.sort((a, b) => {
-      const rank = { Critical: 3, High: 2, Medium: 1 };
-      return (rank[b.criticality] || 0) - (rank[a.criticality] || 0) || b.daysOpen - a.daysOpen;
+      const aCurated = curatedIds.has(a.id) ? 1 : 0;
+      const bCurated = curatedIds.has(b.id) ? 1 : 0;
+      if (aCurated !== bCurated) return bCurated - aCurated;
+      return (critRank[b.criticality] || 0) - (critRank[a.criticality] || 0) || b.daysOpen - a.daysOpen;
     });
   })();
 
@@ -205,16 +341,36 @@
 
   // Trend chart geometry
   const W = 320;
-  const H = 155;
-  const PAD_L = 30;
-  const PAD_R = 12;
-  const PAD_T = 14;
+  const H = 166;
+  const PAD_L = 32;
+  const PAD_R = 14;
+  const PAD_T = 16;
   const PAD_B = 26;
   const plotW = W - PAD_L - PAD_R;
   const plotH = H - PAD_T - PAD_B;
 
+  $: trendYBounds = (() => {
+    const vals: number[] = [];
+    for (const p of currentDomain.trendSeries) {
+      if (p.actual !== null) vals.push(p.actual);
+      vals.push(p.expected);
+      if (p.forecast !== null) vals.push(p.forecast);
+    }
+    const minVal = vals.length ? Math.min(...vals) : 0;
+    const yMax = 100;
+    let yMin = minVal >= 75 ? 75 : Math.max(0, Math.floor((minVal - 2) / 10) * 10);
+    if (yMax - yMin === 70) yMin = 20;
+    const span = Math.max(10, yMax - yMin);
+    const step = span <= 25 ? 5 : span <= 50 ? 10 : span <= 60 ? 15 : 20;
+    const ticks: number[] = [];
+    for (let t = yMin; t <= yMax; t += step) ticks.push(t);
+    if (ticks[ticks.length - 1] !== yMax) ticks.push(yMax);
+    return { yMin, yMax, ticks };
+  })();
+
   $: xPos = (i: number) => PAD_L + (i / Math.max(1, currentDomain.trendSeries.length - 1)) * plotW;
-  const yPos = (val: number) => PAD_T + ((100 - val) / 100) * plotH;
+  $: yPos = (val: number) =>
+    PAD_T + ((trendYBounds.yMax - val) / Math.max(1, trendYBounds.yMax - trendYBounds.yMin)) * plotH;
 
   $: actualPoints = currentDomain.trendSeries
     .map((p, i) => (p.actual !== null ? `${xPos(i)},${yPos(p.actual)}` : null))
@@ -353,7 +509,7 @@
             <div class="flex items-center justify-between gap-1 text-xs">
               <button
                 type="button"
-                on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; }}
+                on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; criticalityFilter = 'all'; subjectPage = 1; pendingPage = 1; }}
                 class="font-semibold text-slate-800 hover:text-blue-700 truncate text-left cursor-pointer"
               >
                 {dom.name}
@@ -391,7 +547,7 @@
         {@const w = $v3DomainWeights[dom.id] ?? 0}
         <button
           type="button"
-          on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; }}
+          on:click={() => { selectedDomainId = dom.id; searchQuery = ''; statusFilter = 'all'; criticalityFilter = 'all'; subjectPage = 1; pendingPage = 1; }}
           class="w-full text-left px-3 py-2.5 rounded-lg border transition-colors flex items-center justify-between cursor-pointer {active ? 'bg-blue-50/90 border-blue-300 shadow-2xs' : 'bg-white border-transparent hover:bg-slate-50'}"
         >
           <div>
@@ -486,7 +642,7 @@
           </div>
           <div class="flex-1 flex items-center">
             <svg viewBox="0 0 {W} {H}" class="w-full h-auto">
-              {#each [0, 20, 40, 60, 80, 100] as tick}
+              {#each trendYBounds.ticks as tick}
                 <line x1={PAD_L} y1={yPos(tick)} x2={W - PAD_R} y2={yPos(tick)} stroke="#e2e8f0" stroke-width="1" />
                 <text x={PAD_L - 5} y={yPos(tick) + 3} text-anchor="end" font-size="8" fill="#94a3b8">{tick}%</text>
               {/each}
@@ -494,9 +650,22 @@
               <polyline fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="3 2" points={forecastPoints} />
               <polyline fill="none" stroke="#2563eb" stroke-width="2.2" points={actualPoints} />
               {#each currentDomain.trendSeries as p, i}
+                <circle cx={xPos(i)} cy={yPos(p.expected)} r="2" fill="#94a3b8">
+                  <title>{p.label} Expected: {p.expected}%</title>
+                </circle>
                 {#if p.actual !== null}
-                  <circle cx={xPos(i)} cy={yPos(p.actual)} r="3" fill="#2563eb" />
-                  <text x={xPos(i)} y={yPos(p.actual) - 6} text-anchor="middle" font-size="8" font-weight="700" fill="#1e293b">{p.actual}%</text>
+                  {@const labelBelow = p.expected >= p.actual}
+                  <circle cx={xPos(i)} cy={yPos(p.actual)} r="3" fill="#2563eb">
+                    <title>{p.label} Actual: {p.actual}% (Expected: {p.expected}%)</title>
+                  </circle>
+                  <text
+                    x={xPos(i)}
+                    y={labelBelow ? yPos(p.actual) + 12 : yPos(p.actual) - 6}
+                    text-anchor="middle"
+                    font-size="8"
+                    font-weight="700"
+                    fill="#1e293b"
+                  >{p.actual}%</text>
                 {/if}
                 <text x={xPos(i)} y={H - 8} text-anchor="middle" font-size="8" fill="#64748b">{p.label}</text>
               {/each}
@@ -812,7 +981,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
-                {#each (subTab === 'details' ? pagedPendingRecords : currentDomain.topPendingRows) as item}
+                {#each (subTab === 'details' ? pagedPendingRecords : allDomainPendingRecords.slice(0, 10)) as item}
                   <tr class="hover:bg-blue-50/50 transition-colors cursor-pointer" on:click={() => (drawerSubjectId = item.subjectId)}>
                     <td class="px-3 py-2 font-mono font-bold text-blue-700 whitespace-nowrap">{item.subjectId}</td>
                     <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{item.siteId}</td>
@@ -857,7 +1026,7 @@
                   <option value={15}>15 / page</option>
                   <option value={25}>25 / page</option>
                   <option value={50}>50 / page</option>
-                  <option value={500}>All ({filteredPendingRecords.length})</option>
+                  <option value={Math.max(1000, filteredPendingRecords.length)}>All ({filteredPendingRecords.length})</option>
                 </select>
               </div>
               <div class="flex items-center gap-1.5">
