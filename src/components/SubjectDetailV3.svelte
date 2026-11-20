@@ -79,11 +79,58 @@
     ? 0
     : Math.max(1, Math.round((100 - effectiveReadiness) / 8) + hardGatesRemaining);
 
-  // Open items filtering
+  // Open & Closed Queries / Domain Items filtering
+  let itemStatusFilter: 'all' | 'Open' | 'Closed' = 'all';
   let itemSeverityFilter: 'all' | 'Critical' | 'Routine' = 'all';
-  $: filteredOpenItems = subject.openItems.filter(
-    (item) => itemSeverityFilter === 'all' || item.severity === itemSeverityFilter
-  );
+  let selectedDomainFilter: string | null = null;
+
+  function mapCategoryToDomain(cat: string): string {
+    const c = cat.toLowerCase();
+    if (c.includes('edc')) return 'EDC Data Cleaning';
+    if (c.includes('quer')) return 'Query Resolution';
+    if (c.includes('ext') || c.includes('lab')) return 'External Data Reconciliation';
+    if (c.includes('saf') || c.includes('sae')) return 'Safety Reconciliation';
+    if (c.includes('cod')) return 'Medical Coding';
+    if (c.includes('sig')) return 'PI Signatures';
+    if (c.includes('dev')) return 'Protocol Deviations';
+    if (c.includes('sdv')) return 'SDV / SDR';
+    return 'Query Resolution';
+  }
+
+  $: closedItemsForSubject = [
+    { id: `QRY-CLS-${subject.siteId}-01`, category: 'Query Resolution', domain: 'Query Resolution', issue: 'Concomitant medication start date query answered & closed', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '24 Oct 2026' },
+    { id: `QRY-CLS-${subject.siteId}-02`, category: 'Query Resolution', domain: 'Query Resolution', issue: 'RECIST target lesion measurement unit query resolved & closed', severity: 'Critical', daysOpen: 0, status: 'Closed', closedDate: '26 Oct 2026' },
+    { id: `EDC-CLS-${subject.siteId}-03`, category: 'EDC Data Cleaning', domain: 'EDC Data Cleaning', issue: 'Screening demographics, vitals & medical history forms cleaned', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '19 Oct 2026' },
+    { id: `LAB-CLS-${subject.siteId}-04`, category: 'External Data', domain: 'External Data Reconciliation', issue: 'Week 12 central laboratory chemistry panel reconciled', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '22 Oct 2026' },
+    { id: `SAE-CLS-${subject.siteId}-05`, category: 'Safety', domain: 'Safety Reconciliation', issue: 'Baseline AE/SAE terms & seriousness verified across Argus & EDC', severity: 'Critical', daysOpen: 0, status: 'Closed', closedDate: '25 Oct 2026' },
+    { id: `COD-CLS-${subject.siteId}-06`, category: 'Medical Coding', domain: 'Medical Coding', issue: 'MedDRA v26.1 & WHODrug dictionary coding approved', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '21 Oct 2026' },
+    { id: `SIG-CLS-${subject.siteId}-07`, category: 'PI Signatures', domain: 'PI Signatures', issue: 'Screening & Day 1 eCRFs electronically signed by PI', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '20 Oct 2026' },
+    { id: `PD-CLS-${subject.siteId}-08`, category: 'Protocol Deviations', domain: 'Protocol Deviations', issue: 'Week 12 visit window (+2d) deviation reviewed & closed', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '23 Oct 2026' },
+    { id: `SDV-CLS-${subject.siteId}-09`, category: 'SDV / SDR', domain: 'SDV / SDR', issue: '100% source data verification completed for Visits 1–4', severity: 'Routine', daysOpen: 0, status: 'Closed', closedDate: '27 Oct 2026' },
+  ];
+
+  $: allSubjectItems = [
+    ...subject.openItems.map((it) => ({
+      ...it,
+      domain: mapCategoryToDomain(it.category),
+      status: 'Open' as const,
+      closedDate: '—',
+    })),
+    ...closedItemsForSubject,
+  ];
+
+  $: filteredSubjectItems = allSubjectItems.filter((item) => {
+    const matchStatus = itemStatusFilter === 'all' || item.status === itemStatusFilter;
+    const matchSev = itemSeverityFilter === 'all' || item.severity === itemSeverityFilter;
+    const matchDom = !selectedDomainFilter || item.domain === selectedDomainFilter;
+    return matchStatus && matchSev && matchDom;
+  });
+
+  function filterByDomain(domainName: string) {
+    selectedDomainFilter = selectedDomainFilter === domainName ? null : domainName;
+    const el = document.getElementById('subject-items-table');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
   function classBadge(c: string): string {
     if (c === 'Lock Ready') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -415,16 +462,19 @@
             {@const isDone = row.status === 'Complete' || isSimCleared}
             {@const pct = isSimCleared ? 100 : row.completion}
             {@const domId = DOMAIN_ID_MAP[row.domain] || 'edc'}
-            <tr class="hover:bg-blue-50/30 transition-colors">
+            <tr class="hover:bg-blue-50/30 transition-colors cursor-pointer {selectedDomainFilter === row.domain ? 'bg-blue-50/60' : ''}" on:click={() => filterByDomain(row.domain)}>
               <td class="px-3 py-2">
-                <button
-                  type="button"
-                  on:click={() => onSelectDomain(domId)}
-                  class="font-bold text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1"
-                >
-                  <span>{row.domain}</span>
-                  <ExternalLink size={11} class="opacity-75" />
-                </button>
+                <div class="inline-flex items-center gap-1.5">
+                  <span class="font-bold text-slate-900">{row.domain}</span>
+                  <button
+                    type="button"
+                    on:click|stopPropagation={() => onSelectDomain(domId)}
+                    class="p-0.5 rounded hover:bg-blue-100 text-blue-600 cursor-pointer"
+                    title="Go to {row.domain} Clinical Domain page"
+                  >
+                    <ExternalLink size={11} />
+                  </button>
+                </div>
               </td>
               <td class="px-3 py-2">
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border {isDone ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-rose-50 text-rose-700 border-rose-200'}">
@@ -440,7 +490,7 @@
                   </div>
                 </div>
               </td>
-              <td class="px-3 py-2 text-center">
+              <td class="px-3 py-2 text-center" on:click|stopPropagation>
                 {#if row.status !== 'Complete'}
                   <label class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white border border-slate-200 text-[10px] font-semibold text-slate-700 cursor-pointer hover:border-emerald-400">
                     <input
@@ -455,12 +505,15 @@
                   <span class="text-[10px] font-semibold text-emerald-600">Passed</span>
                 {/if}
               </td>
-              <td class="px-3 py-2 text-right">
+              <td class="px-3 py-2 text-right" on:click|stopPropagation>
                 <button
                   type="button"
-                  on:click={() => onSelectDomain(domId)}
-                  class="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white text-[10px] font-bold transition-colors cursor-pointer"
-                >Open Domain <ChevronRight size={11} /></button>
+                  on:click={() => filterByDomain(row.domain)}
+                  class="inline-flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold transition-colors cursor-pointer {selectedDomainFilter === row.domain ? 'bg-blue-600 text-white' : 'bg-blue-50 hover:bg-blue-600 text-blue-700 hover:text-white'}"
+                >
+                  {selectedDomainFilter === row.domain ? 'Filtered ✓' : 'Open Domain'}
+                  <ChevronRight size={11} />
+                </button>
               </td>
             </tr>
           {/each}
@@ -469,29 +522,57 @@
     </div>
   </div>
 
-  <!-- Full-Width Open Items & Sign-off Log -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
+  <!-- Full-Width Open & Closed Queries / Domain Items Log -->
+  <div id="subject-items-table" class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
     <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-      <div class="flex items-center gap-2">
-        <h3 class="text-xs font-bold text-slate-900">Open Items & Lock Sign-off Log</h3>
-        <span class="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">{filteredOpenItems.length} items</span>
-      </div>
-      <div class="flex items-center gap-1.5 text-[11px] font-semibold">
-        {#each ['all', 'Critical', 'Routine'] as sev}
+      <div class="flex items-center gap-2 flex-wrap">
+        <h3 class="text-xs font-bold text-slate-900">Queries & Domain Items Log (Open & Closed)</h3>
+        <span class="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">{filteredSubjectItems.length} items</span>
+        {#if selectedDomainFilter}
           <button
             type="button"
-            on:click={() => (itemSeverityFilter = sev as any)}
-            class="px-2.5 py-1 rounded-full border cursor-pointer transition-colors {itemSeverityFilter === sev ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
+            on:click={() => (selectedDomainFilter = null)}
+            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold cursor-pointer"
           >
-            {sev === 'all' ? 'All Severities' : sev}
+            Domain: {selectedDomainFilter} ×
           </button>
-        {/each}
+        {/if}
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold">
+        <div class="inline-flex items-center gap-1">
+          {#each [
+            { key: 'all', label: `All (${allSubjectItems.length})` },
+            { key: 'Open', label: `Open (${subject.openItems.length})` },
+            { key: 'Closed', label: `Closed (${closedItemsForSubject.length})` },
+          ] as st}
+            <button
+              type="button"
+              on:click={() => (itemStatusFilter = st.key as any)}
+              class="px-2.5 py-1 rounded-full border cursor-pointer transition-colors {itemStatusFilter === st.key ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
+            >
+              {st.label}
+            </button>
+          {/each}
+        </div>
+        <span class="text-slate-300">|</span>
+        <div class="inline-flex items-center gap-1">
+          {#each ['all', 'Critical', 'Routine'] as sev}
+            <button
+              type="button"
+              on:click={() => (itemSeverityFilter = sev as any)}
+              class="px-2.5 py-1 rounded-full border cursor-pointer transition-colors {itemSeverityFilter === sev ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
+            >
+              {sev === 'all' ? 'All Severities' : sev}
+            </button>
+          {/each}
+        </div>
       </div>
     </div>
 
-    {#if filteredOpenItems.length === 0}
-      <div class="py-6 text-center text-xs text-emerald-700 flex items-center justify-center gap-1.5">
-        <CheckCircle2 size={15} /> No open items in this filter. Subject casebook is clean.
+    {#if filteredSubjectItems.length === 0}
+      <div class="py-6 text-center text-xs text-slate-500">
+        No items match the selected domain/status filter.
       </div>
     {:else}
       <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
@@ -499,24 +580,32 @@
           <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
               <th class="px-3 py-2 text-left">Record ID</th>
-              <th class="px-3 py-2 text-left">Domain / Category</th>
-              <th class="px-3 py-2 text-left">Blocking Issue</th>
+              <th class="px-3 py-2 text-left">Domain</th>
+              <th class="px-3 py-2 text-left">Issue / Verification Detail</th>
+              <th class="px-3 py-2 text-left">Status</th>
               <th class="px-3 py-2 text-left">Severity</th>
-              <th class="px-3 py-2 text-right">Days Open</th>
+              <th class="px-3 py-2 text-right">Age / Closed</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-100">
-            {#each filteredOpenItems as item}
+            {#each filteredSubjectItems as item}
               <tr class="hover:bg-slate-50/70">
                 <td class="px-3 py-2 font-mono font-bold text-blue-700">{item.id}</td>
-                <td class="px-3 py-2 font-semibold text-slate-800">{item.category}</td>
+                <td class="px-3 py-2 font-semibold text-slate-800">{item.domain}</td>
                 <td class="px-3 py-2 text-slate-700">{item.issue}</td>
+                <td class="px-3 py-2">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {item.status === 'Closed' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}">
+                    {item.status}
+                  </span>
+                </td>
                 <td class="px-3 py-2">
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border {item.severity === 'Critical' ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-slate-100 text-slate-700 border-slate-200'}">
                     {item.severity}
                   </span>
                 </td>
-                <td class="px-3 py-2 text-right font-mono font-bold {item.daysOpen >= 10 ? 'text-rose-600' : 'text-slate-700'}">{item.daysOpen}d</td>
+                <td class="px-3 py-2 text-right font-mono font-bold {item.status === 'Closed' ? 'text-emerald-600' : item.daysOpen >= 10 ? 'text-rose-600' : 'text-slate-700'}">
+                  {item.status === 'Closed' ? item.closedDate : `${item.daysOpen}d open`}
+                </td>
               </tr>
             {/each}
           </tbody>

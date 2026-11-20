@@ -105,8 +105,8 @@
       openWeightConfigOnLoad = showWeightConfig ?? false;
     }
     try { window.location.hash = tab; } catch (e) {}
-    if (tab === 'risk_matrix' || tab === 'sites_countries' || tab === 'subjects') {
-      if (tab !== 'subjects') selectedSiteId = null;
+    if (tab === 'risk_matrix' || tab === 'sites_countries' || tab === 'subjects' || tab === 'clinical_domains' || tab === 'actions_sim' || tab === 'command_centre' || tab === 'portfolio') {
+      if (tab !== 'subjects' && tab !== 'clinical_domains') selectedSiteId = null;
       selectedSubjectId = null;
     }
     if (tab === 'digital_twin' && readinessCategory && !showWeightConfig) {
