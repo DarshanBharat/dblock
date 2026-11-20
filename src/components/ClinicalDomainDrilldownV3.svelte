@@ -9,6 +9,7 @@
     computeCompositeReadiness,
   } from '../lib/v3Weights';
   import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
+  import MultiSelectFilter from './MultiSelectFilter.svelte';
 
   export let selectedDomainId: string = 'edc';
   export let onSelectTab: (tab: string) => void;
@@ -16,15 +17,19 @@
 
   let subTab: 'site' | 'subject' | 'details' = 'site';
   let searchQuery = '';
-  let statusFilter = 'all';
-  let criticalityFilter = 'all';
-  let countryFilter = 'all';
-  let siteFilter = 'all';
-  let ownerFilter = 'all';
-  let classificationFilter = 'all';
-  let agingFilter: 'all' | 'overdue' | 'escalated' | 'recent' = 'all';
+  let statusFilters: string[] = [];
+  let criticalityFilters: string[] = [];
+  let countryFilters: string[] = [];
+  let siteFilters: string[] = [];
+  let ownerFilters: string[] = [];
+  let classificationFilters: string[] = [];
+  let agingFilters: string[] = [];
   let onlyCriticalSites = false;
-  let selectedDonutSegment: string | null = null;
+  let selectedDonutSegments: string[] = [];
+
+  function toggleArrayItem(arr: string[], val: string): string[] {
+    return arr.includes(val) ? arr.filter((v) => v !== val) : [...arr, val];
+  }
 
   type SortDir = 'asc' | 'desc';
   type SiteSortCol = 'country' | 'siteId' | 'subjects' | 'complete' | 'incomplete' | 'pctComplete' | 'trend7d' | 'criticalItems' | 'status';
@@ -77,26 +82,22 @@
   }
 
   function handleDonutClick(label: string) {
-    if (selectedDonutSegment === label) {
-      selectedDonutSegment = null;
-    } else {
-      selectedDonutSegment = label;
-    }
+    selectedDonutSegments = toggleArrayItem(selectedDonutSegments, label);
     subjectPage = 1;
     pendingPage = 1;
   }
 
   function resetTableFilters() {
     searchQuery = '';
-    statusFilter = 'all';
-    criticalityFilter = 'all';
-    countryFilter = 'all';
-    siteFilter = 'all';
-    ownerFilter = 'all';
-    classificationFilter = 'all';
-    agingFilter = 'all';
+    statusFilters = [];
+    criticalityFilters = [];
+    countryFilters = [];
+    siteFilters = [];
+    ownerFilters = [];
+    classificationFilters = [];
+    agingFilters = [];
     onlyCriticalSites = false;
-    selectedDonutSegment = null;
+    selectedDonutSegments = [];
     subjectPage = 1;
     pendingPage = 1;
     hoveredTrendIdx = null;
@@ -205,8 +206,8 @@
     'On track': currentDomain.breakdownRows.filter((r) => r.status === 'On track').length,
   };
 
-  $: segmentPendingRecords = selectedDonutSegment
-    ? allDomainPendingRecords.filter((r) => r.segmentLabel === selectedDonutSegment)
+  $: segmentPendingRecords = selectedDonutSegments.length > 0
+    ? allDomainPendingRecords.filter((r) => selectedDonutSegments.includes(r.segmentLabel))
     : allDomainPendingRecords;
   $: segmentSiteIds = new Set(segmentPendingRecords.map((r) => r.siteId));
   $: segmentSubjectIds = new Set(segmentPendingRecords.map((r) => r.subjectId));
@@ -218,16 +219,18 @@
         !q ||
         r.country.toLowerCase().includes(q) ||
         r.siteId.toLowerCase().includes(q);
-      const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
-      const matchesCountry = countryFilter === 'all' || r.country === countryFilter;
+      const matchesStatus = statusFilters.length === 0 || statusFilters.includes(r.status);
+      const matchesCountry = countryFilters.length === 0 || countryFilters.includes(r.country);
       const matchesCritical = !onlyCriticalSites || r.criticalItems > 0;
-      const matchesSegment = !selectedDonutSegment
+      const matchesSegment = selectedDonutSegments.length === 0
         ? true
         : currentDomain.id === 'external_data'
         ? (() => {
-            const words = selectedDonutSegment.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
             const rowText = `${r.country} ${r.siteId}`.toLowerCase();
-            return words.some((w) => rowText.includes(w)) || (selectedDonutSegment === 'Other Vendors' && r.siteId === 'BIO');
+            return selectedDonutSegments.some((seg) => {
+              const words = seg.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+              return words.some((w) => rowText.includes(w)) || (seg === 'Other Vendors' && r.siteId === 'BIO');
+            });
           })()
         : segmentSiteIds.has(r.siteId);
       return matchesSearch && matchesStatus && matchesCountry && matchesCritical && matchesSegment;
@@ -304,11 +307,11 @@
         subj.country.toLowerCase().includes(q) ||
         subj.owner.toLowerCase().includes(q) ||
         (domEntry?.details || '').toLowerCase().includes(q);
-      const matchesStatus = statusFilter === 'all' || domainStatus === statusFilter;
-      const matchesCountry = countryFilter === 'all' || subj.country === countryFilter;
-      const matchesClass = classificationFilter === 'all' || subj.classification === classificationFilter;
-      const matchesOwner = ownerFilter === 'all' || subj.owner === ownerFilter;
-      const matchesSegment = !selectedDonutSegment || segmentSubjectIds.has(subj.id);
+      const matchesStatus = statusFilters.length === 0 || statusFilters.includes(domainStatus);
+      const matchesCountry = countryFilters.length === 0 || countryFilters.includes(subj.country);
+      const matchesClass = classificationFilters.length === 0 || classificationFilters.includes(subj.classification);
+      const matchesOwner = ownerFilters.length === 0 || ownerFilters.includes(subj.owner);
+      const matchesSegment = selectedDonutSegments.length === 0 || segmentSubjectIds.has(subj.id);
       return matchesSearch && matchesStatus && matchesCountry && matchesClass && matchesOwner && matchesSegment;
     })
     .sort((a, b) => {
@@ -549,15 +552,18 @@
         r.form.toLowerCase().includes(q) ||
         r.issue.toLowerCase().includes(q) ||
         r.owner.toLowerCase().includes(q);
-      const matchesCrit = criticalityFilter === 'all' || r.criticality === criticalityFilter;
-      const matchesSite = siteFilter === 'all' || r.siteId === siteFilter;
-      const matchesOwner = ownerFilter === 'all' || r.owner === ownerFilter;
-      const matchesSegment = !selectedDonutSegment || r.segmentLabel === selectedDonutSegment;
+      const matchesCrit = criticalityFilters.length === 0 || criticalityFilters.includes(r.criticality);
+      const matchesSite = siteFilters.length === 0 || siteFilters.includes(r.siteId);
+      const matchesOwner = ownerFilters.length === 0 || ownerFilters.includes(r.owner);
+      const matchesSegment = selectedDonutSegments.length === 0 || selectedDonutSegments.includes(r.segmentLabel);
       const matchesAging =
-        agingFilter === 'all' ||
-        (agingFilter === 'escalated' && r.daysOpen >= 10) ||
-        (agingFilter === 'overdue' && r.daysOpen > 7) ||
-        (agingFilter === 'recent' && r.daysOpen <= 7);
+        agingFilters.length === 0 ||
+        agingFilters.some(
+          (ag) =>
+            (ag === 'escalated' && r.daysOpen >= 10) ||
+            (ag === 'overdue' && r.daysOpen > 7) ||
+            (ag === 'recent' && r.daysOpen <= 7)
+        );
       return matchesSearch && matchesCrit && matchesSite && matchesOwner && matchesSegment && matchesAging;
     })
     .sort((a, b) => {
@@ -597,21 +603,14 @@
   $: activeFilterCount = (() => {
     let n = 0;
     if (searchQuery.trim()) n++;
-    if (selectedDonutSegment) n++;
+    if (selectedDonutSegments.length > 0) n += selectedDonutSegments.length;
     if (subTab === 'site') {
-      if (statusFilter !== 'all') n++;
-      if (countryFilter !== 'all') n++;
+      n += statusFilters.length + countryFilters.length;
       if (onlyCriticalSites) n++;
     } else if (subTab === 'subject') {
-      if (statusFilter !== 'all') n++;
-      if (countryFilter !== 'all') n++;
-      if (classificationFilter !== 'all') n++;
-      if (ownerFilter !== 'all') n++;
+      n += statusFilters.length + countryFilters.length + classificationFilters.length + ownerFilters.length;
     } else {
-      if (criticalityFilter !== 'all') n++;
-      if (siteFilter !== 'all') n++;
-      if (ownerFilter !== 'all') n++;
-      if (agingFilter !== 'all') n++;
+      n += criticalityFilters.length + siteFilters.length + ownerFilters.length + agingFilters.length;
     }
     return n;
   })();
@@ -1091,14 +1090,14 @@
         >
           <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.donutTitle}</h3>
-            {#if selectedDonutSegment}
+            {#if selectedDonutSegments.length > 0}
               <button
                 type="button"
-                on:click={() => (selectedDonutSegment = null)}
+                on:click={() => (selectedDonutSegments = [])}
                 class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 shrink-0 cursor-pointer"
-                title="Clear pie chart filter"
+                title="Clear pie chart filters"
               >
-                <span class="truncate max-w-[90px]">{selectedDonutSegment}</span>
+                <span class="truncate max-w-[100px]">{selectedDonutSegments.length === 1 ? selectedDonutSegments[0] : `${selectedDonutSegments.length} selected`}</span>
                 <X size={10} />
               </button>
             {:else if hoveredDonutIdx !== null && currentDomain.donutSegments[hoveredDonutIdx]}
@@ -1108,7 +1107,7 @@
                 <span class="truncate">{activeSeg.label}</span>
               </span>
             {:else}
-              <span class="text-[10px] font-semibold text-slate-400 shrink-0">Click slice to filter</span>
+              <span class="text-[10px] font-semibold text-slate-400 shrink-0">Click slices to filter</span>
             {/if}
           </div>
           <div class="flex-1 flex items-center gap-3">
@@ -1116,9 +1115,9 @@
               <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
               {#each donutArcs as arc, idx}
                 {@const isHovered = hoveredDonutIdx === idx}
-                {@const isSelected = selectedDonutSegment === arc.label}
+                {@const isSelected = selectedDonutSegments.includes(arc.label)}
                 {@const isActive = isHovered || isSelected}
-                {@const hasFocus = hoveredDonutIdx !== null || selectedDonutSegment !== null}
+                {@const hasFocus = hoveredDonutIdx !== null || selectedDonutSegments.length > 0}
                 {@const isDimmed = hasFocus && !isActive}
                 <circle
                   cx="55"
@@ -1144,12 +1143,16 @@
                 {@const activeSeg = currentDomain.donutSegments[hoveredDonutIdx]}
                 <text x="55" y="52" text-anchor="middle" font-size="13" font-weight="800" fill={activeSeg.color}>{activeSeg.count}</text>
                 <text x="55" y="64" text-anchor="middle" font-size="8" font-weight="700" fill="#475569">{activeSeg.pct}% share</text>
-              {:else if selectedDonutSegment}
-                {@const selSeg = currentDomain.donutSegments.find((s) => s.label === selectedDonutSegment)}
+              {:else if selectedDonutSegments.length === 1}
+                {@const selSeg = currentDomain.donutSegments.find((s) => s.label === selectedDonutSegments[0])}
                 {#if selSeg}
                   <text x="55" y="52" text-anchor="middle" font-size="13" font-weight="800" fill={selSeg.color}>{selSeg.count}</text>
                   <text x="55" y="64" text-anchor="middle" font-size="8" font-weight="700" fill="#475569">{selSeg.pct}% filtered</text>
                 {/if}
+              {:else if selectedDonutSegments.length > 1}
+                {@const selCount = currentDomain.donutSegments.filter((s) => selectedDonutSegments.includes(s.label)).reduce((acc, s) => acc + s.count, 0)}
+                <text x="55" y="52" text-anchor="middle" font-size="13" font-weight="800" fill="#2563eb">{selCount}</text>
+                <text x="55" y="64" text-anchor="middle" font-size="8" font-weight="700" fill="#475569">{selectedDonutSegments.length} slices</text>
               {:else}
                 <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{currentDomain.donutCenterValue}</text>
                 <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">{currentDomain.donutCenterLabel}</text>
@@ -1158,9 +1161,9 @@
             <div class="space-y-0.5 flex-1 min-w-0">
               {#each currentDomain.donutSegments as seg, idx}
                 {@const isHovered = hoveredDonutIdx === idx}
-                {@const isSelected = selectedDonutSegment === seg.label}
+                {@const isSelected = selectedDonutSegments.includes(seg.label)}
                 {@const isActive = isHovered || isSelected}
-                {@const hasFocus = hoveredDonutIdx !== null || selectedDonutSegment !== null}
+                {@const hasFocus = hoveredDonutIdx !== null || selectedDonutSegments.length > 0}
                 {@const isDimmed = hasFocus && !isActive}
                 <button
                   type="button"
@@ -1203,7 +1206,7 @@
           <div class="flex items-center gap-4 text-xs font-semibold">
             <button
               type="button"
-              on:click={() => { subTab = 'site'; countryFilter = 'all'; }}
+              on:click={() => { subTab = 'site'; countryFilters = []; }}
               class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {subTab === 'site' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
             >
               <span>{currentDomain.breakdownTitle}</span>
@@ -1211,7 +1214,7 @@
             </button>
             <button
               type="button"
-              on:click={() => { subTab = 'subject'; countryFilter = 'all'; ownerFilter = 'all'; subjectPage = 1; }}
+              on:click={() => { subTab = 'subject'; countryFilters = []; ownerFilters = []; subjectPage = 1; }}
               class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {subTab === 'subject' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
             >
               <span>Subject Breakdown</span>
@@ -1219,7 +1222,7 @@
             </button>
             <button
               type="button"
-              on:click={() => { subTab = 'details'; ownerFilter = 'all'; pendingPage = 1; }}
+              on:click={() => { subTab = 'details'; ownerFilters = []; pendingPage = 1; }}
               class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {subTab === 'details' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
             >
               <span>Pending Records</span>
@@ -1248,21 +1251,21 @@
 
         <!-- Polished Top Filter Bar -->
         <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-2.5 space-y-2">
-          <!-- Row 0: Pie / Category Filter Pills (synced with Donut Chart) -->
+          <!-- Row 0: Pie / Category Filter Pills (synced with Donut Chart, multi-select) -->
           <div class="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-200/70">
             <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
               Category
             </span>
             <button
               type="button"
-              on:click={() => { selectedDonutSegment = null; subjectPage = 1; pendingPage = 1; }}
-              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {!selectedDonutSegment ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+              on:click={() => { selectedDonutSegments = []; subjectPage = 1; pendingPage = 1; }}
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {selectedDonutSegments.length === 0 ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
             >
               <span>All</span>
-              <span class="px-1 rounded-full text-[10px] font-bold {!selectedDonutSegment ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{currentDomain.donutCenterValue}</span>
+              <span class="px-1 rounded-full text-[10px] font-bold {selectedDonutSegments.length === 0 ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{currentDomain.donutCenterValue}</span>
             </button>
             {#each currentDomain.donutSegments as seg, idx}
-              {@const isSel = selectedDonutSegment === seg.label}
+              {@const isSel = selectedDonutSegments.includes(seg.label)}
               <button
                 type="button"
                 on:click={() => handleDonutClick(seg.label)}
@@ -1277,7 +1280,7 @@
             {/each}
           </div>
 
-          <!-- Row 1: Quick Status / Criticality Segmented Pills -->
+          <!-- Row 1: Quick Status / Criticality Multi-Select Pills -->
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1">
@@ -1286,42 +1289,54 @@
               </span>
 
               {#if subTab === 'details'}
+                <button
+                  type="button"
+                  on:click={() => { criticalityFilters = []; pendingPage = 1; }}
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {criticalityFilters.length === 0 ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                >
+                  <span>All</span>
+                  <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {criticalityFilters.length === 0 ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pendingCritCounts.all}</span>
+                </button>
                 {#each [
-                  { key: 'all', label: 'All', count: pendingCritCounts.all, dot: '' },
                   { key: 'Critical', label: 'Critical', count: pendingCritCounts.Critical, dot: 'bg-rose-500' },
                   { key: 'High', label: 'High', count: pendingCritCounts.High, dot: 'bg-amber-500' },
                   { key: 'Medium', label: 'Medium', count: pendingCritCounts.Medium, dot: 'bg-slate-400' },
                 ] as pill}
+                  {@const active = criticalityFilters.includes(pill.key)}
                   <button
                     type="button"
-                    on:click={() => { criticalityFilter = pill.key; pendingPage = 1; }}
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {criticalityFilter === pill.key ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                    on:click={() => { criticalityFilters = toggleArrayItem(criticalityFilters, pill.key); pendingPage = 1; }}
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {active ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
                   >
-                    {#if pill.dot}
-                      <span class="w-1.5 h-1.5 rounded-full {pill.dot}"></span>
-                    {/if}
+                    <span class="w-1.5 h-1.5 rounded-full {pill.dot}"></span>
                     <span>{pill.label}</span>
-                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {criticalityFilter === pill.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pill.count}</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pill.count}</span>
                   </button>
                 {/each}
               {:else}
                 {@const counts = subTab === 'site' ? siteStatusCounts : subjectStatusCounts}
+                <button
+                  type="button"
+                  on:click={() => { statusFilters = []; subjectPage = 1; }}
+                  class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {statusFilters.length === 0 ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                >
+                  <span>All</span>
+                  <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {statusFilters.length === 0 ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{counts.all}</span>
+                </button>
                 {#each [
-                  { key: 'all', label: 'All', count: counts.all, dot: '' },
                   { key: 'High risk', label: 'High risk', count: counts['High risk'], dot: 'bg-rose-500' },
                   { key: 'At risk', label: 'At risk', count: counts['At risk'], dot: 'bg-amber-500' },
                   { key: 'On track', label: 'On track', count: counts['On track'], dot: 'bg-emerald-500' },
                 ] as pill}
+                  {@const active = statusFilters.includes(pill.key)}
                   <button
                     type="button"
-                    on:click={() => { statusFilter = pill.key; subjectPage = 1; }}
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {statusFilter === pill.key ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+                    on:click={() => { statusFilters = toggleArrayItem(statusFilters, pill.key); subjectPage = 1; }}
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {active ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
                   >
-                    {#if pill.dot}
-                      <span class="w-1.5 h-1.5 rounded-full {pill.dot}"></span>
-                    {/if}
+                    <span class="w-1.5 h-1.5 rounded-full {pill.dot}"></span>
                     <span>{pill.label}</span>
-                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {statusFilter === pill.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pill.count}</span>
+                    <span class="px-1.5 py-0.2 rounded-full text-[10px] font-bold {active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{pill.count}</span>
                   </button>
                 {/each}
               {/if}
@@ -1339,7 +1354,7 @@
             {/if}
           </div>
 
-          <!-- Row 2: Search + Context-Aware Dropdown Filters -->
+          <!-- Row 2: Search + Context-Aware Multi-Select Dropdown Filters -->
           <div class="flex flex-wrap items-center gap-2">
             <div class="relative flex-1 min-w-[200px]">
               <Search size={13} class="absolute left-2.5 top-2 text-slate-400" />
@@ -1363,78 +1378,59 @@
             </div>
 
             {#if subTab === 'site'}
-              <select
-                bind:value={countryFilter}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">{currentDomain.id === 'external_data' ? 'All Sources' : 'All Countries'} ({breakdownCountries.length})</option>
-                {#each breakdownCountries as c}
-                  <option value={c}>{c}</option>
-                {/each}
-              </select>
+              <MultiSelectFilter
+                label={currentDomain.id === 'external_data' ? 'Sources' : 'Countries'}
+                options={breakdownCountries.map((c) => ({ value: c, label: c }))}
+                selected={countryFilters}
+                onChange={(next) => (countryFilters = next)}
+              />
             {:else if subTab === 'subject'}
-              <select
-                bind:value={countryFilter}
-                on:change={() => (subjectPage = 1)}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">All Countries ({subjectCountries.length})</option>
-                {#each subjectCountries as c}
-                  <option value={c}>{c}</option>
-                {/each}
-              </select>
-              <select
-                bind:value={classificationFilter}
-                on:change={() => (subjectPage = 1)}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">All Classifications</option>
-                <option value="Hard Blocked">Hard Blocked</option>
-                <option value="Action Required">Action Required</option>
-                <option value="Conditionally Ready">Conditionally Ready</option>
-                <option value="Lock Ready">Lock Ready</option>
-              </select>
-              <select
-                bind:value={ownerFilter}
-                on:change={() => (subjectPage = 1)}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">All Owners</option>
-                {#each subjectOwners as owner}
-                  <option value={owner}>{owner}</option>
-                {/each}
-              </select>
+              <MultiSelectFilter
+                label="Countries"
+                options={subjectCountries.map((c) => ({ value: c, label: c }))}
+                selected={countryFilters}
+                onChange={(next) => { countryFilters = next; subjectPage = 1; }}
+              />
+              <MultiSelectFilter
+                label="Classifications"
+                options={[
+                  { value: 'Hard Blocked', label: 'Hard Blocked', dotColor: '#f43f5e' },
+                  { value: 'Action Required', label: 'Action Required', dotColor: '#f59e0b' },
+                  { value: 'Conditionally Ready', label: 'Conditionally Ready', dotColor: '#3b82f6' },
+                  { value: 'Lock Ready', label: 'Lock Ready', dotColor: '#10b981' },
+                ]}
+                selected={classificationFilters}
+                onChange={(next) => { classificationFilters = next; subjectPage = 1; }}
+              />
+              <MultiSelectFilter
+                label="Owners"
+                options={subjectOwners.map((o) => ({ value: o, label: o }))}
+                selected={ownerFilters}
+                onChange={(next) => { ownerFilters = next; subjectPage = 1; }}
+              />
             {:else}
-              <select
-                bind:value={siteFilter}
-                on:change={() => (pendingPage = 1)}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">All Sites ({pendingSites.length})</option>
-                {#each pendingSites as s}
-                  <option value={s}>Site {s}</option>
-                {/each}
-              </select>
-              <select
-                bind:value={ownerFilter}
-                on:change={() => (pendingPage = 1)}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">All Owners ({pendingOwners.length})</option>
-                {#each pendingOwners as owner}
-                  <option value={owner}>{owner}</option>
-                {/each}
-              </select>
-              <select
-                bind:value={agingFilter}
-                on:change={() => (pendingPage = 1)}
-                class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white text-slate-700 font-medium focus:outline-hidden focus:border-blue-500 cursor-pointer"
-              >
-                <option value="all">All Aging</option>
-                <option value="escalated">Escalated (≥ 10d)</option>
-                <option value="overdue">Overdue (&gt; 7d)</option>
-                <option value="recent">Recent (≤ 7d)</option>
-              </select>
+              <MultiSelectFilter
+                label="Sites"
+                options={pendingSites.map((s) => ({ value: s, label: `Site ${s}` }))}
+                selected={siteFilters}
+                onChange={(next) => { siteFilters = next; pendingPage = 1; }}
+              />
+              <MultiSelectFilter
+                label="Owners"
+                options={pendingOwners.map((o) => ({ value: o, label: o }))}
+                selected={ownerFilters}
+                onChange={(next) => { ownerFilters = next; pendingPage = 1; }}
+              />
+              <MultiSelectFilter
+                label="Aging"
+                options={[
+                  { value: 'escalated', label: 'Escalated (≥ 10d)', dotColor: '#f43f5e' },
+                  { value: 'overdue', label: 'Overdue (> 7d)', dotColor: '#f59e0b' },
+                  { value: 'recent', label: 'Recent (≤ 7d)', dotColor: '#10b981' },
+                ]}
+                selected={agingFilters}
+                onChange={(next) => { agingFilters = next; pendingPage = 1; }}
+              />
             {/if}
           </div>
         </div>

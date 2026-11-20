@@ -1,253 +1,699 @@
 <script lang="ts">
-  import { ArrowLeft, AlertTriangle, CheckCircle2, ChevronRight, Sliders } from '@lucide/svelte';
   import {
+    ArrowLeft,
+    AlertTriangle,
+    CheckCircle2,
+    Clock,
+    SlidersHorizontal,
+    Search,
+    X,
+    RotateCcw,
+    ArrowUpDown,
+    ArrowUp,
+    ArrowDown,
+    Activity,
+    Users,
+    ShieldAlert,
+    Calendar,
+    Sparkles,
+    ChevronRight,
+  } from '@lucide/svelte';
+  import {
+    V3_STUDY_META,
     V3_SITES,
     V3_SUBJECT_ROWS,
     V3_ACTIONS,
-    type V3SiteSpec
+    type V3SubjectRow,
   } from '../data/v3Data';
   import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
+  import MultiSelectFilter from './MultiSelectFilter.svelte';
 
   export let siteId: string;
   export let onBackToSites: () => void;
-  export let onSelectTab: (tab: string) => void;
+  export let onSelectTab: (tab: any) => void;
 
-  let subjectFilter = 'all';
-  let drawerSubjectIndex: number | null = null;
+  $: site = V3_SITES.find((s) => s.id === siteId) || V3_SITES[0];
 
-  $: site = (V3_SITES.find((s) => s.id === siteId) || V3_SITES[0]) as V3SiteSpec;
-  $: siteSubjects = V3_SUBJECT_ROWS.filter((s) => s.siteId === site.id);
-  $: filteredSubjects = siteSubjects.filter(
-    (s) => subjectFilter === 'all' || s.classification === subjectFilter
-  );
-  $: siteActions = V3_ACTIONS.filter((a) => a.siteId === site.id || a.studySite.includes(site.id));
+  // Site subjects (fallback to deterministic subset if a site has fewer rows in mock data)
+  $: rawSiteSubjects = V3_SUBJECT_ROWS.filter((r) => r.siteId === site.id);
+  $: siteSubjects =
+    rawSiteSubjects.length > 0
+      ? rawSiteSubjects
+      : V3_SUBJECT_ROWS.slice(0, 6).map((r, idx) => ({
+          ...r,
+          id: `${site.id}-${String(idx + 1).padStart(3, '0')}`,
+          siteId: site.id,
+          country: site.country,
+        }));
 
-  function riskBadge(risk: string): string {
-    if (risk === 'On track') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (risk === 'High risk') return 'bg-rose-50 text-rose-700 border-rose-200';
-    return 'bg-amber-50 text-amber-700 border-amber-200';
+  $: siteActions = V3_ACTIONS.filter((a) => a.siteId === site.id);
+
+  // Interactive What-If recovery levers
+  let whatIfSelected: string[] = [];
+  const WHAT_IF_LEVERS = [
+    { id: 'blocker', label: 'Clear top critical query backlog', gain: 7, daysSaved: 4 },
+    { id: 'cra_sprint', label: 'Deploy 5-day remote SDV sprint', gain: 6, daysSaved: 3 },
+    { id: 'vendor_sync', label: 'Expedite lab & safety reconciliation', gain: 4, daysSaved: 2 },
+  ];
+
+  function toggleWhatIf(id: string) {
+    whatIfSelected = whatIfSelected.includes(id)
+      ? whatIfSelected.filter((x) => x !== id)
+      : [...whatIfSelected, id];
   }
 
-  function classBadge(c: string): string {
-    if (c === 'Lock Ready') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (c === 'Conditionally Ready') return 'bg-amber-50 text-amber-700 border-amber-200';
-    if (c === 'Action Required') return 'bg-orange-50 text-orange-700 border-orange-200';
-    return 'bg-rose-50 text-rose-700 border-rose-200';
+  $: whatIfGain = WHAT_IF_LEVERS.filter((l) => whatIfSelected.includes(l.id)).reduce(
+    (acc, l) => acc + l.gain,
+    0
+  );
+  $: whatIfDaysSaved = WHAT_IF_LEVERS.filter((l) => whatIfSelected.includes(l.id)).reduce(
+    (acc, l) => acc + l.daysSaved,
+    0
+  );
+  $: projectedReadiness = Math.min(99, site.readiness + whatIfGain);
+  $: baseDelayDays = site.dblImpactDays;
+  $: netDelayDays = Math.max(0, baseDelayDays - whatIfDaysSaved);
+
+  // Trajectory chart points
+  let hoveredWeekIdx: number | null = null;
+  $: trajectoryPoints = (() => {
+    const cur = site.readiness;
+    const base = Math.max(28, cur - 22);
+    const weeks = ['W-4', 'W-3', 'W-2', 'W-1', 'Current', 'W+1', 'DBL'];
+    return weeks.map((label, i) => {
+      const expected = Math.round(45 + (i / 6) * 45);
+      const actual = i <= 4 ? Math.round(base + (i / 4) * (cur - base)) : null;
+      const forecastBase = Math.min(96, Math.round(cur + ((i - 4) / 2) * Math.max(6, (88 - cur) * 0.65)));
+      const forecast = i >= 4 ? (i === 4 ? cur : forecastBase) : null;
+      const simulated =
+        i >= 4
+          ? i === 4
+            ? cur
+            : Math.min(99, forecastBase + Math.round((whatIfGain * (i - 4)) / 2))
+          : null;
+      return { label, expected, actual, forecast, simulated };
+    });
+  })();
+
+  // Site Domain Breakdown
+  $: domainBreakdown = (() => {
+    const r = site.readiness;
+    const driversText = `${site.primaryDriver} ${site.riskDrivers.map((d) => `${d.title} ${d.detail}`).join(' ')}`.toLowerCase();
+    return [
+      {
+        name: 'EDC & Queries',
+        pct: Math.max(35, Math.min(98, r - (driversText.includes('quer') || driversText.includes('edc') ? 9 : 2))),
+        open: Math.max(1, Math.round((site.hardGateBlockers + site.criticalSubjects) * 0.6)),
+      },
+      {
+        name: 'SDV & Monitoring',
+        pct: Math.max(38, Math.min(98, r - (driversText.includes('sdv') || driversText.includes('monitor') ? 11 : 1))),
+        open: Math.max(1, Math.round((site.hardGateBlockers + site.criticalSubjects) * 0.45)),
+      },
+      {
+        name: 'Safety / SAE',
+        pct: Math.max(42, Math.min(99, r - (driversText.includes('sae') || driversText.includes('safety') ? 10 : -4))),
+        open: Math.max(0, Math.round(site.hardGateBlockers * 0.35)),
+      },
+      {
+        name: 'Lab & External',
+        pct: Math.max(40, Math.min(99, r - (driversText.includes('lab') || driversText.includes('vendor') ? 12 : -2))),
+        open: Math.max(0, Math.round(site.hardGateBlockers * 0.3)),
+      },
+      {
+        name: 'Coding & Signatures',
+        pct: Math.max(48, Math.min(99, r + 4)),
+        open: Math.max(0, Math.round(site.criticalSubjects * 0.2)),
+      },
+    ];
+  })();
+
+  // Subject table filters & sorting
+  let subjectSearch = '';
+  let classificationFilters: string[] = [];
+  let domainStatusFilters: string[] = [];
+  type SubjSortCol = 'id' | 'classification' | 'readiness' | 'daysOpen' | 'owner' | 'status';
+  let subjSortCol: SubjSortCol = 'readiness';
+  let subjSortDir: 'asc' | 'desc' = 'asc';
+
+  function toggleSubjSort(col: SubjSortCol) {
+    if (subjSortCol === col) {
+      subjSortDir = subjSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      subjSortCol = col;
+      subjSortDir = col === 'daysOpen' ? 'desc' : 'asc';
+    }
+  }
+
+  function resetSubjectFilters() {
+    subjectSearch = '';
+    classificationFilters = [];
+    domainStatusFilters = [];
+  }
+
+  function getSubjectRiskStatus(subj: V3SubjectRow): string {
+    if (subj.classification === 'Hard Blocked') return 'High risk';
+    if (subj.classification === 'Action Required') return 'At risk';
+    return 'On track';
+  }
+
+  $: filteredSubjects = siteSubjects
+    .filter((subj) => {
+      const q = subjectSearch.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        subj.id.toLowerCase().includes(q) ||
+        subj.owner.toLowerCase().includes(q) ||
+        subj.classification.toLowerCase().includes(q) ||
+        subj.keyOpenItems.toLowerCase().includes(q);
+      const matchesClass =
+        classificationFilters.length === 0 || classificationFilters.includes(subj.classification);
+      const st = getSubjectRiskStatus(subj);
+      const matchesStatus = domainStatusFilters.length === 0 || domainStatusFilters.includes(st);
+      return matchesSearch && matchesClass && matchesStatus;
+    })
+    .sort((a, b) => {
+      const dir = subjSortDir === 'asc' ? 1 : -1;
+      let cmp = 0;
+      switch (subjSortCol) {
+        case 'id':
+          cmp = a.id.localeCompare(b.id);
+          break;
+        case 'classification':
+          cmp = a.classification.localeCompare(b.classification);
+          break;
+        case 'daysOpen':
+          cmp = a.daysOpen - b.daysOpen;
+          break;
+        case 'owner':
+          cmp = a.owner.localeCompare(b.owner);
+          break;
+        case 'status':
+          cmp = getSubjectRiskStatus(a).localeCompare(getSubjectRiskStatus(b));
+          break;
+        case 'readiness':
+        default:
+          cmp = a.readiness - b.readiness;
+          break;
+      }
+      return cmp * dir;
+    });
+
+  // Subject drawer state
+  let selectedSubjectIdx: number | null = null;
+  $: activeDrawerSubject =
+    selectedSubjectIdx !== null && filteredSubjects[selectedSubjectIdx]
+      ? filteredSubjects[selectedSubjectIdx]
+      : null;
+
+  function statusBadgeClass(status: string) {
+    if (status === 'High risk') return 'bg-rose-50 text-rose-700 border-rose-200';
+    if (status === 'At risk') return 'bg-amber-50 text-amber-700 border-amber-200';
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  }
+
+  function classBadgeClass(cls: string) {
+    if (cls === 'Hard Blocked') return 'bg-rose-50 text-rose-700 border-rose-200';
+    if (cls === 'Action Required') return 'bg-amber-50 text-amber-700 border-amber-200';
+    if (cls === 'Conditionally Ready') return 'bg-blue-50 text-blue-700 border-blue-200';
+    return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+  }
+
+  function barColor(pct: number) {
+    if (pct >= 85) return 'bg-emerald-500';
+    if (pct >= 70) return 'bg-blue-500';
+    if (pct >= 55) return 'bg-amber-500';
+    return 'bg-rose-500';
   }
 </script>
 
-<div class="space-y-4">
-  <!-- Site Header -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-4 sm:p-5 shadow-xs">
-    <div class="flex flex-wrap items-start justify-between gap-3 pb-3 border-b border-slate-100">
-      <div>
-        <button
-          type="button"
-          on:click={onBackToSites}
-          class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 mb-1.5 cursor-pointer"
-        >
-          <ArrowLeft size={13} /> Back to Sites & Countries
-        </button>
-        <div class="flex flex-wrap items-center gap-2.5">
-          <h1 class="text-lg font-bold text-slate-900">
-            Site {site.id} Lock Readiness and Intervention Detail
-          </h1>
-          <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold border {riskBadge(site.riskLevel)}">
-            {site.riskLevel}
-          </span>
+<div class="space-y-3">
+  <!-- Sticky Compact Executive Header -->
+  <div class="sticky top-0 z-20 -mx-1 px-1 py-1.5 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button
+        type="button"
+        on:click={onBackToSites}
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors shrink-0"
+      >
+        <ArrowLeft size={13} /> Sites
+      </button>
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <h2 class="text-sm font-bold text-slate-900 tracking-tight">Site {site.id} · {site.name}</h2>
+          <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold {statusBadgeClass(site.riskLevel)}">{site.riskLevel}</span>
+          <span class="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-semibold text-slate-700">{site.country}</span>
         </div>
-        <p class="text-xs text-slate-500 mt-0.5">
-          {site.name} · {site.country} · PI: <span class="font-medium text-slate-700">{site.piName}</span>
+        <p class="text-[11px] text-slate-500 truncate">
+          PI: <span class="font-medium text-slate-700">{site.piName}</span> · Target Freeze: <span class="font-medium text-slate-700">{site.plannedFreezeDate}</span> · {site.enrolled} Subjects Enrolled
         </p>
       </div>
+    </div>
+
+    <div class="flex items-center gap-2">
+      <button
+        type="button"
+        on:click={() => onSelectTab('domains')}
+        class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
+      >
+        Domain Drilldown
+      </button>
       <button
         type="button"
         on:click={() => onSelectTab('actions_sim')}
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold cursor-pointer"
+        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
       >
-        <Sliders size={13} /> Simulate Site Actions
+        <SlidersHorizontal size={12} /> Simulate Recovery
       </button>
     </div>
+  </div>
 
-    <!-- Site Metrics Strip -->
-    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pt-3 text-xs">
-      <div>
-        <div class="text-[11px] text-slate-400">Site Readiness</div>
-        <div class="font-bold text-slate-900 text-base">
-          {site.readiness}/100
-          <span class="text-[11px] font-normal text-slate-400">(Exp {site.expectedReadiness})</span>
-        </div>
+  <!-- 5 Executive KPI Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span>Site Readiness</span>
+        <Activity size={13} class="text-blue-600" />
       </div>
-      <div>
-        <div class="text-[11px] text-slate-400">7-Day Trend</div>
-        <div class="font-bold text-base {site.trend7d < 0 ? 'text-rose-600' : 'text-emerald-600'}">
-          {site.trend7d >= 0 ? `+${site.trend7d}` : site.trend7d} pts
-        </div>
+      <div class="mt-1 flex items-baseline gap-2">
+        <span class="text-xl font-extrabold text-slate-900">{projectedReadiness}%</span>
+        {#if whatIfGain > 0}
+          <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold">+{whatIfGain}% sim</span>
+        {:else}
+          <span class="text-[10px] font-semibold {site.readiness >= 85 ? 'text-emerald-600' : 'text-amber-600'}">Goal: {site.expectedReadiness}%</span>
+        {/if}
       </div>
-      <div>
-        <div class="text-[11px] text-slate-400">Study DBL Impact</div>
-        <div class="font-bold text-base {site.dblImpactDays > 0 ? 'text-rose-600' : 'text-emerald-600'}">
-          {site.dblImpactDays > 0 ? `+${site.dblImpactDays} days` : '0 days'}
-        </div>
+      <div class="mt-1.5 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+        <div class="h-full rounded-full {barColor(projectedReadiness)} transition-all duration-200" style="width:{projectedReadiness}%"></div>
       </div>
-      <div>
-        <div class="text-[11px] text-slate-400">Subjects (Enr / Comp / Disc)</div>
-        <div class="font-semibold text-slate-800">{site.enrolled} / {site.completed} / {site.discontinued}</div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span>Subjects</span>
+        <Users size={13} class="text-indigo-500" />
       </div>
-      <div>
-        <div class="text-[11px] text-slate-400">Data-Entry Cut-off</div>
-        <div class="font-semibold text-slate-800">{site.dataCutoffDate}</div>
+      <div class="mt-1 flex items-baseline gap-1.5">
+        <span class="text-xl font-extrabold text-slate-900">{site.enrolled}</span>
+        <span class="text-[10px] text-slate-500">enrolled</span>
       </div>
-      <div>
-        <div class="text-[11px] text-slate-400">Forecast Site-Ready</div>
-        <div class="font-bold {site.dblImpactDays > 0 ? 'text-rose-600' : 'text-emerald-700'}">{site.estReadyDate}</div>
+      <div class="mt-1 text-[10px] text-slate-500">
+        {site.completed} completed · {site.criticalSubjects} critical
       </div>
-      <div>
-        <div class="text-[11px] text-slate-400">Required Site-Ready</div>
-        <div class="font-semibold text-slate-800">{site.requiredReadyDate}</div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span>Hard Gate Blockers</span>
+        <ShieldAlert size={13} class="text-rose-500" />
       </div>
+      <div class="mt-1 flex items-baseline gap-1.5">
+        <span class="text-xl font-extrabold text-slate-900">{site.hardGateBlockers}</span>
+        <span class="text-[10px] font-bold text-rose-600">{siteActions.length} actions</span>
+      </div>
+      <div class="mt-1 text-[10px] text-slate-500">7d trend: {site.trend7d >= 0 ? `+${site.trend7d}%` : `${site.trend7d}%`}</div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span>DBL Delay Risk</span>
+        <Calendar size={13} class="text-amber-500" />
+      </div>
+      <div class="mt-1 flex items-baseline gap-1.5">
+        <span class="text-xl font-extrabold {netDelayDays === 0 ? 'text-emerald-600' : 'text-rose-600'}">
+          {netDelayDays === 0 ? 'On Time' : `+${netDelayDays}d`}
+        </span>
+        {#if whatIfDaysSaved > 0}
+          <span class="text-[10px] font-bold text-emerald-600">(-{whatIfDaysSaved}d saved)</span>
+        {/if}
+      </div>
+      <div class="mt-1 text-[10px] text-slate-500">Est Ready: {site.estReadyDate}</div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400">
+        <span>SDV & Query Pace</span>
+        <Clock size={13} class="text-emerald-500" />
+      </div>
+      <div class="mt-1 flex items-baseline gap-1.5">
+        <span class="text-xl font-extrabold text-slate-900">{Math.min(98, site.readiness + 6)}%</span>
+        <span class="text-[10px] text-slate-500">SDV complete</span>
+      </div>
+      <div class="mt-1 text-[10px] text-slate-500">Target DBL: {V3_STUDY_META.targetDbl}</div>
     </div>
   </div>
 
-  <!-- Why is this site at risk? + Sequenced Site Action Plan -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
-    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-2.5">
-      <h2 class="text-sm font-bold text-slate-900">Why is Site {site.id} at risk?</h2>
-      {#if site.riskDrivers.length === 0}
-        <div class="flex items-center gap-2 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
-          <CheckCircle2 size={15} />
-          <span>No critical-path blockers. Site {site.id} is on track for planned freeze on {site.plannedFreezeDate}.</span>
+  <!-- 3-Column Visual Intelligence Row -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-3">
+    <!-- Col 1 (5 cols): Site Readiness Trajectory Chart -->
+    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
+      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+        <div>
+          <h3 class="text-xs font-bold text-slate-900">Site Readiness Trajectory</h3>
+          <p class="text-[10px] text-slate-500">Actual vs Expected vs Forecast {whatIfGain > 0 ? '& What-If' : ''}</p>
         </div>
-      {:else}
-        <div class="space-y-2">
-          {#each site.riskDrivers as drv}
-            <div class="rounded-lg border border-slate-200/80 p-3 bg-slate-50/60 flex items-start justify-between gap-3">
-              <div class="flex items-start gap-2">
-                <AlertTriangle size={14} class="text-rose-600 shrink-0 mt-0.5" />
-                <div>
-                  <div class="text-xs font-bold text-slate-900">{drv.title}</div>
-                  <div class="text-[11px] text-slate-600 mt-0.5">{drv.detail}</div>
-                </div>
-              </div>
-              <div class="text-right shrink-0">
-                <div class="text-xs font-bold text-rose-600">+{drv.impactDays}d</div>
-                {#if drv.hardGate}
-                  <span class="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-rose-100 text-rose-700">Hard Gate</span>
-                {/if}
-              </div>
-            </div>
+        <div class="flex items-center gap-2.5 text-[10px] font-semibold">
+          <span class="inline-flex items-center gap-1 text-slate-600"><span class="w-2 h-0.5 bg-slate-400"></span>Expected</span>
+          <span class="inline-flex items-center gap-1 text-blue-700"><span class="w-2 h-0.5 bg-blue-600"></span>Actual</span>
+          <span class="inline-flex items-center gap-1 text-emerald-700"><span class="w-2 h-0.5 bg-emerald-500"></span>{whatIfGain > 0 ? 'Simulated' : 'Forecast'}</span>
+        </div>
+      </div>
+
+      <div class="relative flex-1 min-h-[175px]" on:mouseleave={() => (hoveredWeekIdx = null)} role="presentation">
+        <svg viewBox="0 0 380 155" class="w-full h-full overflow-visible">
+          {#each [30, 50, 70, 90] as tick}
+            {@const y = 130 - ((tick - 25) / 75) * 115}
+            <line x1="28" y1={y} x2="365" y2={y} stroke="#f1f5f9" stroke-width="1" />
+            <text x="4" y={y + 3} font-size="8" fill="#94a3b8">{tick}%</text>
           {/each}
+
+          <polyline
+            fill="none"
+            stroke="#94a3b8"
+            stroke-width="1.75"
+            stroke-dasharray="4 3"
+            points={trajectoryPoints.map((p, i) => `${34 + i * 54},${130 - ((p.expected - 25) / 75) * 115}`).join(' ')}
+          />
+
+          <polyline
+            fill="none"
+            stroke="#2563eb"
+            stroke-width="2.5"
+            points={trajectoryPoints
+              .filter((p) => p.actual !== null)
+              .map((p, i) => `${34 + i * 54},${130 - (((p.actual || 0) - 25) / 75) * 115}`)
+              .join(' ')}
+          />
+
+          <polyline
+            fill="none"
+            stroke="#10b981"
+            stroke-width="2.25"
+            stroke-dasharray="4 2"
+            points={trajectoryPoints
+              .map((p, i) => (p.simulated !== null ? `${34 + i * 54},${130 - ((p.simulated - 25) / 75) * 115}` : null))
+              .filter(Boolean)
+              .join(' ')}
+          />
+
+          {#each trajectoryPoints as pt, i}
+            {@const x = 34 + i * 54}
+            {@const yVal = pt.actual ?? pt.simulated ?? pt.expected}
+            {@const y = 130 - ((yVal - 25) / 75) * 115}
+            <text x={x} y="148" text-anchor="middle" font-size="8" font-weight={i === 4 ? '700' : '500'} fill={i === 4 ? '#0f172a' : '#64748b'}>{pt.label}</text>
+            <circle
+              cx={x}
+              cy={y}
+              r={hoveredWeekIdx === i ? 5 : 3.2}
+              fill={pt.actual !== null ? '#2563eb' : '#10b981'}
+              stroke="#ffffff"
+              stroke-width="1.5"
+            />
+            <rect
+              x={x - 22}
+              y="10"
+              width="44"
+              height="125"
+              fill="transparent"
+              role="presentation"
+              class="cursor-pointer"
+              on:mouseenter={() => (hoveredWeekIdx = i)}
+            />
+          {/each}
+        </svg>
+
+        {#if hoveredWeekIdx !== null && trajectoryPoints[hoveredWeekIdx]}
+          {@const pt = trajectoryPoints[hoveredWeekIdx]}
+          <div class="absolute top-1 right-1 bg-slate-900/95 text-white rounded-lg px-2.5 py-1.5 text-[10px] shadow-md pointer-events-none">
+            <div class="font-bold text-slate-200">{pt.label}</div>
+            <div>Expected: <span class="font-mono font-bold">{pt.expected}%</span></div>
+            {#if pt.actual !== null}
+              <div>Actual: <span class="font-mono font-bold text-blue-300">{pt.actual}%</span></div>
+            {/if}
+            {#if pt.simulated !== null}
+              <div>{whatIfGain > 0 ? 'Simulated' : 'Forecast'}: <span class="font-mono font-bold text-emerald-300">{pt.simulated}%</span></div>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- Col 2 (4 cols): Site Domain Readiness Breakdown -->
+    <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
+      <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+        <div>
+          <h3 class="text-xs font-bold text-slate-900">Domain Readiness Breakdown</h3>
+          <p class="text-[10px] text-slate-500">Click any domain to inspect study-wide drivers</p>
         </div>
-      {/if}
-    </div>
-
-    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-2.5">
-      <div class="flex items-center justify-between">
-        <h2 class="text-sm font-bold text-slate-900">Prioritised Site Action Plan</h2>
-        <span class="text-[11px] text-slate-400">Owner · Due · Recoverable</span>
+        <span class="text-[10px] font-semibold text-slate-400">5 domains</span>
       </div>
-      {#if siteActions.length === 0}
-        <p class="text-xs text-slate-500">No urgent site-level escalations required.</p>
-      {:else}
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-              <th class="pb-1.5 font-medium">Action</th>
-              <th class="pb-1.5 font-medium">Owner</th>
-              <th class="pb-1.5 font-medium">Due</th>
-              <th class="pb-1.5 font-medium text-right">Impact</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            {#each siteActions as act}
-              <tr>
-                <td class="py-2 font-medium text-slate-800">{act.title}</td>
-                <td class="py-2 text-slate-600">{act.owner}</td>
-                <td class="py-2 text-slate-600 whitespace-nowrap">{act.dueDate}</td>
-                <td class="py-2 text-right font-bold text-emerald-700">{act.estDblImpactDays < 0 ? `${act.estDblImpactDays}d` : '0d'}</td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      {/if}
-    </div>
-  </div>
 
-  <!-- Subject Readiness Table at Site Level -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <div>
-        <h2 class="text-sm font-bold text-slate-900">Subject Readiness Table · Site {site.id} ({filteredSubjects.length} of {siteSubjects.length} subjects)</h2>
-        <p class="text-[11px] text-slate-400">Click any subject to open the Subject Details Drawer</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-1.5 text-xs">
-        {#each ['all', 'Hard Blocked', 'Action Required', 'Conditionally Ready', 'Lock Ready'] as cls}
+      <div class="flex-1 flex flex-col justify-center space-y-2.5">
+        {#each domainBreakdown as dom}
           <button
             type="button"
-            on:click={() => (subjectFilter = cls)}
-            class="px-2.5 py-1 rounded-lg border text-xs font-medium cursor-pointer {subjectFilter === cls ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}"
+            on:click={() => onSelectTab('domains')}
+            class="w-full text-left group cursor-pointer"
           >
-            {cls === 'all' ? 'All' : cls}
+            <div class="flex items-center justify-between text-[11px] mb-1">
+              <span class="font-semibold text-slate-800 group-hover:text-blue-600 transition-colors">{dom.name}</span>
+              <span class="font-mono font-bold text-slate-700">{dom.pct}% <span class="text-[10px] font-normal text-slate-400">({dom.open} open)</span></span>
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+              <div class="h-full rounded-full {barColor(dom.pct)}" style="width:{dom.pct}%"></div>
+            </div>
           </button>
         {/each}
       </div>
     </div>
 
-    <div class="overflow-x-auto">
+    <!-- Col 3 (3 cols): Why at Risk & What-If Recovery Levers -->
+    <div class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+          <h3 class="text-xs font-bold text-slate-900">Risk Drivers & What-If</h3>
+          <Sparkles size={13} class="text-blue-600" />
+        </div>
+        <div class="space-y-1.5 mb-3">
+          {#if site.riskDrivers.length === 0}
+            <div class="flex items-start gap-1.5 text-[11px] text-emerald-800 bg-emerald-50/70 border border-emerald-200/60 rounded-lg px-2 py-1.5">
+              <CheckCircle2 size={12} class="text-emerald-600 shrink-0 mt-0.5" />
+              <span>{site.primaryDriver}</span>
+            </div>
+          {:else}
+            {#each site.riskDrivers as drv}
+              <div class="flex items-start gap-1.5 text-[11px] text-slate-700 bg-rose-50/60 border border-rose-200/60 rounded-lg px-2 py-1.5">
+                <AlertTriangle size={12} class="text-rose-500 shrink-0 mt-0.5" />
+                <div class="leading-snug">
+                  <span class="font-bold text-slate-900">{drv.title}</span>
+                  <span class="text-rose-600 font-semibold"> (+{drv.impactDays}d)</span>
+                  <div class="text-[10px] text-slate-600">{drv.detail}</div>
+                </div>
+              </div>
+            {/each}
+          {/if}
+        </div>
+      </div>
+
+      <div class="pt-2 border-t border-slate-100 space-y-1.5">
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Test Recovery Levers</div>
+        {#each WHAT_IF_LEVERS as lever}
+          {@const checked = whatIfSelected.includes(lever.id)}
+          <label class="flex items-center justify-between gap-2 p-1.5 rounded-lg border text-[11px] cursor-pointer transition-colors {checked ? 'bg-emerald-50/70 border-emerald-300 text-emerald-900' : 'bg-slate-50/70 border-slate-200/70 text-slate-700 hover:bg-slate-100/70'}">
+            <span class="flex items-center gap-1.5 min-w-0">
+              <input
+                type="checkbox"
+                checked={checked}
+                on:change={() => toggleWhatIf(lever.id)}
+                class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              />
+              <span class="truncate font-medium">{lever.label}</span>
+            </span>
+            <span class="font-mono font-bold text-emerald-700 shrink-0">+{lever.gain}%</span>
+          </label>
+        {/each}
+      </div>
+    </div>
+  </div>
+
+  <!-- Prioritised Site Action Plan -->
+  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2">
+    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <h3 class="text-xs font-bold text-slate-900">Prioritised Site Action Plan</h3>
+        <span class="px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-bold">{siteActions.length} actions</span>
+      </div>
+      <button
+        type="button"
+        on:click={() => onSelectTab('actions_sim')}
+        class="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
+      >
+        Open Action Workbench <ChevronRight size={12} />
+      </button>
+    </div>
+
+    {#if siteActions.length === 0}
+      <div class="py-4 text-center text-xs text-slate-500 flex items-center justify-center gap-1.5">
+        <CheckCircle2 size={14} class="text-emerald-500" /> No escalated site-level actions pending.
+      </div>
+    {:else}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+        {#each siteActions as act}
+          <div class="p-2.5 rounded-lg border border-slate-200/80 bg-slate-50/60 hover:bg-white transition-colors flex flex-col justify-between gap-1.5">
+            <div class="flex items-start justify-between gap-2">
+              <span class="text-xs font-bold text-slate-900 leading-snug">{act.title}</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 {act.status === 'Overdue' ? 'bg-rose-100 text-rose-700' : act.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}">{act.status}</span>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-500">
+              <span>Owner: <strong class="text-slate-700">{act.owner}</strong></span>
+              <span>Due: <strong class="text-slate-700">{act.dueDate}</strong> · <strong class="text-rose-600">+{act.estDblImpactDays}d</strong></span>
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
+  </div>
+
+  <!-- Subject Readiness Table with Multi-Select Filters -->
+  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
+    <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
+      <div class="flex items-center gap-2">
+        <h3 class="text-xs font-bold text-slate-900">Subject Readiness</h3>
+        <span class="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">{filteredSubjects.length} of {siteSubjects.length}</span>
+      </div>
+      {#if subjectSearch || classificationFilters.length > 0 || domainStatusFilters.length > 0}
+        <button
+          type="button"
+          on:click={resetSubjectFilters}
+          class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-600 cursor-pointer"
+        >
+          <RotateCcw size={11} /> Reset
+        </button>
+      {/if}
+    </div>
+
+    <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-2.5 flex flex-wrap items-center gap-2">
+      <div class="relative flex-1 min-w-[200px]">
+        <Search size={13} class="absolute left-2.5 top-2 text-slate-400" />
+        <input
+          type="text"
+          bind:value={subjectSearch}
+          placeholder="Search subject ID, owner, classification, or open items..."
+          class="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-blue-500"
+        />
+        {#if subjectSearch}
+          <button
+            type="button"
+            on:click={() => (subjectSearch = '')}
+            class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+          >
+            <X size={13} />
+          </button>
+        {/if}
+      </div>
+
+      <MultiSelectFilter
+        label="Classifications"
+        options={[
+          { value: 'Hard Blocked', label: 'Hard Blocked', dotColor: '#f43f5e' },
+          { value: 'Action Required', label: 'Action Required', dotColor: '#f59e0b' },
+          { value: 'Conditionally Ready', label: 'Conditionally Ready', dotColor: '#3b82f6' },
+          { value: 'Lock Ready', label: 'Lock Ready', dotColor: '#10b981' },
+        ]}
+        selected={classificationFilters}
+        onChange={(next) => (classificationFilters = next)}
+      />
+
+      <MultiSelectFilter
+        label="Status"
+        options={[
+          { value: 'High risk', label: 'High risk', dotColor: '#f43f5e' },
+          { value: 'At risk', label: 'At risk', dotColor: '#f59e0b' },
+          { value: 'On track', label: 'On track', dotColor: '#10b981' },
+        ]}
+        selected={domainStatusFilters}
+        onChange={(next) => (domainStatusFilters = next)}
+      />
+    </div>
+
+    <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
       <table class="w-full text-xs">
-        <thead>
-          <tr class="text-left text-[11px] text-slate-400 border-b border-slate-100">
-            <th class="pb-2 font-medium">Subject ID</th>
-            <th class="pb-2 font-medium">Status</th>
-            <th class="pb-2 font-medium text-right">Readiness</th>
-            <th class="pb-2 font-medium">Classification</th>
-            <th class="pb-2 font-medium">Key Open Items</th>
-            <th class="pb-2 font-medium">Owner</th>
-            <th class="pb-2 font-medium text-right">Action</th>
+        <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          <tr>
+            {#each [
+              { col: 'id', label: 'Subject ID', align: 'text-left' },
+              { col: 'classification', label: 'Classification', align: 'text-left' },
+              { col: 'readiness', label: 'Readiness %', align: 'text-left' },
+              { col: 'daysOpen', label: 'Days Open', align: 'text-right' },
+              { col: 'owner', label: 'Owner', align: 'text-left' },
+              { col: 'status', label: 'Status', align: 'text-left' },
+            ] as h}
+              <th class="px-3 py-2 {h.align}">
+                <button
+                  type="button"
+                  on:click={() => toggleSubjSort(h.col as SubjSortCol)}
+                  class="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
+                >
+                  <span>{h.label}</span>
+                  {#if subjSortCol === h.col}
+                    {#if subjSortDir === 'asc'}<ArrowUp size={11} class="text-blue-600" />
+                    {:else}<ArrowDown size={11} class="text-blue-600" />{/if}
+                  {:else}
+                    <ArrowUpDown size={10} class="text-slate-300" />
+                  {/if}
+                </button>
+              </th>
+            {/each}
+            <th class="px-3 py-2 text-left">Key Open Items</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-slate-100">
-          {#each filteredSubjects as s, idx}
-            <tr class="hover:bg-blue-50/50 cursor-pointer" on:click={() => (drawerSubjectIndex = idx)}>
-              <td class="py-2 font-mono font-bold text-blue-700">{s.id}</td>
-              <td class="py-2 text-slate-600">{s.status}</td>
-              <td class="py-2 text-right font-bold text-slate-900">{s.readiness}%</td>
-              <td class="py-2">
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border {classBadge(s.classification)}">
-                  {s.classification}
-                </span>
-              </td>
-              <td class="py-2 text-slate-600 max-w-xs truncate">{s.keyOpenItems}</td>
-              <td class="py-2 text-slate-600">{s.owner}</td>
-              <td class="py-2 text-right">
-                <span class="inline-flex items-center gap-0.5 text-blue-600 font-semibold">
-                  Inspect <ChevronRight size={13} />
-                </span>
-              </td>
+          {#if filteredSubjects.length === 0}
+            <tr>
+              <td colspan="7" class="px-4 py-6 text-center text-slate-500">No subjects match the selected filters.</td>
             </tr>
-          {/each}
+          {:else}
+            {#each filteredSubjects as subj, idx}
+              {@const st = getSubjectRiskStatus(subj)}
+              <tr
+                on:click={() => (selectedSubjectIdx = idx)}
+                class="hover:bg-blue-50/40 cursor-pointer transition-colors"
+              >
+                <td class="px-3 py-2 font-mono font-bold text-blue-700">{subj.id}</td>
+                <td class="px-3 py-2">
+                  <span class="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold {classBadgeClass(subj.classification)}">{subj.classification}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <div class="flex items-center gap-2">
+                    <span class="font-mono font-bold text-slate-900 w-9">{subj.readiness}%</span>
+                    <div class="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div class="h-full rounded-full {barColor(subj.readiness)}" style="width:{subj.readiness}%"></div>
+                    </div>
+                  </div>
+                </td>
+                <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">{subj.daysOpen}d</td>
+                <td class="px-3 py-2 text-slate-700">{subj.owner}</td>
+                <td class="px-3 py-2">
+                  <span class="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold {statusBadgeClass(st)}">{st}</span>
+                </td>
+                <td class="px-3 py-2 text-slate-600 max-w-[240px] truncate">{subj.keyOpenItems}</td>
+              </tr>
+            {/each}
+          {/if}
         </tbody>
       </table>
     </div>
   </div>
 </div>
 
-{#if drawerSubjectIndex !== null && filteredSubjects[drawerSubjectIndex]}
+{#if activeDrawerSubject && selectedSubjectIdx !== null}
   <SubjectDrawerV3
-    subject={filteredSubjects[drawerSubjectIndex]}
-    subjectIndex={drawerSubjectIndex}
+    subject={activeDrawerSubject}
+    subjectIndex={selectedSubjectIdx}
     totalSubjects={filteredSubjects.length}
-    onClose={() => (drawerSubjectIndex = null)}
-    onPrev={() => {
-      if (drawerSubjectIndex !== null) {
-        drawerSubjectIndex = (drawerSubjectIndex - 1 + filteredSubjects.length) % filteredSubjects.length;
-      }
-    }}
-    onNext={() => {
-      if (drawerSubjectIndex !== null) {
-        drawerSubjectIndex = (drawerSubjectIndex + 1) % filteredSubjects.length;
-      }
-    }}
-    onOpenActions={() => { drawerSubjectIndex = null; onSelectTab('actions_sim'); }}
+    onClose={() => (selectedSubjectIdx = null)}
+    onPrev={() => (selectedSubjectIdx = selectedSubjectIdx !== null && selectedSubjectIdx > 0 ? selectedSubjectIdx - 1 : filteredSubjects.length - 1)}
+    onNext={() => (selectedSubjectIdx = selectedSubjectIdx !== null && selectedSubjectIdx < filteredSubjects.length - 1 ? selectedSubjectIdx + 1 : 0)}
+    onOpenActions={() => { selectedSubjectIdx = null; onSelectTab('actions_sim'); }}
   />
 {/if}
