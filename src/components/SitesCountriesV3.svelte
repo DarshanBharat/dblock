@@ -495,21 +495,50 @@
         </div>
       {:else if visualMode === 'quadrant'}
         <div class="relative h-[250px] bg-slate-50/70 rounded-lg border border-slate-200/70 p-2">
-          <svg viewBox="0 0 460 220" class="w-full h-full overflow-visible">
-            <rect x="38" y="10" width="205" height="92" fill="#fff1f2" opacity="0.55" />
-            <rect x="243" y="10" width="205" height="92" fill="#fefce8" opacity="0.55" />
-            <rect x="38" y="102" width="205" height="92" fill="#fffbeb" opacity="0.45" />
-            <rect x="243" y="102" width="205" height="92" fill="#ecfdf5" opacity="0.55" />
-            <line x1="243" y1="10" x2="243" y2="194" stroke="#cbd5e1" stroke-dasharray="3 3" />
-            <line x1="38" y1="102" x2="448" y2="102" stroke="#cbd5e1" stroke-dasharray="3 3" />
-            <text x="44" y="22" font-size="8" font-weight="700" fill="#be123c">CRITICAL INTERVENTION</text>
-            <text x="366" y="188" font-size="8" font-weight="700" fill="#047857">LOCK READY</text>
-            <text x="38" y="210" font-size="8" fill="#64748b">30% Readiness</text>
-            <text x="235" y="210" font-size="8" fill="#64748b">75%</text>
-            <text x="425" y="210" font-size="8" fill="#64748b">100%</text>
+          <svg viewBox="0 0 470 230" class="w-full h-full overflow-visible">
+            <!-- Quadrant backgrounds (x: 46..452, y: 12..192) -->
+            <rect x="46" y="12" width="203" height="90" fill="#fff1f2" opacity="0.6" />
+            <rect x="249" y="12" width="203" height="90" fill="#fefce8" opacity="0.55" />
+            <rect x="46" y="102" width="203" height="90" fill="#fffbeb" opacity="0.45" />
+            <rect x="249" y="102" width="203" height="90" fill="#ecfdf5" opacity="0.6" />
+
+            <!-- Gridlines -->
+            {#each [2, 4, 6, 8] as yTick}
+              {@const gy = 192 - (yTick / 8) * 180}
+              <line x1="46" y1={gy} x2="452" y2={gy} stroke="#e2e8f0" stroke-width="0.75" />
+              <line x1="42" y1={gy} x2="46" y2={gy} stroke="#64748b" stroke-width="1" />
+              <text x="39" y={gy + 3} text-anchor="end" font-size="8" font-weight="600" fill="#64748b">{yTick}</text>
+            {/each}
+            <text x="39" y="195" text-anchor="end" font-size="8" font-weight="600" fill="#64748b">0</text>
+
+            {#each [30, 50, 75, 100] as xTick}
+              {@const gx = 46 + ((xTick - 30) / 70) * 406}
+              <line x1={gx} y1="12" x2={gx} y2="192" stroke="#e2e8f0" stroke-width="0.75" />
+              <line x1={gx} y1="192" x2={gx} y2="196" stroke="#64748b" stroke-width="1" />
+              <text x={gx} y="206" text-anchor="middle" font-size="8" font-weight="600" fill="#64748b">{xTick}%</text>
+            {/each}
+
+            <!-- Quadrant center dividers -->
+            <line x1="249" y1="12" x2="249" y2="192" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3" />
+            <line x1="46" y1="102" x2="452" y2="102" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3" />
+
+            <!-- Solid X & Y Axis Lines -->
+            <line x1="46" y1="12" x2="46" y2="192" stroke="#475569" stroke-width="1.25" />
+            <line x1="46" y1="192" x2="452" y2="192" stroke="#475569" stroke-width="1.25" />
+
+            <!-- Axis Titles -->
+            <text x="14" y="102" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569" transform="rotate(-90 14 102)">Hard Gate Blockers</text>
+            <text x="249" y="222" text-anchor="middle" font-size="8.5" font-weight="700" fill="#475569">Site Readiness %</text>
+
+            <!-- Quadrant Labels -->
+            <text x="52" y="23" font-size="7.5" font-weight="700" fill="#be123c">CRITICAL INTERVENTION</text>
+            <text x="446" y="23" text-anchor="end" font-size="7.5" font-weight="700" fill="#b45309">HIGH BLOCKER / WATCH</text>
+            <text x="52" y="186" font-size="7.5" font-weight="700" fill="#d97706">LOW READINESS</text>
+            <text x="446" y="186" text-anchor="end" font-size="7.5" font-weight="700" fill="#047857">LOCK READY</text>
+
             {#each filteredSites as s}
-              {@const cx = 38 + Math.max(0, Math.min(1, (s.readiness - 30) / 70)) * 410}
-              {@const cy = 194 - Math.max(0, Math.min(1, s.hardGateBlockers / 8)) * 184}
+              {@const cx = 46 + Math.max(0, Math.min(1, (s.readiness - 30) / 70)) * 406}
+              {@const cy = 192 - Math.max(0, Math.min(1, s.hardGateBlockers / 8)) * 180}
               {@const fill = s.riskLevel === 'High risk' ? '#f43f5e' : s.riskLevel === 'At risk' ? '#f59e0b' : '#10b981'}
               <circle
                 {cx}
