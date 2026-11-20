@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    ArrowLeft,
     Search,
     X,
     RotateCcw,
@@ -293,6 +294,13 @@
   <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs px-3.5 py-2.5">
     <div class="flex flex-wrap items-start justify-between gap-2 pb-2 border-b border-slate-100">
       <div>
+        <button
+          type="button"
+          on:click={() => onSelectTab('command_centre')}
+          class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 mb-0.5 cursor-pointer"
+        >
+          <ArrowLeft size={12} /> Back to Study Overview
+        </button>
         <div class="flex flex-wrap items-center gap-2">
           <h1 class="text-base font-bold text-slate-900 tracking-tight leading-tight">
             {V3_STUDY_META.protocol} <span class="text-slate-300 font-normal">|</span> Sites & Countries

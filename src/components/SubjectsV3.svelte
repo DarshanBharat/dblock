@@ -23,6 +23,7 @@
   import MultiSelectFilter from './MultiSelectFilter.svelte';
 
   export let onSelectTab: (tab: string) => void;
+  export let onSelectSubject: (subjectId: string) => void = () => {};
 
   // Multi-select filters
   let countryFilters: string[] = [];
@@ -801,7 +802,7 @@
             {#each pagedSubjects as s, idx}
               <tr
                 class="hover:bg-blue-50/40 cursor-pointer transition-colors"
-                on:click={() => (drawerSubjectIndex = (currentPage - 1) * pageSize + idx)}
+                on:click={() => onSelectSubject(s.id)}
               >
                 <td class="px-3 py-2 font-mono font-bold text-blue-700">{s.id}</td>
                 <td class="px-3 py-2 text-slate-600">{s.country}</td>
@@ -860,7 +861,7 @@
           <tbody class="divide-y divide-slate-100">
             {#each pagedSubjects as subj, idx}
               <tr
-                on:click={() => (drawerSubjectIndex = (currentPage - 1) * pageSize + idx)}
+                on:click={() => onSelectSubject(subj.id)}
                 class="hover:bg-blue-50/40 cursor-pointer transition-colors"
               >
                 <td class="px-3 py-2 sticky left-0 bg-white z-10 border-r border-slate-100">

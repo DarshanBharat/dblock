@@ -31,6 +31,7 @@
   export let siteId: string;
   export let onBackToSites: () => void;
   export let onSelectTab: (tab: any) => void;
+  export let onSelectSubject: (subjectId: string) => void = () => {};
 
   $: site = V3_SITES.find((s) => s.id === siteId) || V3_SITES[0];
 
@@ -687,7 +688,7 @@
               {#each filteredSubjects as subj, idx}
                 {@const st = getSubjectRiskStatus(subj)}
                 <tr
-                  on:click={() => (selectedSubjectIdx = idx)}
+                  on:click={() => onSelectSubject(subj.id)}
                   class="hover:bg-blue-50/40 cursor-pointer transition-colors"
                 >
                   <td class="px-3 py-2 font-mono font-bold text-blue-700">{subj.id}</td>
@@ -735,7 +736,7 @@
             {:else}
               {#each filteredSubjects as subj, idx}
                 <tr
-                  on:click={() => (selectedSubjectIdx = idx)}
+                  on:click={() => onSelectSubject(subj.id)}
                   class="hover:bg-blue-50/40 cursor-pointer transition-colors"
                 >
                   <td class="px-3 py-2 sticky left-0 bg-white z-10 border-r border-slate-100">

@@ -19,6 +19,7 @@
   import ActionsSimulationV3 from './components/ActionsSimulationV3.svelte';
   import PortfolioViewV3 from './components/PortfolioViewV3.svelte';
   import SiteInterventionV3 from './components/SiteInterventionV3.svelte';
+  import SubjectDetailV3 from './components/SubjectDetailV3.svelte';
 
   import { initialize } from './lib/workflow';
 
@@ -104,8 +105,8 @@
       openWeightConfigOnLoad = showWeightConfig ?? false;
     }
     try { window.location.hash = tab; } catch (e) {}
-    if (tab === 'risk_matrix' || tab === 'sites_countries') {
-      selectedSiteId = null;
+    if (tab === 'risk_matrix' || tab === 'sites_countries' || tab === 'subjects') {
+      if (tab !== 'subjects') selectedSiteId = null;
       selectedSubjectId = null;
     }
     if (tab === 'digital_twin' && readinessCategory && !showWeightConfig) {
@@ -196,11 +197,20 @@
             />
 
           {:else if activeTab === 'sites_countries'}
-            {#if selectedSiteId}
+            {#if selectedSubjectId}
+              <SubjectDetailV3
+                subjectId={selectedSubjectId}
+                onBack={() => (selectedSubjectId = null)}
+                onSelectSubject={handleSelectSubject}
+                onSelectSite={handleSelectSite}
+                onSelectTab={handleSelectTab}
+              />
+            {:else if selectedSiteId}
               <SiteInterventionV3
                 siteId={selectedSiteId}
                 onBackToSites={handleBackToSites}
                 onSelectTab={handleSelectTab}
+                onSelectSubject={handleSelectSubject}
               />
             {:else}
               <SitesCountriesV3
@@ -211,9 +221,20 @@
             {/if}
 
           {:else if activeTab === 'subjects'}
-            <SubjectsV3
-              onSelectTab={handleSelectTab}
-            />
+            {#if selectedSubjectId}
+              <SubjectDetailV3
+                subjectId={selectedSubjectId}
+                onBack={() => (selectedSubjectId = null)}
+                onSelectSubject={handleSelectSubject}
+                onSelectSite={handleSelectSite}
+                onSelectTab={handleSelectTab}
+              />
+            {:else}
+              <SubjectsV3
+                onSelectTab={handleSelectTab}
+                onSelectSubject={handleSelectSubject}
+              />
+            {/if}
 
           {:else if activeTab === 'actions_sim'}
             <ActionsSimulationV3
