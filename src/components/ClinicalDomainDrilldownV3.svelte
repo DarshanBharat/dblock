@@ -685,57 +685,57 @@
   })();
 </script>
 
-<div class="space-y-4">
-  <!-- Top Header -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-wrap items-center justify-between gap-3">
+<div class="flex flex-col gap-2.5 lg:h-[calc(100vh-77px)] lg:overflow-hidden">
+  <!-- Frozen Top Header -->
+  <div class="shrink-0 bg-white rounded-xl border border-slate-200/80 px-3.5 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
     <div>
       <button
         type="button"
         on:click={() => onSelectTab('command_centre')}
-        class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 mb-1 cursor-pointer"
+        class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-blue-600 mb-0.5 cursor-pointer"
       >
-        <ArrowLeft size={13} /> Back to Study Overview
+        <ArrowLeft size={12} /> Back to Study Overview
       </button>
-      <div class="flex flex-wrap items-center gap-2.5">
-        <h1 class="text-lg font-bold text-slate-900">
+      <div class="flex flex-wrap items-center gap-2">
+        <h1 class="text-base font-bold text-slate-900 leading-tight">
           {V3_STUDY_META.protocol} <span class="text-slate-300 font-normal">|</span> Clinical Domain Drill-down
         </h1>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border {statusPill(currentDomain.status)}">
+        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border {statusPill(currentDomain.status)}">
           <span class="w-1.5 h-1.5 rounded-full {dotColor(currentDomain.status)}"></span>
           {currentDomain.status}
         </span>
       </div>
-      <p class="text-xs text-slate-500 mt-0.5">{V3_STUDY_META.title}</p>
+      <p class="text-[11px] text-slate-500 mt-0.5">{V3_STUDY_META.title}</p>
     </div>
-    <div class="flex flex-col items-end gap-1.5 text-right text-xs">
+    <div class="flex flex-col items-end gap-1 text-right text-xs">
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <span class="px-2.5 py-1 rounded-full text-[11px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
+        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {totalWeight === 100 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-700 border border-amber-200'}">
           Composite Readiness: {computedReadiness}% · {totalWeight}% wt
         </span>
         <button
           type="button"
           on:click={() => (showWeightConfig = !showWeightConfig)}
-          class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border text-xs font-semibold cursor-pointer transition-colors {showWeightConfig || isCustomWeights ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}"
+          class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-semibold cursor-pointer transition-colors {showWeightConfig || isCustomWeights ? 'border-blue-300 bg-blue-50 text-blue-700' : 'border-slate-200 bg-white hover:bg-slate-50 text-slate-700'}"
         >
-          <SlidersHorizontal size={13} />
+          <SlidersHorizontal size={12} />
           <span>{showWeightConfig ? 'Hide Weightage Config' : 'Configure Weights'}</span>
           {#if isCustomWeights}
             <span class="px-1.5 py-0.5 rounded bg-blue-600 text-white text-[9px] font-bold">Custom</span>
           {/if}
         </button>
       </div>
-      <div>
+      <div class="text-[11px]">
         Target DBL: <span class="font-semibold text-slate-800">{V3_STUDY_META.targetDbl}</span>
         <span class="mx-1.5 text-slate-300">|</span>
         Predicted DBL: <span class="font-bold text-rose-600">{V3_STUDY_META.predictedDbl} (+{V3_STUDY_META.delayDays}d)</span>
         <span class="mx-1.5 text-slate-300">|</span>
-        <span class="text-[11px] text-slate-400">Last refreshed: {V3_STUDY_META.lastRefreshed}</span>
+        <span class="text-[10px] text-slate-400">Last refreshed: {V3_STUDY_META.lastRefreshed}</span>
       </div>
     </div>
   </div>
 
   {#if showWeightConfig}
-    <div class="bg-white rounded-xl border border-blue-200/90 p-4 shadow-xs space-y-3">
+    <div class="shrink-0 bg-white rounded-xl border border-blue-200/90 p-3 shadow-xs space-y-2">
       <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
         <div>
           <div class="flex items-center gap-2">
@@ -821,12 +821,12 @@
     </div>
   {/if}
 
-  <!-- Sidebar + Main Drilldown -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-    <!-- Left Domain Selector -->
-    <aside class="lg:col-span-3 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-1">
-      <div class="px-2 py-1.5 flex items-center justify-between">
-        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Clinical Domains</span>
+  <!-- Frozen Sidebar + Scrollable Main Drilldown -->
+  <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 lg:overflow-hidden">
+    <!-- Frozen Fitted Left Domain Selector -->
+    <aside class="lg:col-span-3 lg:h-full lg:overflow-y-auto bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs flex flex-col gap-0.5">
+      <div class="px-2 py-1 flex items-center justify-between shrink-0">
+        <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Clinical Domains</span>
         <span class="text-[10px] font-semibold text-slate-400">Weight</span>
       </div>
       {#each V3_DOMAINS as dom}
@@ -835,80 +835,80 @@
         <button
           type="button"
           on:click={() => { selectedDomainId = dom.id; resetTableFilters(); }}
-          class="w-full text-left px-3 py-2.5 rounded-lg border transition-colors flex items-center justify-between cursor-pointer {active ? 'bg-blue-50/90 border-blue-300 shadow-2xs' : 'bg-white border-transparent hover:bg-slate-50'}"
+          class="w-full text-left px-2.5 py-2 rounded-lg border transition-colors flex items-center justify-between cursor-pointer {active ? 'bg-blue-50/90 border-blue-300 shadow-2xs' : 'bg-white border-transparent hover:bg-slate-50'}"
         >
-          <div>
-            <div class="text-xs font-semibold {active ? 'text-blue-900' : 'text-slate-800'}">{dom.name}</div>
-            <div class="flex items-center gap-1.5 mt-1 text-[11px] text-slate-600">
+          <div class="min-w-0 pr-1.5">
+            <div class="text-xs font-semibold truncate {active ? 'text-blue-900' : 'text-slate-800'}">{dom.name}</div>
+            <div class="flex items-center gap-1.5 mt-0.5 text-[11px] text-slate-600">
               <span class="font-bold text-slate-900">{dom.readiness}%</span>
               <span class="w-1.5 h-1.5 rounded-full {dotColor(dom.status)}"></span>
               <span>{dom.status}</span>
             </div>
           </div>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1 shrink-0">
             <span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-mono font-semibold text-slate-600">{w}%</span>
-            <ChevronRight size={14} class={active ? 'text-blue-600' : 'text-slate-400'} />
+            <ChevronRight size={13} class={active ? 'text-blue-600' : 'text-slate-400'} />
           </div>
         </button>
       {/each}
     </aside>
 
-    <!-- Main Domain Content -->
-    <div class="lg:col-span-9 space-y-4">
+    <!-- Scrollable Main Domain Content -->
+    <div class="lg:col-span-9 lg:h-full lg:overflow-y-auto lg:pr-0.5 space-y-2.5">
       <!-- Domain Header & 4 KPI Cards -->
-      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
           <div>
-            <h2 class="text-base font-bold text-slate-900">{currentDomain.name}</h2>
-            <p class="text-xs text-slate-500">{currentDomain.subtitle}</p>
+            <h2 class="text-sm font-bold text-slate-900">{currentDomain.name}</h2>
+            <p class="text-[11px] text-slate-500">{currentDomain.subtitle}</p>
           </div>
-          <span class="inline-flex items-center gap-1 text-[11px] text-slate-500 border border-slate-200 rounded-lg px-2.5 py-1">
-            <Info size={12} /> View Domain Definition
+          <span class="inline-flex items-center gap-1 text-[11px] text-slate-500 border border-slate-200 rounded-lg px-2 py-0.5">
+            <Info size={11} /> View Domain Definition
           </span>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-          <div class="rounded-lg border border-slate-200/80 p-3 bg-slate-50/50">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2.5">
+          <div class="rounded-lg border border-slate-200/80 p-2.5 bg-slate-50/50">
             <div class="text-[11px] font-medium text-slate-500">Domain Readiness</div>
-            <div class="mt-1 flex items-baseline gap-2">
-              <span class="text-2xl font-bold text-slate-900">{currentDomain.readiness}%</span>
+            <div class="mt-0.5 flex items-baseline gap-2">
+              <span class="text-xl font-bold text-slate-900">{currentDomain.readiness}%</span>
               <span class="text-[11px] font-semibold {currentDomain.variance <= -10 ? 'text-rose-600' : 'text-amber-600'}">
                 {currentDomain.variance}% vs expected
               </span>
             </div>
-            <div class="mt-2 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
+            <div class="mt-1.5 h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
               <div
                 class="h-full rounded-full {currentDomain.status === 'On track' ? 'bg-emerald-500' : currentDomain.status === 'High risk' ? 'bg-rose-500' : 'bg-amber-500'}"
                 style="width: {currentDomain.readiness}%"
               ></div>
             </div>
-            <div class="mt-1.5 text-[11px] text-slate-400">Expected today: {currentDomain.expected}%</div>
+            <div class="mt-1 text-[10px] text-slate-400">Expected today: {currentDomain.expected}%</div>
           </div>
 
-          <div class="rounded-lg border border-slate-200/80 p-3 bg-slate-50/50">
+          <div class="rounded-lg border border-slate-200/80 p-2.5 bg-slate-50/50">
             <div class="text-[11px] font-medium text-slate-500">{currentDomain.kpi2Label}</div>
-            <div class="mt-1 flex items-baseline gap-2">
-              <span class="text-2xl font-bold text-slate-900">{currentDomain.kpi2Value}</span>
+            <div class="mt-0.5 flex items-baseline gap-2">
+              <span class="text-xl font-bold text-slate-900">{currentDomain.kpi2Value}</span>
               <span class="text-[11px] font-semibold text-rose-600">{currentDomain.kpi2Delta}</span>
             </div>
-            <div class="mt-3 text-[11px] text-slate-500">{currentDomain.kpi2Sub}</div>
+            <div class="mt-2 text-[11px] text-slate-500">{currentDomain.kpi2Sub}</div>
           </div>
 
-          <div class="rounded-lg border border-slate-200/80 p-3 bg-slate-50/50">
+          <div class="rounded-lg border border-slate-200/80 p-2.5 bg-slate-50/50">
             <div class="text-[11px] font-medium text-slate-500">{currentDomain.kpi3Label}</div>
-            <div class="mt-1 text-2xl font-bold text-slate-900">{currentDomain.kpi3Value}</div>
-            <div class="mt-3 text-[11px] text-slate-500">{currentDomain.kpi3Sub}</div>
+            <div class="mt-0.5 text-xl font-bold text-slate-900">{currentDomain.kpi3Value}</div>
+            <div class="mt-2 text-[11px] text-slate-500">{currentDomain.kpi3Sub}</div>
           </div>
 
-          <div class="rounded-lg border border-slate-200/80 p-3 bg-slate-50/50">
+          <div class="rounded-lg border border-slate-200/80 p-2.5 bg-slate-50/50">
             <div class="text-[11px] font-medium text-slate-500">Predicted Completion Date</div>
-            <div class="mt-1 flex items-center gap-2">
-              <span class="text-xl font-bold text-slate-900">{currentDomain.predictedCompletion}</span>
+            <div class="mt-0.5 flex items-center gap-2">
+              <span class="text-lg font-bold text-slate-900">{currentDomain.predictedCompletion}</span>
               <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded border {statusPill(currentDomain.status)}">
                 {currentDomain.status}
               </span>
             </div>
-            <div class="mt-3 text-[11px] font-semibold {currentDomain.dblImpactDays > 0 ? 'text-rose-600' : 'text-emerald-600'}">
+            <div class="mt-2 text-[11px] font-semibold {currentDomain.dblImpactDays > 0 ? 'text-rose-600' : 'text-emerald-600'}">
               Contribution to DBL delay: {currentDomain.dblImpactDays > 0 ? `+${currentDomain.dblImpactDays} day${currentDomain.dblImpactDays > 1 ? 's' : ''}` : '0 days'}
             </div>
           </div>
@@ -916,10 +916,10 @@
       </div>
 
       <!-- Charts & Key Insights Row (3 Balanced Cards) -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch">
         <!-- Trend Chart -->
-        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
-          <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.trendLabel}</h3>
             <div class="flex items-center gap-2 text-[10px] text-slate-500 shrink-0">
               <span class="inline-flex items-center gap-1"><span class="w-2 h-0.5 bg-blue-600 inline-block"></span> Act</span>
@@ -1069,11 +1069,11 @@
 
         <!-- Donut Chart -->
         <div
-          class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between"
+          class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between"
           role="presentation"
           on:mouseleave={() => (hoveredDonutIdx = null)}
         >
-          <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+          <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.donutTitle}</h3>
             {#if selectedDonutSegment}
               <button
@@ -1095,7 +1095,7 @@
               <span class="text-[10px] font-semibold text-slate-400 shrink-0">Click slice to filter</span>
             {/if}
           </div>
-          <div class="flex-1 flex items-center gap-4">
+          <div class="flex-1 flex items-center gap-3">
             <svg viewBox="0 0 110 110" class="w-24 h-24 shrink-0 overflow-visible">
               <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
               {#each donutArcs as arc, idx}
@@ -1139,7 +1139,7 @@
                 <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">{currentDomain.donutCenterLabel}</text>
               {/if}
             </svg>
-            <div class="space-y-1 flex-1 min-w-0">
+            <div class="space-y-0.5 flex-1 min-w-0">
               {#each currentDomain.donutSegments as seg, idx}
                 {@const isHovered = hoveredDonutIdx === idx}
                 {@const isSelected = selectedDonutSegment === seg.label}
@@ -1150,7 +1150,7 @@
                   type="button"
                   on:mouseenter={() => (hoveredDonutIdx = idx)}
                   on:click={() => handleDonutClick(seg.label)}
-                  class="w-full flex items-center justify-between text-[11px] gap-2 px-1.5 py-1 rounded-md cursor-pointer transition-all duration-150 text-left {isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200/80' : 'hover:bg-slate-50'} {isDimmed ? 'opacity-50' : 'opacity-100'}"
+                  class="w-full flex items-center justify-between text-[11px] gap-2 px-1.5 py-0.5 rounded-md cursor-pointer transition-all duration-150 text-left {isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200/80' : 'hover:bg-slate-50'} {isDimmed ? 'opacity-50' : 'opacity-100'}"
                 >
                   <span class="inline-flex items-center gap-1.5 truncate {isActive ? 'text-slate-900 font-semibold' : 'text-slate-700'}">
                     <span class="w-2 h-2 rounded-full shrink-0 transition-transform duration-150 {isActive ? 'scale-125' : ''}" style="background:{seg.color}"></span>
@@ -1164,14 +1164,14 @@
         </div>
 
         <!-- Key Insights -->
-        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs flex flex-col justify-between">
-          <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
+        <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center justify-between gap-2 pb-2 mb-2 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900">Key Insights</h3>
             <span class="px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-600">{Math.min(3, currentDomain.insights.length)} signals</span>
           </div>
-          <ol class="flex-1 flex flex-col justify-center space-y-2">
+          <ol class="flex-1 flex flex-col justify-center space-y-1.5">
             {#each currentDomain.insights.slice(0, 3) as ins, idx}
-              <li class="flex items-start gap-2 text-[11px] text-slate-700 leading-snug rounded-lg bg-slate-50/80 border border-slate-100 px-2.5 py-2">
+              <li class="flex items-start gap-2 text-[11px] text-slate-700 leading-snug rounded-lg bg-slate-50/80 border border-slate-100 px-2.5 py-1.5">
                 <span class="w-4 h-4 rounded-full bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">{idx + 1}</span>
                 <span>{ins}</span>
               </li>
@@ -1181,9 +1181,9 @@
       </div>
 
       <!-- Breakdown Section -->
-      <div class="bg-white rounded-xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
         <!-- Sub-tabs & Sort Header -->
-        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
           <div class="flex items-center gap-4 text-xs font-semibold">
             <button
               type="button"
