@@ -128,7 +128,18 @@
     ];
   })();
 
-  // Subject table filters & sorting
+  // Subject table tabs, filters & sorting
+  let patientTab: 'readiness' | 'domain_tracker' = 'readiness';
+  const DOMAIN_COLUMNS = [
+    { match: 'EDC Data Cleaning', short: 'EDC Cleaning' },
+    { match: 'Query Resolution', short: 'Queries' },
+    { match: 'External Data Reconciliation', short: 'Ext. Data' },
+    { match: 'Safety Reconciliation', short: 'Safety / SAE' },
+    { match: 'Medical Coding', short: 'Coding' },
+    { match: 'PI Signatures', short: 'PI Sign.' },
+    { match: 'Protocol Deviations', short: 'PDs' },
+    { match: 'SDV / SDR', short: 'SDV / SDR' },
+  ];
   let subjectSearch = '';
   let classificationFilters: string[] = [];
   let domainStatusFilters: string[] = [];
@@ -554,22 +565,41 @@
     {/if}
   </div>
 
-  <!-- Subject Readiness Table with Multi-Select Filters -->
+  <!-- Patient Readiness & 8-Domain Patient Tracker -->
   <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2.5">
     <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-100">
-      <div class="flex items-center gap-2">
-        <h3 class="text-xs font-bold text-slate-900">Subject Readiness</h3>
-        <span class="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold">{filteredSubjects.length} of {siteSubjects.length}</span>
-      </div>
-      {#if subjectSearch || classificationFilters.length > 0 || domainStatusFilters.length > 0}
+      <div class="flex items-center gap-4 text-xs font-semibold">
         <button
           type="button"
-          on:click={resetSubjectFilters}
-          class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-600 cursor-pointer"
+          on:click={() => (patientTab = 'readiness')}
+          class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {patientTab === 'readiness' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
         >
-          <RotateCcw size={11} /> Reset
+          <span>Patient Readiness</span>
+          <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {patientTab === 'readiness' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">{filteredSubjects.length}</span>
         </button>
-      {/if}
+        <button
+          type="button"
+          on:click={() => (patientTab = 'domain_tracker')}
+          class="pb-1 border-b-2 cursor-pointer inline-flex items-center gap-1.5 transition-colors {patientTab === 'domain_tracker' ? 'border-blue-600 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-800'}"
+        >
+          <span>Patient Domain Tracker (8 Domains)</span>
+          <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold {patientTab === 'domain_tracker' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">8 domains</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-2">
+        {#if subjectSearch || classificationFilters.length > 0 || domainStatusFilters.length > 0}
+          <button
+            type="button"
+            on:click={resetSubjectFilters}
+            class="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-semibold text-slate-600 cursor-pointer"
+          >
+            <RotateCcw size={11} /> Reset
+          </button>
+        {/if}
+        <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border border-slate-200/80 bg-slate-50 text-[10px] font-medium text-slate-500">
+          Click any patient row for details
+        </span>
+      </div>
     </div>
 
     <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-2.5 flex flex-wrap items-center gap-2">
@@ -578,7 +608,7 @@
         <input
           type="text"
           bind:value={subjectSearch}
-          placeholder="Search subject ID, owner, classification, or open items..."
+          placeholder="Search patient ID, owner, classification, or open items..."
           class="w-full pl-8 pr-7 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-hidden focus:border-blue-500"
         />
         {#if subjectSearch}
@@ -616,73 +646,134 @@
       />
     </div>
 
-    <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
-      <table class="w-full text-xs">
-        <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
-          <tr>
-            {#each [
-              { col: 'id', label: 'Subject ID', align: 'text-left' },
-              { col: 'classification', label: 'Classification', align: 'text-left' },
-              { col: 'readiness', label: 'Readiness %', align: 'text-left' },
-              { col: 'daysOpen', label: 'Days Open', align: 'text-right' },
-              { col: 'owner', label: 'Owner', align: 'text-left' },
-              { col: 'status', label: 'Status', align: 'text-left' },
-            ] as h}
-              <th class="px-3 py-2 {h.align}">
-                <button
-                  type="button"
-                  on:click={() => toggleSubjSort(h.col as SubjSortCol)}
-                  class="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
-                >
-                  <span>{h.label}</span>
-                  {#if subjSortCol === h.col}
-                    {#if subjSortDir === 'asc'}<ArrowUp size={11} class="text-blue-600" />
-                    {:else}<ArrowDown size={11} class="text-blue-600" />{/if}
-                  {:else}
-                    <ArrowUpDown size={10} class="text-slate-300" />
-                  {/if}
-                </button>
-              </th>
-            {/each}
-            <th class="px-3 py-2 text-left">Key Open Items</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          {#if filteredSubjects.length === 0}
+    {#if patientTab === 'readiness'}
+      <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
             <tr>
-              <td colspan="7" class="px-4 py-6 text-center text-slate-500">No subjects match the selected filters.</td>
+              {#each [
+                { col: 'id', label: 'Patient ID', align: 'text-left' },
+                { col: 'classification', label: 'Classification', align: 'text-left' },
+                { col: 'readiness', label: 'Readiness %', align: 'text-left' },
+                { col: 'daysOpen', label: 'Days Open', align: 'text-right' },
+                { col: 'owner', label: 'Owner', align: 'text-left' },
+                { col: 'status', label: 'Status', align: 'text-left' },
+              ] as h}
+                <th class="px-3 py-2 {h.align}">
+                  <button
+                    type="button"
+                    on:click={() => toggleSubjSort(h.col as SubjSortCol)}
+                    class="inline-flex items-center gap-1 hover:text-slate-900 cursor-pointer"
+                  >
+                    <span>{h.label}</span>
+                    {#if subjSortCol === h.col}
+                      {#if subjSortDir === 'asc'}<ArrowUp size={11} class="text-blue-600" />
+                      {:else}<ArrowDown size={11} class="text-blue-600" />{/if}
+                    {:else}
+                      <ArrowUpDown size={10} class="text-slate-300" />
+                    {/if}
+                  </button>
+                </th>
+              {/each}
+              <th class="px-3 py-2 text-left">Key Open Items</th>
             </tr>
-          {:else}
-            {#each filteredSubjects as subj, idx}
-              {@const st = getSubjectRiskStatus(subj)}
-              <tr
-                on:click={() => (selectedSubjectIdx = idx)}
-                class="hover:bg-blue-50/40 cursor-pointer transition-colors"
-              >
-                <td class="px-3 py-2 font-mono font-bold text-blue-700">{subj.id}</td>
-                <td class="px-3 py-2">
-                  <span class="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold {classBadgeClass(subj.classification)}">{subj.classification}</span>
-                </td>
-                <td class="px-3 py-2">
-                  <div class="flex items-center gap-2">
-                    <span class="font-mono font-bold text-slate-900 w-9">{subj.readiness}%</span>
-                    <div class="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                      <div class="h-full rounded-full {barColor(subj.readiness)}" style="width:{subj.readiness}%"></div>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">{subj.daysOpen}d</td>
-                <td class="px-3 py-2 text-slate-700">{subj.owner}</td>
-                <td class="px-3 py-2">
-                  <span class="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold {statusBadgeClass(st)}">{st}</span>
-                </td>
-                <td class="px-3 py-2 text-slate-600 max-w-[240px] truncate">{subj.keyOpenItems}</td>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {#if filteredSubjects.length === 0}
+              <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-slate-500">No patients match the selected filters.</td>
               </tr>
-            {/each}
-          {/if}
-        </tbody>
-      </table>
-    </div>
+            {:else}
+              {#each filteredSubjects as subj, idx}
+                {@const st = getSubjectRiskStatus(subj)}
+                <tr
+                  on:click={() => (selectedSubjectIdx = idx)}
+                  class="hover:bg-blue-50/40 cursor-pointer transition-colors"
+                >
+                  <td class="px-3 py-2 font-mono font-bold text-blue-700">{subj.id}</td>
+                  <td class="px-3 py-2">
+                    <span class="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold {classBadgeClass(subj.classification)}">{subj.classification}</span>
+                  </td>
+                  <td class="px-3 py-2">
+                    <div class="flex items-center gap-2">
+                      <span class="font-mono font-bold text-slate-900 w-9">{subj.readiness}%</span>
+                      <div class="w-16 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-full rounded-full {barColor(subj.readiness)}" style="width:{subj.readiness}%"></div>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">{subj.daysOpen}d</td>
+                  <td class="px-3 py-2 text-slate-700">{subj.owner}</td>
+                  <td class="px-3 py-2">
+                    <span class="inline-flex px-2 py-0.5 rounded-full border text-[10px] font-bold {statusBadgeClass(st)}">{st}</span>
+                  </td>
+                  <td class="px-3 py-2 text-slate-600 max-w-[240px] truncate">{subj.keyOpenItems}</td>
+                </tr>
+              {/each}
+            {/if}
+          </tbody>
+        </table>
+      </div>
+    {:else}
+      <!-- Clean 8-Domain Patient Tracker Matrix -->
+      <div class="rounded-lg border border-slate-200/80 overflow-x-auto">
+        <table class="w-full text-xs">
+          <thead class="bg-slate-50 border-b border-slate-200 text-[10px] font-bold uppercase tracking-wider text-slate-500">
+            <tr>
+              <th class="px-3 py-2 text-left sticky left-0 bg-slate-50 z-10">Patient ID</th>
+              <th class="px-2.5 py-2 text-center">Overall</th>
+              {#each DOMAIN_COLUMNS as col}
+                <th class="px-2 py-2 text-center whitespace-nowrap">{col.short}</th>
+              {/each}
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {#if filteredSubjects.length === 0}
+              <tr>
+                <td colspan="10" class="px-4 py-6 text-center text-slate-500">No patients match the selected filters.</td>
+              </tr>
+            {:else}
+              {#each filteredSubjects as subj, idx}
+                <tr
+                  on:click={() => (selectedSubjectIdx = idx)}
+                  class="hover:bg-blue-50/40 cursor-pointer transition-colors"
+                >
+                  <td class="px-3 py-2 sticky left-0 bg-white z-10 border-r border-slate-100">
+                    <div class="font-mono font-bold text-blue-700">{subj.id}</div>
+                    <div class="text-[10px] text-slate-500">{subj.classification}</div>
+                  </td>
+                  <td class="px-2.5 py-2 text-center">
+                    <span class="font-mono font-bold text-slate-900">{subj.readiness}%</span>
+                  </td>
+                  {#each DOMAIN_COLUMNS as col}
+                    {@const dom = subj.domainBreakdown.find((d) => d.domain === col.match)}
+                    <td class="px-2 py-2 text-center" title={dom ? `${dom.domain}: ${dom.details} (${dom.completion}%)` : ''}>
+                      {#if dom}
+                        {#if dom.status === 'Complete'}
+                          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
+                            ✓ {dom.completion}%
+                          </span>
+                        {:else if dom.completion < 60}
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold">
+                            {dom.completion}%
+                          </span>
+                        {:else}
+                          <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-bold">
+                            {dom.completion}%
+                          </span>
+                        {/if}
+                      {:else}
+                        <span class="text-slate-300">—</span>
+                      {/if}
+                    </td>
+                  {/each}
+                </tr>
+              {/each}
+            {/if}
+          </tbody>
+        </table>
+      </div>
+    {/if}
   </div>
 </div>
 

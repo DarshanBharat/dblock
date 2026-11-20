@@ -6,8 +6,6 @@
     ArrowUpDown,
     ArrowUp,
     ArrowDown,
-    Download,
-    Globe,
     AlertTriangle,
     CheckCircle2,
     Clock,
@@ -263,30 +261,6 @@
     { vendor: 'Argus Safety DB', status: 'Synced', lag: '8m ago', health: 'ok', records: '412' },
   ];
 
-  function exportCsv() {
-    const headers = ['Site ID', 'Name', 'Country', 'PI', 'Subjects', 'Readiness %', 'Status', 'Hard Gates', 'DBL Impact (d)', 'Primary Driver'];
-    const rows = filteredSites.map((s) => [
-      s.id,
-      `"${s.name}"`,
-      s.country,
-      `"${s.piName}"`,
-      s.enrolled,
-      s.readiness,
-      s.riskLevel,
-      s.hardGateBlockers,
-      s.dblImpactDays,
-      `"${s.primaryDriver}"`,
-    ]);
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `dblock-sites-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function statusBadgeClass(status: string) {
     if (status === 'High risk') return 'bg-rose-50 text-rose-700 border-rose-200';
     if (status === 'At risk') return 'bg-amber-50 text-amber-700 border-amber-200';
@@ -301,18 +275,18 @@
   }
 </script>
 
-<div class="space-y-3">
-  <!-- Compact Sticky Header -->
-  <div class="sticky top-0 z-20 -mx-1 px-1 py-1.5 bg-slate-50/95 backdrop-blur-xs border-b border-slate-200/70 flex flex-wrap items-center justify-between gap-2">
-    <div class="flex items-center gap-2.5 min-w-0">
-      <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
-        <Globe size={16} />
-      </div>
-      <div class="min-w-0">
-        <div class="flex items-center gap-2 flex-wrap">
-          <h2 class="text-sm font-bold text-slate-900 tracking-tight">Sites & Countries</h2>
-          <span class="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-semibold text-slate-700">
-            {V3_STUDY_META.protocol} · {V3_SITES.length} Sites · {V3_COUNTRY_SUMMARY.length} Countries
+<div class="space-y-2.5">
+  <!-- Top Sites & Countries Banner (matching StudyOverviewV3) -->
+  <div class="bg-white rounded-xl border border-slate-200/80 shadow-xs px-3.5 py-2.5">
+    <div class="flex flex-wrap items-start justify-between gap-2 pb-2 border-b border-slate-100">
+      <div>
+        <div class="flex flex-wrap items-center gap-2">
+          <h1 class="text-base font-bold text-slate-900 tracking-tight leading-tight">
+            {V3_STUDY_META.protocol} <span class="text-slate-300 font-normal">|</span> Sites & Countries
+          </h1>
+          <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            {V3_SITES.filter((s) => s.riskLevel === 'High risk').length} High Risk Sites
           </span>
           {#if activeFilterCount > 0}
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-bold text-blue-700">
@@ -320,36 +294,66 @@
             </span>
           {/if}
         </div>
-        <p class="text-[11px] text-slate-500 truncate">
-          Geographic readiness, risk concentration, and site-level intervention priorities
-        </p>
+        <p class="text-[11px] text-slate-500 mt-0.5">{V3_STUDY_META.title}</p>
+      </div>
+
+      <div class="flex flex-col items-end gap-1">
+        <div class="flex flex-wrap items-center gap-1.5">
+          {#if activeFilterCount > 0}
+            <button
+              type="button"
+              on:click={resetAllFilters}
+              class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
+            >
+              <RotateCcw size={12} /> Reset Filters
+            </button>
+          {/if}
+          <button
+            type="button"
+            on:click={() => onSelectTab('actions_sim')}
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
+          >
+            <SlidersHorizontal size={12} /> Simulate DBL Impact
+          </button>
+        </div>
+        <span class="text-[10px] text-slate-400">Last refreshed: {V3_STUDY_META.lastRefreshed}</span>
       </div>
     </div>
 
-    <div class="flex items-center gap-2">
-      {#if activeFilterCount > 0}
-        <button
-          type="button"
-          on:click={resetAllFilters}
-          class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
-        >
-          <RotateCcw size={12} /> Reset
-        </button>
-      {/if}
-      <button
-        type="button"
-        on:click={exportCsv}
-        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-xs font-semibold text-slate-700 cursor-pointer transition-colors"
-      >
-        <Download size={12} /> Export CSV
-      </button>
-      <button
-        type="button"
-        on:click={() => onSelectTab('actions_sim')}
-        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs cursor-pointer transition-colors"
-      >
-        <SlidersHorizontal size={12} /> Simulate DBL Impact
-      </button>
+    <!-- Metadata Strip -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-2 text-[11px]">
+      <div>
+        <div class="text-[10px] text-slate-400">Active Sites</div>
+        <div class="font-semibold text-slate-800">{kpiSites.length} / {V3_SITES.length}</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Countries</div>
+        <div class="font-semibold text-slate-800">{V3_COUNTRY_SUMMARY.length} Countries</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Regions</div>
+        <div class="font-semibold text-slate-800">{V3_STUDY_META.regions}</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Enrolled Subjects</div>
+        <div class="font-semibold text-slate-800">{totalSubjects}</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Avg Readiness</div>
+        <div class="font-semibold text-slate-800">{avgReadiness}%</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Target DBL</div>
+        <div class="font-semibold text-slate-800">{V3_STUDY_META.targetDbl}</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Predicted DBL (P80)</div>
+        <div class="font-bold text-rose-600">{V3_STUDY_META.predictedDbl} (+{V3_STUDY_META.delayDays}d)</div>
+      </div>
+      <div>
+        <div class="text-[10px] text-slate-400">Hard Gate Blockers</div>
+        <div class="font-bold text-rose-600">{totalHardGates} blockers</div>
+      </div>
     </div>
   </div>
 

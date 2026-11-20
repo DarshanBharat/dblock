@@ -41,14 +41,9 @@
     return { bg: '#059669', ring: '#10b981' };
   }
 
-  function fitSites(country = 'all', animate = true) {
+  function fitSites(_country = 'all', animate = true) {
     if (!map || !L) return;
-    const targets = country === 'all' ? V3_SITES : V3_SITES.filter((s) => s.country === country);
-    const pts = targets.map((s) => SITE_COORDS[s.id]).filter(Boolean);
-    if (pts.length > 0) {
-      const bounds = L.latLngBounds(pts);
-      map.fitBounds(bounds, { padding: [32, 32], maxZoom: country === 'all' ? 4 : 6, animate });
-    }
+    map.setView([22, 10], 1, { animate });
   }
 
   $: if (map && L) {
@@ -65,9 +60,9 @@
       if (!mapContainer) return;
 
       map = L.map(mapContainer, {
-        center: [28, 12],
-        zoom: 2,
-        minZoom: 1.5,
+        center: [22, 10],
+        zoom: 1,
+        minZoom: 1,
         maxZoom: 16,
         zoomControl: false,
         attributionControl: true,
