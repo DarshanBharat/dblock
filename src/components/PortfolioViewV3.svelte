@@ -19,7 +19,7 @@
     Clock,
     Layers,
   } from '@lucide/svelte';
-  import { V3_PORTFOLIO_STUDIES, type V3PortfolioStudy } from '../data/v3Data';
+  import { V3_PORTFOLIO_STUDIES, countryFlag, type V3PortfolioStudy } from '../data/v3Data';
   import MultiSelectFilter from './MultiSelectFilter.svelte';
 
   export let onSelectStudy: (studyId: string) => void;
@@ -205,8 +205,12 @@
   }
 
   function formatCountries(countries: string[]): string {
-    if (countries.length <= 3) return countries.join(', ');
-    return `${countries.slice(0, 3).join(', ')} +${countries.length - 3}`;
+    const withFlags = countries.map((c) => {
+      const f = countryFlag(c);
+      return f ? `${f} ${c}` : c;
+    });
+    if (withFlags.length <= 3) return withFlags.join(', ');
+    return `${withFlags.slice(0, 3).join(', ')} +${withFlags.length - 3}`;
   }
 </script>
 

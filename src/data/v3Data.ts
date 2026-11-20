@@ -704,6 +704,43 @@ export const V3_COUNTRY_SUMMARY = [
   { country: 'Australia', flag: '🇦🇺', sites: 2, readiness: 93, highRiskSites: 0, atRiskSites: 0, onTrackSites: 2, subjectsNotReady: 1, criticalBlockers: 0, forecastDays: 0, driver: 'On track', worstSite: 'Site 502', lat: -25.2, lon: 133.7 },
 ];
 
+const COUNTRY_FLAG_MAP: Record<string, string> = {
+  'United States': '🇺🇸',
+  US: '🇺🇸',
+  USA: '🇺🇸',
+  Germany: '🇩🇪',
+  DE: '🇩🇪',
+  France: '🇫🇷',
+  FR: '🇫🇷',
+  'South Korea': '🇰🇷',
+  KR: '🇰🇷',
+  Canada: '🇨🇦',
+  CA: '🇨🇦',
+  Spain: '🇪🇸',
+  ES: '🇪🇸',
+  Australia: '🇦🇺',
+  AU: '🇦🇺',
+  'United Kingdom': '🇬🇧',
+  UK: '🇬🇧',
+  GB: '🇬🇧',
+  Japan: '🇯🇵',
+  JP: '🇯🇵',
+  Italy: '🇮🇹',
+  IT: '🇮🇹',
+  Brazil: '🇧🇷',
+  BR: '🇧🇷',
+  Taiwan: '🇹🇼',
+  TW: '🇹🇼',
+  Poland: '🇵🇱',
+  PL: '🇵🇱',
+  Mexico: '🇲🇽',
+  MX: '🇲🇽',
+};
+
+export function countryFlag(country: string): string {
+  return COUNTRY_FLAG_MAP[country] || '';
+}
+
 // Generate all 220 subjects deterministically with exact classification totals:
 // 158 Lock Ready, 32 Conditionally Ready, 20 Action Required, 10 Hard Blocked
 const HERO_SUBJECTS: Record<string, V3SubjectRow> = {

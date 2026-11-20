@@ -16,7 +16,7 @@
     Activity,
     Building2,
   } from '@lucide/svelte';
-  import { V3_SUBJECT_ROWS, V3_STUDY_META, V3_SITES } from '../data/v3Data';
+  import { V3_SUBJECT_ROWS, V3_STUDY_META, V3_SITES, countryFlag } from '../data/v3Data';
 
   export let subjectId: string;
   export let onBack: () => void;
@@ -225,7 +225,7 @@
     <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 pt-2 text-[11px]">
       <div>
         <div class="text-[10px] text-slate-400">Country</div>
-        <div class="font-semibold text-slate-800">{subject.country}</div>
+        <div class="font-semibold text-slate-800">{countryFlag(subject.country)} {subject.country}</div>
       </div>
       <div>
         <div class="text-[10px] text-slate-400">Investigator</div>

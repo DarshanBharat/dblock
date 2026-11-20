@@ -23,6 +23,8 @@
     V3_SITES,
     V3_SUBJECT_ROWS,
     V3_ACTIONS,
+    V3_DOMAINS,
+    countryFlag,
     type V3SubjectRow,
   } from '../data/v3Data';
   import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
@@ -96,49 +98,28 @@
     });
   })();
 
-  // Site Domain Breakdown
-  $: domainBreakdown = (() => {
-    const r = site.readiness;
-    const driversText = `${site.primaryDriver} ${site.riskDrivers.map((d) => `${d.title} ${d.detail}`).join(' ')}`.toLowerCase();
-    return [
-      {
-        name: 'EDC & Queries',
-        pct: Math.max(35, Math.min(98, r - (driversText.includes('quer') || driversText.includes('edc') ? 9 : 2))),
-        open: Math.max(1, Math.round((site.hardGateBlockers + site.criticalSubjects) * 0.6)),
-      },
-      {
-        name: 'SDV & Monitoring',
-        pct: Math.max(38, Math.min(98, r - (driversText.includes('sdv') || driversText.includes('monitor') ? 11 : 1))),
-        open: Math.max(1, Math.round((site.hardGateBlockers + site.criticalSubjects) * 0.45)),
-      },
-      {
-        name: 'Safety / SAE',
-        pct: Math.max(42, Math.min(99, r - (driversText.includes('sae') || driversText.includes('safety') ? 10 : -4))),
-        open: Math.max(0, Math.round(site.hardGateBlockers * 0.35)),
-      },
-      {
-        name: 'Lab & External',
-        pct: Math.max(40, Math.min(99, r - (driversText.includes('lab') || driversText.includes('vendor') ? 12 : -2))),
-        open: Math.max(0, Math.round(site.hardGateBlockers * 0.3)),
-      },
-      {
-        name: 'Coding & Signatures',
-        pct: Math.max(48, Math.min(99, r + 4)),
-        open: Math.max(0, Math.round(site.criticalSubjects * 0.2)),
-      },
-    ];
-  })();
+  // Site Domain Breakdown (all 8 canonical domains)
+  $: domainBreakdown = V3_DOMAINS.map((dom) => {
+    const entries = siteSubjects
+      .map((s) => s.domainBreakdown.find((d) => d.domain === dom.name))
+      .filter((d): d is NonNullable<typeof d> => Boolean(d));
+    const pct = entries.length
+      ? Math.round(entries.reduce((acc, d) => acc + d.completion, 0) / entries.length)
+      : site.readiness;
+    const open = entries.filter((d) => d.status === 'Action Required').length;
+    return { name: dom.name, pct, open };
+  });
 
   // Subject table tabs, filters & sorting
   let patientTab: 'readiness' | 'domain_tracker' = 'readiness';
   const DOMAIN_COLUMNS = [
-    { match: 'EDC Data Cleaning', short: 'EDC Cleaning' },
-    { match: 'Query Resolution', short: 'Queries' },
-    { match: 'External Data Reconciliation', short: 'Ext. Data' },
-    { match: 'Safety Reconciliation', short: 'Safety / SAE' },
-    { match: 'Medical Coding', short: 'Coding' },
-    { match: 'PI Signatures', short: 'PI Sign.' },
-    { match: 'Protocol Deviations', short: 'PDs' },
+    { match: 'EDC Data Cleaning', short: 'EDC Data Cleaning' },
+    { match: 'Query Resolution', short: 'Query Resolution' },
+    { match: 'External Data Reconciliation', short: 'External Data Reconciliation' },
+    { match: 'Safety Reconciliation', short: 'Safety Reconciliation' },
+    { match: 'Medical Coding', short: 'Medical Coding' },
+    { match: 'PI Signatures', short: 'PI Signatures' },
+    { match: 'Protocol Deviations', short: 'Protocol Deviations' },
     { match: 'SDV / SDR', short: 'SDV / SDR' },
   ];
   let subjectSearch = '';
@@ -254,7 +235,7 @@
         <div class="flex items-center gap-2 flex-wrap">
           <h2 class="text-sm font-bold text-slate-900 tracking-tight">Site {site.id} · {site.name}</h2>
           <span class="px-2 py-0.5 rounded-full border text-[10px] font-bold {statusBadgeClass(site.riskLevel)}">{site.riskLevel}</span>
-          <span class="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-semibold text-slate-700">{site.country}</span>
+          <span class="px-1.5 py-0.5 rounded bg-slate-200/70 text-[10px] font-semibold text-slate-700">{countryFlag(site.country)} {site.country}</span>
         </div>
         <p class="text-[11px] text-slate-500 truncate">
           PI: <span class="font-medium text-slate-700">{site.piName}</span> · Target Freeze: <span class="font-medium text-slate-700">{site.plannedFreezeDate}</span> · {site.enrolled} Subjects Enrolled

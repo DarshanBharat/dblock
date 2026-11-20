@@ -23,6 +23,7 @@
     V3_STUDY_META,
     V3_COUNTRY_SUMMARY,
     V3_SITES,
+    countryFlag,
     type V3SiteSpec,
   } from '../data/v3Data';
   import WorldMapWidgetV3 from './WorldMapWidgetV3.svelte';
@@ -574,7 +575,7 @@
           </svg>
           {#if hoveredQuadrantSite}
             <div class="absolute top-2 right-2 bg-slate-900 text-white rounded-lg px-2.5 py-1.5 text-[10px] shadow-lg pointer-events-none">
-              <div class="font-bold">Site {hoveredQuadrantSite.id} · {hoveredQuadrantSite.country}</div>
+              <div class="font-bold">Site {hoveredQuadrantSite.id} · {countryFlag(hoveredQuadrantSite.country)} {hoveredQuadrantSite.country}</div>
               <div class="text-slate-300">Readiness: {hoveredQuadrantSite.readiness}% · Hard Gates: {hoveredQuadrantSite.hardGateBlockers}</div>
             </div>
           {/if}
@@ -657,7 +658,7 @@
             <div class="min-w-0">
               <div class="flex items-center gap-1.5">
                 <span class="text-xs font-bold text-slate-900 group-hover:text-blue-700">Site {site.id}</span>
-                <span class="text-[10px] text-slate-500 truncate">{site.country}</span>
+                <span class="text-[10px] text-slate-500 truncate">{countryFlag(site.country)} {site.country}</span>
               </div>
               <div class="text-[10px] text-slate-500 truncate">{site.primaryDriver}</div>
             </div>
@@ -794,7 +795,7 @@
           label="Countries"
           options={allCountries.map((c) => ({
             value: c,
-            label: c,
+            label: `${countryFlag(c)} ${c}`,
             count: V3_SITES.filter((s) => s.country === c).length,
           }))}
           selected={countryFilters}
@@ -873,7 +874,7 @@
                   <div class="font-bold text-slate-900 group-hover:text-blue-700">Site {site.id}</div>
                   <div class="text-[10px] text-slate-500 truncate max-w-[170px]">{site.name}</div>
                 </td>
-                <td class="px-3 py-2 text-slate-700 font-medium">{site.country}</td>
+                <td class="px-3 py-2 text-slate-700 font-medium whitespace-nowrap">{countryFlag(site.country)} {site.country}</td>
                 <td class="px-3 py-2 text-slate-600">{site.piName}</td>
                 <td class="px-3 py-2 text-right font-mono font-semibold text-slate-800">{site.enrolled}</td>
                 <td class="px-3 py-2">

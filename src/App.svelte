@@ -187,6 +187,7 @@
               onSelectTab={handleSelectTab}
               onSelectDomain={handleSelectDomain}
               onSelectCountry={handleSelectCountry}
+              onSelectSite={handleSelectSite}
             />
 
           {:else if activeTab === 'clinical_domains'}

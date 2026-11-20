@@ -31,6 +31,7 @@
   export let onSelectTab: (tab: string) => void;
   export let onSelectDomain: (domainId: string) => void;
   export let onSelectCountry: (country: string) => void = () => onSelectTab('sites_countries');
+  export let onSelectSite: (siteId: string) => void = () => onSelectTab('sites_countries');
 
   // Readiness Weightage Configurator State (synced via v3DomainWeights store)
   let showWeightConfig = false;
@@ -307,7 +308,7 @@
           <span class="text-base text-slate-400 font-semibold">/ {V3_STUDY_META.totalSites}</span>
         </div>
         <div class="mt-2 text-[10px] text-slate-500">
-          Site 104 (US), Site 317 (DE), Site 405 (KR)
+          Site 104 (🇺🇸 US), Site 317 (🇩🇪 DE), Site 405 (🇰🇷 KR)
         </div>
       </div>
       <div class="mt-2 pt-1.5 border-t border-slate-100">
@@ -323,142 +324,9 @@
     </div>
   </div>
 
-  <!-- Row 2: Readiness Trend & Forecast + Key Insights -->
+  <!-- Row 2: Readiness by Clinical Domain + Key Insights -->
   <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-    <div class="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-        <h2 class="text-xs font-bold text-slate-900">Readiness Trend and Forecast</h2>
-        <div class="flex items-center gap-3 text-[10px] text-slate-600">
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-600 inline-block"></span> Actual</span>
-          <span class="inline-flex items-center gap-1"><span class="w-3 h-0.5 border-t-2 border-dashed border-slate-400 inline-block"></span> Expected</span>
-          <span class="inline-flex items-center gap-1"><span class="w-3 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block"></span> Forecast (P80)</span>
-        </div>
-      </div>
-
-      <svg viewBox="0 0 {W} {H}" class="w-full h-auto overflow-visible" aria-label="Readiness Trend and Forecast">
-        {#each [0, 20, 40, 60, 80, 100] as tick}
-          <line x1={PAD_L} y1={yPos(tick)} x2={W - PAD_R} y2={yPos(tick)} stroke="#e2e8f0" stroke-width="1" />
-          <text x={PAD_L - 6} y={yPos(tick) + 3} text-anchor="end" font-size="8.5" fill="#94a3b8">{tick}%</text>
-        {/each}
-
-        <!-- Today marker -->
-        <line x1={xPos(2)} y1={PAD_T} x2={xPos(2)} y2={H - PAD_B} stroke="#cbd5e1" stroke-dasharray="3 3" />
-        <text x={xPos(2)} y={PAD_T - 4} text-anchor="middle" font-size="8" fill="#64748b" font-weight="600">Today · 31 Oct</text>
-
-        <polyline fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 4" points={expectedLine} />
-        <polyline fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="4 3" points={forecastLine} />
-        <polyline fill="none" stroke="#2563eb" stroke-width="2.2" points={actualLine} />
-
-        {#each V3_OVERVIEW_TREND as pt, i}
-          {#if pt.actual !== null}
-            <circle cx={xPos(i)} cy={yPos(pt.actual)} r="3.2" fill="#2563eb" stroke="#fff" stroke-width="1.2" />
-            <text x={xPos(i)} y={yPos(pt.actual) - 6} text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">{pt.actual}%</text>
-          {/if}
-          {#if pt.forecast !== null && pt.actual === null}
-            <circle cx={xPos(i)} cy={yPos(pt.forecast)} r="2.8" fill="#10b981" stroke="#fff" stroke-width="1.2" />
-            <text x={xPos(i)} y={yPos(pt.forecast) - 5} text-anchor="middle" font-size="8" font-weight="600" fill="#047857">{pt.forecast}%</text>
-          {/if}
-          {#each pt.label.split('\n') as line, lineIdx}
-            <text x={xPos(i)} y={H - PAD_B + 11 + lineIdx * 9} text-anchor="middle" font-size="8" fill="#64748b">{line}</text>
-          {/each}
-        {/each}
-      </svg>
-    </div>
-
-    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
-      <div>
-        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100">
-          <h2 class="text-xs font-bold text-slate-900">Key Insights</h2>
-          <button
-            type="button"
-            on:click={() => onSelectTab('actions_sim')}
-            class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
-          >
-            View All Insights <ChevronRight size={12} />
-          </button>
-        </div>
-        <div class="space-y-2">
-          {#each V3_OVERVIEW_INSIGHTS as ins}
-            <div class="flex items-start gap-2 text-xs">
-              {#if ins.type === 'critical'}
-                <span class="w-4 h-4 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5"><AlertTriangle size={10} /></span>
-              {:else if ins.type === 'warning'}
-                <span class="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5"><TrendingDown size={10} /></span>
-              {:else if ins.type === 'info'}
-                <span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5"><Info size={10} /></span>
-              {:else}
-                <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle2 size={10} /></span>
-              {/if}
-              <div class="leading-snug">
-                <div class="text-[11px] font-semibold text-slate-800">{ins.title}</div>
-                <div class="text-slate-500 text-[10px] mt-0.5">{ins.detail}</div>
-              </div>
-            </div>
-          {/each}
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Row 3: Countries and Sites (Map on the Left + Table on the Right) -->
-  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-xs font-bold text-slate-900">Countries and Sites</h2>
-        <p class="text-[10px] text-slate-400">Interactive global site readiness map alongside country-level DBL impact</p>
-      </div>
-      <button
-        type="button"
-        on:click={() => onSelectTab('sites_countries')}
-        class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
-      >
-        View All 18 Sites <ChevronRight size={12} />
-      </button>
-    </div>
-
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch">
-      <!-- Map on the Left -->
-      <div class="lg:col-span-6 min-h-[220px]">
-        <WorldMapWidgetV3 {onSelectCountry} />
-      </div>
-
-      <!-- Table on the Right -->
-      <div class="lg:col-span-6 overflow-x-auto flex flex-col justify-center">
-        <table class="w-full text-xs">
-          <thead>
-            <tr class="text-left text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
-              <th class="pb-1.5 font-semibold">Country</th>
-              <th class="pb-1.5 font-semibold text-right">Sites</th>
-              <th class="pb-1.5 font-semibold text-right">Readiness</th>
-              <th class="pb-1.5 font-semibold text-right">High-Risk Sites</th>
-              <th class="pb-1.5 font-semibold text-right">DBL Impact</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-slate-100">
-            {#each V3_COUNTRY_SUMMARY as c}
-              <tr class="hover:bg-blue-50/40 cursor-pointer" on:click={() => onSelectCountry(c.country)}>
-                <td class="py-1.5 font-medium text-slate-800">{c.flag} {c.country}</td>
-                <td class="py-1.5 text-right text-slate-600">{c.sites}</td>
-                <td class="py-1.5 text-right font-bold {c.readiness < 70 ? 'text-rose-600' : c.readiness < 80 ? 'text-amber-600' : 'text-emerald-600'}">
-                  {c.readiness}%
-                </td>
-                <td class="py-1.5 text-right">
-                  <span class="font-semibold {c.highRiskSites > 0 ? 'text-rose-600' : 'text-slate-500'}">{c.highRiskSites}</span>
-                </td>
-                <td class="py-1.5 text-right font-semibold {c.forecastDays > 0 ? 'text-rose-600' : 'text-slate-500'}">
-                  {c.forecastDays > 0 ? `+${c.forecastDays}d` : '0d'}
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- Row 4: Readiness by Clinical Domain + Top Risks and Next Best Actions -->
-  <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
-    <div id="clinical-domain-readiness" class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2">
+    <div id="clinical-domain-readiness" class="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2">
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div>
           <div class="flex items-center gap-2">
@@ -590,6 +458,83 @@
       </div>
     </div>
 
+    <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col justify-between">
+      <div>
+        <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-slate-100">
+          <h2 class="text-xs font-bold text-slate-900">Key Insights</h2>
+          <button
+            type="button"
+            on:click={() => onSelectTab('actions_sim')}
+            class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
+          >
+            View All Insights <ChevronRight size={12} />
+          </button>
+        </div>
+        <div class="space-y-2">
+          {#each V3_OVERVIEW_INSIGHTS as ins}
+            <div class="flex items-start gap-2 text-xs">
+              {#if ins.type === 'critical'}
+                <span class="w-4 h-4 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 mt-0.5"><AlertTriangle size={10} /></span>
+              {:else if ins.type === 'warning'}
+                <span class="w-4 h-4 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center shrink-0 mt-0.5"><TrendingDown size={10} /></span>
+              {:else if ins.type === 'info'}
+                <span class="w-4 h-4 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5"><Info size={10} /></span>
+              {:else}
+                <span class="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5"><CheckCircle2 size={10} /></span>
+              {/if}
+              <div class="leading-snug">
+                <div class="text-[11px] font-semibold text-slate-800">{ins.title}</div>
+                <div class="text-slate-500 text-[10px] mt-0.5">{ins.detail}</div>
+              </div>
+            </div>
+          {/each}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Readiness Trend & Forecast + Top Risks and Next Best Actions -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+    <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+        <h2 class="text-xs font-bold text-slate-900">Readiness Trend and Forecast</h2>
+        <div class="flex items-center gap-3 text-[10px] text-slate-600">
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-600 inline-block"></span> Actual</span>
+          <span class="inline-flex items-center gap-1"><span class="w-3 h-0.5 border-t-2 border-dashed border-slate-400 inline-block"></span> Expected</span>
+          <span class="inline-flex items-center gap-1"><span class="w-3 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block"></span> Forecast (P80)</span>
+        </div>
+      </div>
+
+      <svg viewBox="0 0 {W} {H}" class="w-full h-auto overflow-visible" aria-label="Readiness Trend and Forecast">
+        {#each [0, 20, 40, 60, 80, 100] as tick}
+          <line x1={PAD_L} y1={yPos(tick)} x2={W - PAD_R} y2={yPos(tick)} stroke="#e2e8f0" stroke-width="1" />
+          <text x={PAD_L - 6} y={yPos(tick) + 3} text-anchor="end" font-size="8.5" fill="#94a3b8">{tick}%</text>
+        {/each}
+
+        <!-- Today marker -->
+        <line x1={xPos(2)} y1={PAD_T} x2={xPos(2)} y2={H - PAD_B} stroke="#cbd5e1" stroke-dasharray="3 3" />
+        <text x={xPos(2)} y={PAD_T - 4} text-anchor="middle" font-size="8" fill="#64748b" font-weight="600">Today · 31 Oct</text>
+
+        <polyline fill="none" stroke="#94a3b8" stroke-width="1.8" stroke-dasharray="4 4" points={expectedLine} />
+        <polyline fill="none" stroke="#10b981" stroke-width="1.8" stroke-dasharray="4 3" points={forecastLine} />
+        <polyline fill="none" stroke="#2563eb" stroke-width="2.2" points={actualLine} />
+
+        {#each V3_OVERVIEW_TREND as pt, i}
+          {#if pt.actual !== null}
+            <circle cx={xPos(i)} cy={yPos(pt.actual)} r="3.2" fill="#2563eb" stroke="#fff" stroke-width="1.2" />
+            <text x={xPos(i)} y={yPos(pt.actual) - 6} text-anchor="middle" font-size="8.5" font-weight="700" fill="#1e293b">{pt.actual}%</text>
+          {/if}
+          {#if pt.forecast !== null && pt.actual === null}
+            <circle cx={xPos(i)} cy={yPos(pt.forecast)} r="2.8" fill="#10b981" stroke="#fff" stroke-width="1.2" />
+            <text x={xPos(i)} y={yPos(pt.forecast) - 5} text-anchor="middle" font-size="8" font-weight="600" fill="#047857">{pt.forecast}%</text>
+          {/if}
+          {#each pt.label.split('\n') as line, lineIdx}
+            <text x={xPos(i)} y={H - PAD_B + 11 + lineIdx * 9} text-anchor="middle" font-size="8" fill="#64748b">{line}</text>
+          {/each}
+        {/each}
+      </svg>
+    </div>
+
     <div class="lg:col-span-6 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
       <div class="flex items-center justify-between mb-2">
         <h2 class="text-xs font-bold text-slate-900">Top Risks and Next Best Actions</h2>
@@ -633,6 +578,62 @@
                   >
                     {act.actionLabel}
                   </button>
+                </td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 4: Countries and Sites (Map on the Left + Table on the Right) -->
+  <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs space-y-2">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-xs font-bold text-slate-900">Countries and Sites</h2>
+        <p class="text-[10px] text-slate-400">Interactive global site readiness map alongside country-level DBL impact</p>
+      </div>
+      <button
+        type="button"
+        on:click={() => onSelectTab('sites_countries')}
+        class="text-[11px] font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-0.5 cursor-pointer"
+      >
+        View All 18 Sites <ChevronRight size={12} />
+      </button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-stretch">
+      <!-- Map on the Left -->
+      <div class="lg:col-span-6 min-h-[220px]">
+        <WorldMapWidgetV3 {onSelectCountry} {onSelectSite} />
+      </div>
+
+      <!-- Table on the Right -->
+      <div class="lg:col-span-6 overflow-x-auto flex flex-col justify-center">
+        <table class="w-full text-xs">
+          <thead>
+            <tr class="text-left text-[10px] uppercase tracking-wider text-slate-400 border-b border-slate-100">
+              <th class="pb-1.5 font-semibold">Country</th>
+              <th class="pb-1.5 font-semibold text-right">Sites</th>
+              <th class="pb-1.5 font-semibold text-right">Readiness</th>
+              <th class="pb-1.5 font-semibold text-right">High-Risk Sites</th>
+              <th class="pb-1.5 font-semibold text-right">DBL Impact</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            {#each V3_COUNTRY_SUMMARY as c}
+              <tr class="hover:bg-blue-50/40 cursor-pointer" on:click={() => onSelectCountry(c.country)}>
+                <td class="py-1.5 font-medium text-slate-800">{c.flag} {c.country}</td>
+                <td class="py-1.5 text-right text-slate-600">{c.sites}</td>
+                <td class="py-1.5 text-right font-bold {c.readiness < 70 ? 'text-rose-600' : c.readiness < 80 ? 'text-amber-600' : 'text-emerald-600'}">
+                  {c.readiness}%
+                </td>
+                <td class="py-1.5 text-right">
+                  <span class="font-semibold {c.highRiskSites > 0 ? 'text-rose-600' : 'text-slate-500'}">{c.highRiskSites}</span>
+                </td>
+                <td class="py-1.5 text-right font-semibold {c.forecastDays > 0 ? 'text-rose-600' : 'text-slate-500'}">
+                  {c.forecastDays > 0 ? `+${c.forecastDays}d` : '0d'}
                 </td>
               </tr>
             {/each}

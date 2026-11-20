@@ -1,6 +1,6 @@
 <script lang="ts">
   import { X, ChevronLeft, ChevronRight, ExternalLink, AlertTriangle, Info } from '@lucide/svelte';
-  import type { V3SubjectRow } from '../data/v3Data';
+  import { countryFlag, type V3SubjectRow } from '../data/v3Data';
 
   export let subject: V3SubjectRow;
   export let subjectIndex: number;
@@ -53,7 +53,7 @@
             </span>
           </div>
           <div class="text-[11px] text-slate-500 mt-1">
-            Site {subject.siteId} · {subject.country} · Current Status: <span class="font-semibold text-slate-700">{subject.status}</span> · Randomization {subject.keyInfo.randomization} · {subject.keyInfo.arm}
+            Site {subject.siteId} · {countryFlag(subject.country)} {subject.country} · Current Status: <span class="font-semibold text-slate-700">{subject.status}</span> · Randomization {subject.keyInfo.randomization} · {subject.keyInfo.arm}
           </div>
         </div>
         <button

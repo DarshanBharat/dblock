@@ -1,6 +1,6 @@
 <script lang="ts">
   import { ArrowLeft, ChevronRight, ChevronLeft, Search, Info, SlidersHorizontal, RotateCcw, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from '@lucide/svelte';
-  import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS } from '../data/v3Data';
+  import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS, countryFlag } from '../data/v3Data';
   import {
     v3DomainWeights,
     resetV3Weights,
@@ -701,9 +701,9 @@
   })();
 </script>
 
-<div class="flex flex-col gap-2.5 lg:h-[calc(100vh-4.85rem)] lg:overflow-hidden">
-  <!-- Frozen Top Header -->
-  <div class="shrink-0 bg-white rounded-xl border border-slate-200/80 px-3.5 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+<div class="flex flex-col gap-2.5">
+  <!-- Top Header -->
+  <div class="bg-white rounded-xl border border-slate-200/80 px-3.5 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
     <div>
       <button
         type="button"
@@ -837,10 +837,10 @@
     </div>
   {/if}
 
-  <!-- Frozen Sidebar + Scrollable Main Drilldown -->
-  <div class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 gap-2.5 lg:overflow-hidden">
-    <!-- Frozen Fitted Left Domain Selector -->
-    <aside class="lg:col-span-3 lg:h-full lg:overflow-y-auto bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs flex flex-col gap-0.5">
+  <!-- Sidebar + Main Drilldown -->
+  <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5 items-start">
+    <!-- Left Domain Selector -->
+    <aside class="lg:col-span-3 lg:sticky lg:top-16 bg-white rounded-xl border border-slate-200/80 p-2.5 shadow-xs flex flex-col gap-0.5">
       <div class="px-2 py-1 flex items-center justify-between shrink-0">
         <span class="text-[11px] font-bold text-slate-700 uppercase tracking-wider">Clinical Domains</span>
         <span class="text-[10px] font-semibold text-slate-400">Weight</span>
@@ -869,8 +869,8 @@
       {/each}
     </aside>
 
-    <!-- Scrollable Main Domain Content -->
-    <div class="lg:col-span-9 lg:h-full lg:overflow-y-auto lg:pr-0.5 space-y-2.5">
+    <!-- Main Domain Content -->
+    <div class="lg:col-span-9 space-y-2.5">
       <!-- Domain Header & 4 KPI Cards -->
       <div class="bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-2.5">
@@ -1381,14 +1381,14 @@
             {#if subTab === 'site'}
               <MultiSelectFilter
                 label={currentDomain.id === 'external_data' ? 'Sources' : 'Countries'}
-                options={breakdownCountries.map((c) => ({ value: c, label: c }))}
+                options={breakdownCountries.map((c) => ({ value: c, label: countryFlag(c) ? `${countryFlag(c)} ${c}` : c }))}
                 selected={countryFilters}
                 onChange={(next) => (countryFilters = next)}
               />
             {:else if subTab === 'subject'}
               <MultiSelectFilter
                 label="Countries"
-                options={subjectCountries.map((c) => ({ value: c, label: c }))}
+                options={subjectCountries.map((c) => ({ value: c, label: countryFlag(c) ? `${countryFlag(c)} ${c}` : c }))}
                 selected={countryFilters}
                 onChange={(next) => { countryFilters = next; subjectPage = 1; }}
               />
@@ -1479,7 +1479,7 @@
                     class="hover:bg-blue-50/50 transition-colors cursor-pointer"
                     on:click={() => { if (/^\d+$/.test(row.siteId)) onSelectSite(row.siteId); }}
                   >
-                    <td class="px-3 py-2.5 font-semibold text-slate-800">{row.country}</td>
+                    <td class="px-3 py-2.5 font-semibold text-slate-800 whitespace-nowrap">{countryFlag(row.country)} {row.country}</td>
                     <td class="px-3 py-2.5">
                       <span class="px-2 py-0.5 rounded bg-slate-100 font-mono font-semibold text-slate-700 text-[11px]">{row.siteId}</span>
                     </td>
@@ -1575,7 +1575,7 @@
                     <td class="px-3 py-2.5 font-mono font-bold text-blue-700 whitespace-nowrap">{item.subj.id}</td>
                     <td class="px-3 py-2.5 text-slate-700 whitespace-nowrap">
                       <span class="px-1.5 py-0.5 rounded bg-slate-100 font-mono text-[11px] font-semibold text-slate-700 mr-1">{item.subj.siteId}</span>
-                      <span class="text-slate-500">{item.subj.country}</span>
+                      <span class="text-slate-500">{countryFlag(item.subj.country)} {item.subj.country}</span>
                     </td>
                     <td class="px-3 py-2.5 text-slate-600 max-w-[260px] truncate" title={item.domEntry?.details || item.subj.keyOpenItems}>
                       {item.domEntry?.details || item.subj.keyOpenItems}

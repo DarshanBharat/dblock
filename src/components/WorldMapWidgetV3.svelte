@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { ZoomIn, ZoomOut, RotateCcw } from '@lucide/svelte';
-  import { V3_SITES, V3_COUNTRY_SUMMARY } from '../data/v3Data';
+  import { V3_SITES, V3_COUNTRY_SUMMARY, countryFlag } from '../data/v3Data';
 
   export let onSelectCountry: (country: string) => void = () => {};
   export let onSelectSite: ((siteId: string) => void) | null = null;
@@ -151,10 +151,11 @@
             ? 'background:#fffbeb;color:#b45309;border:1px solid #fde68a;'
             : 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;';
 
+        const flag = countryFlag(site.country);
         const popupHtml = `
           <div style="min-width:210px;font-family:Inter,system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1e293b;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">
-              <strong style="font-size:12px;color:#0f172a;">Site ${site.id} · ${site.country}</strong>
+              <strong style="font-size:12px;color:#0f172a;">Site ${site.id} · ${flag ? `${flag} ` : ''}${site.country}</strong>
               <span style="padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;${badgeClass}">${site.riskLevel}</span>
             </div>
             <div style="margin-top:5px;font-weight:600;color:#334155;">${site.name}</div>
@@ -167,7 +168,7 @@
             <div style="margin-top:5px;font-size:10px;color:#64748b;">Driver: ${site.primaryDriver}</div>
             <div style="display:flex;gap:6px;margin-top:7px;">
               <button type="button" data-country="${site.country}" class="v3-popup-filter-btn" style="flex:1;padding:4px 8px;border-radius:6px;background:#f1f5f9;color:#1e293b;font-weight:600;font-size:10.5px;border:1px solid #cbd5e1;cursor:pointer;">
-                Filter ${site.country}
+                Filter ${flag ? `${flag} ` : ''}${site.country}
               </button>
               ${onSelectSite ? `<button type="button" data-site="${site.id}" class="v3-popup-site-btn" style="flex:1;padding:4px 8px;border-radius:6px;background:#2563eb;color:#ffffff;font-weight:600;font-size:10.5px;border:none;cursor:pointer;">Inspect Site →</button>` : ''}
             </div>
@@ -226,7 +227,7 @@
   <!-- Top-left Summary Pill -->
   <div class="absolute top-2.5 left-2.5 z-[400] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-xs border border-slate-200/90 shadow-xs text-[11px] font-semibold text-slate-700 pointer-events-none">
     <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-    <span>{selectedCountry === 'all' ? `${V3_COUNTRY_SUMMARY.length} Countries · ${V3_SITES.length} Sites` : `${selectedCountry} · ${V3_SITES.filter((s) => s.country === selectedCountry).length} Sites`}</span>
+    <span>{selectedCountry === 'all' ? `${V3_COUNTRY_SUMMARY.length} Countries · ${V3_SITES.length} Sites` : `${countryFlag(selectedCountry)} ${selectedCountry} · ${V3_SITES.filter((s) => s.country === selectedCountry).length} Sites`}</span>
   </div>
 
   <!-- Top-right Clean Zoom Controls -->

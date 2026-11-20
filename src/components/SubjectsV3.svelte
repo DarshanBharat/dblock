@@ -18,7 +18,7 @@
     Clock,
     Calendar,
   } from '@lucide/svelte';
-  import { V3_STUDY_META, V3_SUBJECT_ROWS, V3_COUNTRY_SUMMARY, V3_SITES } from '../data/v3Data';
+  import { V3_STUDY_META, V3_SUBJECT_ROWS, V3_COUNTRY_SUMMARY, V3_SITES, countryFlag } from '../data/v3Data';
   import SubjectDrawerV3 from './SubjectDrawerV3.svelte';
   import MultiSelectFilter from './MultiSelectFilter.svelte';
 
@@ -59,13 +59,13 @@
   ];
 
   const DOMAIN_COLUMNS = [
-    { match: 'EDC Data Cleaning', short: 'EDC Cleaning' },
-    { match: 'Query Resolution', short: 'Queries' },
-    { match: 'External Data Reconciliation', short: 'Ext. Data' },
-    { match: 'Safety Reconciliation', short: 'Safety / SAE' },
-    { match: 'Medical Coding', short: 'Coding' },
-    { match: 'PI Signatures', short: 'PI Sign.' },
-    { match: 'Protocol Deviations', short: 'PDs' },
+    { match: 'EDC Data Cleaning', short: 'EDC Data Cleaning' },
+    { match: 'Query Resolution', short: 'Query Resolution' },
+    { match: 'External Data Reconciliation', short: 'External Data Reconciliation' },
+    { match: 'Safety Reconciliation', short: 'Safety Reconciliation' },
+    { match: 'Medical Coding', short: 'Medical Coding' },
+    { match: 'PI Signatures', short: 'PI Signatures' },
+    { match: 'Protocol Deviations', short: 'Protocol Deviations' },
     { match: 'SDV / SDR', short: 'SDV / SDR' },
   ];
 
@@ -218,13 +218,10 @@
 
   $: maxDomainOpen = Math.max(1, ...domainOpenBars.map((d) => d.count));
 
-  const topSitesNotReady = [
-    { siteId: '317', country: 'Germany', total: 20, notReady: 10, pct: 50 },
-    { siteId: '405', country: 'South Korea', total: 18, notReady: 8, pct: 44 },
-    { siteId: '104', country: 'United States', total: 16, notReady: 6, pct: 38 },
-    { siteId: '208', country: 'France', total: 14, notReady: 5, pct: 36 },
-    { siteId: '511', country: 'Spain', total: 12, notReady: 4, pct: 33 },
-  ];
+  $: topSubjectsNotReady = [...V3_SUBJECT_ROWS]
+    .filter((s) => s.classification !== 'Lock Ready')
+    .sort((a, b) => a.readiness - b.readiness || b.daysOpen - a.daysOpen)
+    .slice(0, 5);
 
   function classBadge(c: string): string {
     if (c === 'Lock Ready') return 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -490,8 +487,8 @@
             on:click={() => { domainOpenFilters = toggleArrayItem(domainOpenFilters, b.domain); currentPage = 1; }}
             class="w-full grid grid-cols-12 items-center gap-2 text-[11px] px-1.5 py-0.5 rounded cursor-pointer transition-colors {active ? 'bg-blue-50 ring-1 ring-blue-200' : 'hover:bg-slate-50'}"
           >
-            <span class="col-span-5 text-left truncate font-medium {active ? 'text-blue-800 font-bold' : 'text-slate-700'}">{b.short}</span>
-            <div class="col-span-6 h-2 bg-slate-100 rounded-full overflow-hidden">
+            <span class="col-span-6 text-left truncate font-medium {active ? 'text-blue-800 font-bold' : 'text-slate-700'}" title={b.domain}>{b.domain}</span>
+            <div class="col-span-5 h-2 bg-slate-100 rounded-full overflow-hidden">
               <div class="h-full rounded-full {active ? 'bg-blue-600' : 'bg-blue-500/80'}" style="width: {(b.count / maxDomainOpen) * 100}%"></div>
             </div>
             <span class="col-span-1 text-right font-mono font-bold text-slate-900">{b.count}</span>
@@ -500,7 +497,7 @@
       </div>
     </div>
 
-    <!-- Col 3 (4 cols): Top 5 Sites Not Ready / Key Insights Tabbed Card -->
+    <!-- Col 3 (4 cols): Top 5 Subjects Not Ready / Key Insights Tabbed Card -->
     <div class="lg:col-span-4 bg-white rounded-xl border border-slate-200/80 p-3 shadow-xs flex flex-col">
       <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
         <div class="inline-flex rounded-lg bg-slate-100 p-0.5 text-[10px] font-semibold">
@@ -508,38 +505,30 @@
             type="button"
             on:click={() => (rightCardTab = 'sites')}
             class="px-2 py-0.5 rounded-md cursor-pointer {rightCardTab === 'sites' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}"
-          >Top 5 Sites Not Ready</button>
+          >Top 5 Subjects Not Ready</button>
           <button
             type="button"
             on:click={() => (rightCardTab = 'insights')}
             class="px-2 py-0.5 rounded-md cursor-pointer {rightCardTab === 'insights' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-600'}"
           >Key Insights (3)</button>
         </div>
-        {#if siteFilters.length > 0 && rightCardTab === 'sites'}
-          <button
-            type="button"
-            on:click={() => { siteFilters = []; currentPage = 1; }}
-            class="text-[10px] font-semibold text-blue-600 hover:underline cursor-pointer"
-          >Clear</button>
-        {/if}
       </div>
 
       {#if rightCardTab === 'sites'}
         <div class="space-y-1.5 flex-1">
-          {#each topSitesNotReady as r}
-            {@const active = siteFilters.includes(r.siteId)}
+          {#each topSubjectsNotReady as s}
             <button
               type="button"
-              on:click={() => { siteFilters = toggleArrayItem(siteFilters, r.siteId); currentPage = 1; }}
-              class="w-full flex items-center justify-between p-1.5 rounded-lg border text-xs cursor-pointer transition-all {active ? 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-100' : 'bg-slate-50/60 border-slate-100 hover:bg-slate-100/70'}"
+              on:click={() => onSelectSubject(s.id)}
+              class="w-full flex items-center justify-between p-1.5 rounded-lg border text-xs cursor-pointer transition-all bg-slate-50/60 border-slate-100 hover:bg-blue-50/50 hover:border-blue-200"
             >
-              <div class="text-left">
-                <span class="font-mono font-bold text-blue-700">Site {r.siteId}</span>
-                <span class="text-[11px] text-slate-500 ml-1">{r.country}</span>
+              <div class="text-left min-w-0 pr-2">
+                <div class="font-mono font-bold text-blue-700 truncate">{s.id}</div>
+                <div class="text-[10px] text-slate-500 truncate">{countryFlag(s.country)} Site {s.siteId} · {s.classification}</div>
               </div>
-              <div class="flex items-center gap-2 text-[11px]">
-                <span class="text-slate-600">{r.notReady}/{r.total} not ready</span>
-                <span class="font-bold {r.pct >= 45 ? 'text-rose-600' : 'text-amber-600'}">{r.pct}%</span>
+              <div class="flex items-center gap-2 text-[11px] shrink-0">
+                <span class="text-slate-500">{s.openItems.length} open · {s.daysOpen}d</span>
+                <span class="font-bold {s.readiness < 70 ? 'text-rose-600' : 'text-amber-600'}">{s.readiness}%</span>
               </div>
             </button>
           {/each}
@@ -840,7 +829,7 @@
 
         <MultiSelectFilter
           label="Sites"
-          options={V3_SITES.map((st) => ({ value: st.id, label: `Site ${st.id} (${st.country})` }))}
+          options={V3_SITES.map((st) => ({ value: st.id, label: `Site ${st.id} (${countryFlag(st.country)} ${st.country})` }))}
           selected={siteFilters}
           onChange={(next) => { siteFilters = next; currentPage = 1; }}
         />
@@ -870,7 +859,7 @@
 
         <MultiSelectFilter
           label="Open Domains"
-          options={DOMAIN_COLUMNS.map((d) => ({ value: d.match, label: d.short }))}
+          options={DOMAIN_COLUMNS.map((d) => ({ value: d.match, label: d.match }))}
           selected={domainOpenFilters}
           onChange={(next) => { domainOpenFilters = next; currentPage = 1; }}
         />
@@ -919,7 +908,7 @@
                 on:click={() => onSelectSubject(s.id)}
               >
                 <td class="px-3 py-2 font-mono font-bold text-blue-700">{s.id}</td>
-                <td class="px-3 py-2 text-slate-600">{s.country}</td>
+                <td class="px-3 py-2 text-slate-600 whitespace-nowrap">{countryFlag(s.country)} {s.country}</td>
                 <td class="px-3 py-2 font-mono text-slate-600">{s.siteId}</td>
                 <td class="px-3 py-2 text-slate-600">{s.status}</td>
                 <td class="px-3 py-2">
