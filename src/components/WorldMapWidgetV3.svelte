@@ -4,6 +4,9 @@
   import { V3_SITES, V3_COUNTRY_SUMMARY } from '../data/v3Data';
 
   export let onSelectCountry: (country: string) => void = () => {};
+  export let onSelectSite: ((siteId: string) => void) | null = null;
+  export let selectedCountry: string = 'all';
+  export let heightClass: string = 'h-[310px]';
 
   let mapContainer: HTMLElement;
   let map: any = null;
@@ -38,13 +41,18 @@
     return { bg: '#059669', ring: '#10b981' };
   }
 
-  function fitAllSites(animate = true) {
+  function fitSites(country = 'all', animate = true) {
     if (!map || !L) return;
-    const pts = V3_SITES.map((s) => SITE_COORDS[s.id]).filter(Boolean);
+    const targets = country === 'all' ? V3_SITES : V3_SITES.filter((s) => s.country === country);
+    const pts = targets.map((s) => SITE_COORDS[s.id]).filter(Boolean);
     if (pts.length > 0) {
       const bounds = L.latLngBounds(pts);
-      map.fitBounds(bounds, { padding: [32, 32], maxZoom: 4, animate });
+      map.fitBounds(bounds, { padding: [32, 32], maxZoom: country === 'all' ? 4 : 6, animate });
     }
+  }
+
+  $: if (map && L) {
+    fitSites(selectedCountry, true);
   }
 
   onMount(async () => {
@@ -149,7 +157,7 @@
             : 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;';
 
         const popupHtml = `
-          <div style="min-width:205px;font-family:Inter,system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1e293b;">
+          <div style="min-width:210px;font-family:Inter,system-ui,sans-serif;font-size:11px;line-height:1.4;color:#1e293b;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:6px;border-bottom:1px solid #f1f5f9;">
               <strong style="font-size:12px;color:#0f172a;">Site ${site.id} · ${site.country}</strong>
               <span style="padding:1px 6px;border-radius:999px;font-size:10px;font-weight:700;${badgeClass}">${site.riskLevel}</span>
@@ -162,17 +170,25 @@
               <div>Subjects: <strong style="color:#0f172a;">${site.enrolled}</strong></div>
             </div>
             <div style="margin-top:5px;font-size:10px;color:#64748b;">Driver: ${site.primaryDriver}</div>
-            <button type="button" data-country="${site.country}" class="v3-popup-filter-btn" style="margin-top:7px;width:100%;padding:4px 8px;border-radius:6px;background:#2563eb;color:#ffffff;font-weight:600;font-size:10.5px;border:none;cursor:pointer;">
-              Filter ${site.country} Sites →
-            </button>
+            <div style="display:flex;gap:6px;margin-top:7px;">
+              <button type="button" data-country="${site.country}" class="v3-popup-filter-btn" style="flex:1;padding:4px 8px;border-radius:6px;background:#f1f5f9;color:#1e293b;font-weight:600;font-size:10.5px;border:1px solid #cbd5e1;cursor:pointer;">
+                Filter ${site.country}
+              </button>
+              ${onSelectSite ? `<button type="button" data-site="${site.id}" class="v3-popup-site-btn" style="flex:1;padding:4px 8px;border-radius:6px;background:#2563eb;color:#ffffff;font-weight:600;font-size:10.5px;border:none;cursor:pointer;">Inspect Site →</button>` : ''}
+            </div>
           </div>
         `;
 
         marker.bindPopup(popupHtml, { closeButton: true, className: 'v3-leaflet-popup' });
         marker.on('popupopen', (e: any) => {
-          const btn = e.popup.getElement()?.querySelector('.v3-popup-filter-btn');
+          const el = e.popup.getElement();
+          const btn = el?.querySelector('.v3-popup-filter-btn');
           if (btn) {
             btn.addEventListener('click', () => onSelectCountry(site.country));
+          }
+          const siteBtn = el?.querySelector('.v3-popup-site-btn');
+          if (siteBtn && onSelectSite) {
+            siteBtn.addEventListener('click', () => onSelectSite!(site.id));
           }
         });
 
@@ -180,7 +196,7 @@
       });
 
       map.addLayer(clusterGroup);
-      fitAllSites(false);
+      fitSites(selectedCountry, false);
 
       if (typeof ResizeObserver !== 'undefined') {
         resizeObserver = new ResizeObserver(() => {
@@ -209,13 +225,13 @@
   });
 </script>
 
-<div class="relative w-full h-[310px] rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
+<div class="relative w-full {heightClass} rounded-lg overflow-hidden border border-slate-200 bg-slate-100">
   <div bind:this={mapContainer} class="w-full h-full z-0"></div>
 
   <!-- Top-left Summary Pill -->
   <div class="absolute top-2.5 left-2.5 z-[400] inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/95 backdrop-blur-xs border border-slate-200/90 shadow-xs text-[11px] font-semibold text-slate-700 pointer-events-none">
     <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-    <span>{V3_COUNTRY_SUMMARY.length} Countries · {V3_SITES.length} Sites</span>
+    <span>{selectedCountry === 'all' ? `${V3_COUNTRY_SUMMARY.length} Countries · ${V3_SITES.length} Sites` : `${selectedCountry} · ${V3_SITES.filter((s) => s.country === selectedCountry).length} Sites`}</span>
   </div>
 
   <!-- Top-right Clean Zoom Controls -->
@@ -238,7 +254,7 @@
     </button>
     <button
       type="button"
-      on:click={() => fitAllSites(true)}
+      on:click={() => fitSites('all', true)}
       title="Reset view"
       class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
     >
