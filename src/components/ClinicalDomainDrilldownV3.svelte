@@ -81,9 +81,9 @@
       selectedDonutSegment = null;
     } else {
       selectedDonutSegment = label;
-      subTab = 'details';
-      pendingPage = 1;
     }
+    subjectPage = 1;
+    pendingPage = 1;
   }
 
   function resetTableFilters() {
@@ -205,6 +205,12 @@
     'On track': currentDomain.breakdownRows.filter((r) => r.status === 'On track').length,
   };
 
+  $: segmentPendingRecords = selectedDonutSegment
+    ? allDomainPendingRecords.filter((r) => r.segmentLabel === selectedDonutSegment)
+    : allDomainPendingRecords;
+  $: segmentSiteIds = new Set(segmentPendingRecords.map((r) => r.siteId));
+  $: segmentSubjectIds = new Set(segmentPendingRecords.map((r) => r.subjectId));
+
   $: filteredBreakdown = currentDomain.breakdownRows
     .filter((r) => {
       const q = searchQuery.trim().toLowerCase();
@@ -215,7 +221,16 @@
       const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
       const matchesCountry = countryFilter === 'all' || r.country === countryFilter;
       const matchesCritical = !onlyCriticalSites || r.criticalItems > 0;
-      return matchesSearch && matchesStatus && matchesCountry && matchesCritical;
+      const matchesSegment = !selectedDonutSegment
+        ? true
+        : currentDomain.id === 'external_data'
+        ? (() => {
+            const words = selectedDonutSegment.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+            const rowText = `${r.country} ${r.siteId}`.toLowerCase();
+            return words.some((w) => rowText.includes(w)) || (selectedDonutSegment === 'Other Vendors' && r.siteId === 'BIO');
+          })()
+        : segmentSiteIds.has(r.siteId);
+      return matchesSearch && matchesStatus && matchesCountry && matchesCritical && matchesSegment;
     })
     .sort((a, b) => {
       const dir = siteSortDir === 'asc' ? 1 : -1;
@@ -293,7 +308,8 @@
       const matchesCountry = countryFilter === 'all' || subj.country === countryFilter;
       const matchesClass = classificationFilter === 'all' || subj.classification === classificationFilter;
       const matchesOwner = ownerFilter === 'all' || subj.owner === ownerFilter;
-      return matchesSearch && matchesStatus && matchesCountry && matchesClass && matchesOwner;
+      const matchesSegment = !selectedDonutSegment || segmentSubjectIds.has(subj.id);
+      return matchesSearch && matchesStatus && matchesCountry && matchesClass && matchesOwner && matchesSegment;
     })
     .sort((a, b) => {
       const dir = subjectSortDir === 'asc' ? 1 : -1;
@@ -581,6 +597,7 @@
   $: activeFilterCount = (() => {
     let n = 0;
     if (searchQuery.trim()) n++;
+    if (selectedDonutSegment) n++;
     if (subTab === 'site') {
       if (statusFilter !== 'all') n++;
       if (countryFilter !== 'all') n++;
@@ -595,7 +612,6 @@
       if (siteFilter !== 'all') n++;
       if (ownerFilter !== 'all') n++;
       if (agingFilter !== 'all') n++;
-      if (selectedDonutSegment) n++;
     }
     return n;
   })();
@@ -1231,25 +1247,36 @@
         </div>
 
         <!-- Polished Top Filter Bar -->
-        <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2.5">
-          {#if selectedDonutSegment && subTab === 'details'}
-            {@const segObj = currentDomain.donutSegments.find((s) => s.label === selectedDonutSegment)}
-            <div class="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-blue-50/90 border border-blue-200/90 text-xs">
-              <div class="flex items-center gap-2 text-blue-900">
-                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{segObj?.color || '#2563eb'}"></span>
-                <span class="text-[11px] font-medium text-blue-700">Filtered by Pie Chart:</span>
-                <span class="font-bold text-blue-950">{selectedDonutSegment}</span>
-                <span class="px-1.5 py-0.5 rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">{filteredPendingRecords.length} records</span>
-              </div>
+        <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-2.5 space-y-2">
+          <!-- Row 0: Pie / Category Filter Pills (synced with Donut Chart) -->
+          <div class="flex flex-wrap items-center gap-1.5 pb-2 border-b border-slate-200/70">
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-1 shrink-0">
+              Category
+            </span>
+            <button
+              type="button"
+              on:click={() => { selectedDonutSegment = null; subjectPage = 1; pendingPage = 1; }}
+              class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {!selectedDonutSegment ? 'bg-blue-600 text-white border-blue-600 shadow-2xs' : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
+            >
+              <span>All</span>
+              <span class="px-1 rounded-full text-[10px] font-bold {!selectedDonutSegment ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{currentDomain.donutCenterValue}</span>
+            </button>
+            {#each currentDomain.donutSegments as seg, idx}
+              {@const isSel = selectedDonutSegment === seg.label}
               <button
                 type="button"
-                on:click={() => { selectedDonutSegment = null; pendingPage = 1; }}
-                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-blue-200 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
+                on:click={() => handleDonutClick(seg.label)}
+                on:mouseenter={() => (hoveredDonutIdx = idx)}
+                on:mouseleave={() => (hoveredDonutIdx = null)}
+                class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border transition-all cursor-pointer {isSel ? 'bg-slate-900 text-white border-slate-900 shadow-2xs' : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300 hover:bg-slate-50'}"
               >
-                <X size={11} /> Clear
+                <span class="w-2 h-2 rounded-full shrink-0" style="background:{seg.color}"></span>
+                <span class="truncate max-w-[140px]">{seg.label}</span>
+                <span class="px-1 rounded-full text-[10px] font-bold {isSel ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">{seg.count}</span>
               </button>
-            </div>
-          {/if}
+            {/each}
+          </div>
+
           <!-- Row 1: Quick Status / Criticality Segmented Pills -->
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
