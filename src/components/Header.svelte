@@ -82,12 +82,12 @@
       {/each}
     </nav>
 
-    <div class="flex shrink-0 items-center gap-2.5" role="group" aria-label="Darshan, Consultant">
+    <div class="flex shrink-0 items-center gap-2.5" role="group" aria-label="Darshan Bharat, Consultant">
       <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">
-        D
+        DB
       </div>
       <div class="hidden text-left xl:block" aria-hidden="true">
-        <strong class="block text-xs font-semibold leading-tight text-slate-900">Darshan</strong>
+        <strong class="block text-xs font-semibold leading-tight text-slate-900">Darshan Bharat</strong>
         <small class="mt-0.5 block text-[11px] leading-none text-slate-500">Consultant</small>
       </div>
     </div>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ArrowLeft, ChevronRight, ChevronLeft, Search, Info, SlidersHorizontal, RotateCcw, Filter, X, ArrowUpDown } from '@lucide/svelte';
+  import { ArrowLeft, ChevronRight, ChevronLeft, Search, Info, SlidersHorizontal, RotateCcw, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from '@lucide/svelte';
   import { V3_DOMAINS, V3_STUDY_META, V3_SUBJECT_ROWS } from '../data/v3Data';
   import {
     v3DomainWeights,
@@ -24,9 +24,20 @@
   let classificationFilter = 'all';
   let agingFilter: 'all' | 'overdue' | 'escalated' | 'recent' = 'all';
   let onlyCriticalSites = false;
-  let siteSort: 'pct_asc' | 'incomplete_desc' | 'critical_desc' | 'country_asc' = 'pct_asc';
-  let subjectSort: 'pct_asc' | 'days_desc' | 'id_asc' = 'pct_asc';
-  let pendingSort: 'crit_desc' | 'days_desc' | 'site_asc' | 'subject_asc' = 'crit_desc';
+  let selectedDonutSegment: string | null = null;
+
+  type SortDir = 'asc' | 'desc';
+  type SiteSortCol = 'country' | 'siteId' | 'subjects' | 'complete' | 'incomplete' | 'pctComplete' | 'trend7d' | 'criticalItems' | 'status';
+  type SubjectSortCol = 'id' | 'siteId' | 'details' | 'completion' | 'classification' | 'daysOpen' | 'owner' | 'domainStatus';
+  type PendingSortCol = 'subjectId' | 'siteId' | 'visit' | 'form' | 'issue' | 'daysOpen' | 'criticality' | 'owner';
+
+  let siteSortCol: SiteSortCol = 'pctComplete';
+  let siteSortDir: SortDir = 'asc';
+  let subjectSortCol: SubjectSortCol = 'completion';
+  let subjectSortDir: SortDir = 'asc';
+  let pendingSortCol: PendingSortCol = 'criticality';
+  let pendingSortDir: SortDir = 'desc';
+
   let drawerSubjectId: string | null = null;
   let showWeightConfig = false;
   let subjectPage = 1;
@@ -35,6 +46,45 @@
   let pendingPageSize = 15;
   let hoveredTrendIdx: number | null = null;
   let hoveredDonutIdx: number | null = null;
+
+  function toggleSiteSort(col: SiteSortCol) {
+    if (siteSortCol === col) {
+      siteSortDir = siteSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      siteSortCol = col;
+      siteSortDir = ['subjects', 'complete', 'incomplete', 'criticalItems', 'status'].includes(col) ? 'desc' : 'asc';
+    }
+  }
+
+  function toggleSubjectSort(col: SubjectSortCol) {
+    if (subjectSortCol === col) {
+      subjectSortDir = subjectSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      subjectSortCol = col;
+      subjectSortDir = ['daysOpen', 'classification', 'domainStatus'].includes(col) ? 'desc' : 'asc';
+    }
+    subjectPage = 1;
+  }
+
+  function togglePendingSort(col: PendingSortCol) {
+    if (pendingSortCol === col) {
+      pendingSortDir = pendingSortDir === 'asc' ? 'desc' : 'asc';
+    } else {
+      pendingSortCol = col;
+      pendingSortDir = ['daysOpen', 'criticality'].includes(col) ? 'desc' : 'asc';
+    }
+    pendingPage = 1;
+  }
+
+  function handleDonutClick(label: string) {
+    if (selectedDonutSegment === label) {
+      selectedDonutSegment = null;
+    } else {
+      selectedDonutSegment = label;
+      subTab = 'details';
+      pendingPage = 1;
+    }
+  }
 
   function resetTableFilters() {
     searchQuery = '';
@@ -46,6 +96,7 @@
     classificationFilter = 'all';
     agingFilter = 'all';
     onlyCriticalSites = false;
+    selectedDonutSegment = null;
     subjectPage = 1;
     pendingPage = 1;
     hoveredTrendIdx = null;
@@ -167,10 +218,40 @@
       return matchesSearch && matchesStatus && matchesCountry && matchesCritical;
     })
     .sort((a, b) => {
-      if (siteSort === 'incomplete_desc') return b.incomplete - a.incomplete || a.pctComplete - b.pctComplete;
-      if (siteSort === 'critical_desc') return b.criticalItems - a.criticalItems || a.pctComplete - b.pctComplete;
-      if (siteSort === 'country_asc') return a.country.localeCompare(b.country) || a.siteId.localeCompare(b.siteId);
-      return a.pctComplete - b.pctComplete || b.incomplete - a.incomplete;
+      const dir = siteSortDir === 'asc' ? 1 : -1;
+      const statusRank: Record<string, number> = { 'High risk': 3, 'At risk': 2, 'On track': 1 };
+      let cmp = 0;
+      switch (siteSortCol) {
+        case 'country':
+          cmp = a.country.localeCompare(b.country);
+          break;
+        case 'siteId':
+          cmp = a.siteId.localeCompare(b.siteId, undefined, { numeric: true });
+          break;
+        case 'subjects':
+          cmp = a.subjects - b.subjects;
+          break;
+        case 'complete':
+          cmp = a.complete - b.complete;
+          break;
+        case 'incomplete':
+          cmp = a.incomplete - b.incomplete;
+          break;
+        case 'trend7d':
+          cmp = parseFloat(a.trend7d) - parseFloat(b.trend7d);
+          break;
+        case 'criticalItems':
+          cmp = a.criticalItems - b.criticalItems;
+          break;
+        case 'status':
+          cmp = (statusRank[a.status] || 0) - (statusRank[b.status] || 0);
+          break;
+        case 'pctComplete':
+        default:
+          cmp = a.pctComplete - b.pctComplete;
+          break;
+      }
+      return cmp !== 0 ? cmp * dir : a.siteId.localeCompare(b.siteId, undefined, { numeric: true });
     });
 
   $: allDomainSubjects = V3_SUBJECT_ROWS.map((subj) => {
@@ -215,9 +296,43 @@
       return matchesSearch && matchesStatus && matchesCountry && matchesClass && matchesOwner;
     })
     .sort((a, b) => {
-      if (subjectSort === 'days_desc') return b.subj.daysOpen - a.subj.daysOpen || a.completion - b.completion;
-      if (subjectSort === 'id_asc') return a.subj.id.localeCompare(b.subj.id);
-      return a.completion - b.completion || b.subj.daysOpen - a.subj.daysOpen;
+      const dir = subjectSortDir === 'asc' ? 1 : -1;
+      const classRank: Record<string, number> = {
+        'Hard Blocked': 4,
+        'Action Required': 3,
+        'Conditionally Ready': 2,
+        'Lock Ready': 1,
+      };
+      const statusRank: Record<string, number> = { 'High risk': 3, 'At risk': 2, 'On track': 1 };
+      let cmp = 0;
+      switch (subjectSortCol) {
+        case 'id':
+          cmp = a.subj.id.localeCompare(b.subj.id);
+          break;
+        case 'siteId':
+          cmp = a.subj.siteId.localeCompare(b.subj.siteId, undefined, { numeric: true }) || a.subj.country.localeCompare(b.subj.country);
+          break;
+        case 'details':
+          cmp = (a.domEntry?.details || a.subj.keyOpenItems).localeCompare(b.domEntry?.details || b.subj.keyOpenItems);
+          break;
+        case 'classification':
+          cmp = (classRank[a.subj.classification] || 0) - (classRank[b.subj.classification] || 0);
+          break;
+        case 'daysOpen':
+          cmp = a.subj.daysOpen - b.subj.daysOpen;
+          break;
+        case 'owner':
+          cmp = a.subj.owner.localeCompare(b.subj.owner);
+          break;
+        case 'domainStatus':
+          cmp = (statusRank[a.domainStatus] || 0) - (statusRank[b.domainStatus] || 0);
+          break;
+        case 'completion':
+        default:
+          cmp = a.completion - b.completion;
+          break;
+      }
+      return cmp !== 0 ? cmp * dir : a.subj.id.localeCompare(b.subj.id);
     });
 
   $: totalSubjectPages = Math.max(1, Math.ceil(filteredSubjects.length / subjectPageSize));
@@ -306,12 +421,42 @@
     const critRank: Record<string, number> = { Critical: 3, High: 2, Medium: 1 };
     extra.sort((a, b) => (critRank[b.criticality] || 0) - (critRank[a.criticality] || 0) || b.daysOpen - a.daysOpen);
 
-    let records = [...curated, ...extra];
+    let baseRecords = [...curated, ...extra];
+    if (targetCount > 0 && baseRecords.length > targetCount) {
+      baseRecords = baseRecords.slice(0, targetCount);
+    }
 
-    // Reconcile count with top KPI card (currentDomain.kpi2Value)
-    if (targetCount > 0 && records.length > targetCount) {
-      records = records.slice(0, targetCount);
-    } else if (targetCount > 0 && records.length < targetCount) {
+    // Assign exact donutSegment labels so clicking any pie arc filters to its exact count
+    const segments = currentDomain.donutSegments;
+    const remainingBySeg = new Map<string, number>(segments.map((s) => [s.label, s.count]));
+
+    function pickSegmentForExisting(rec: { visit: string; form: string; issue: string; criticality: string }): string {
+      if (!segments.length) return '';
+      const hay = `${rec.visit} ${rec.form} ${rec.issue} ${rec.criticality}`.toLowerCase();
+      for (const seg of segments) {
+        if ((remainingBySeg.get(seg.label) || 0) <= 0) continue;
+        const words = seg.label.toLowerCase().split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+        if (words.some((w) => hay.includes(w))) {
+          remainingBySeg.set(seg.label, (remainingBySeg.get(seg.label) || 1) - 1);
+          return seg.label;
+        }
+      }
+      for (const seg of segments) {
+        if ((remainingBySeg.get(seg.label) || 0) > 0) {
+          remainingBySeg.set(seg.label, (remainingBySeg.get(seg.label) || 1) - 1);
+          return seg.label;
+        }
+      }
+      return segments[0].label;
+    }
+
+    const records = baseRecords.map((r) => ({
+      ...r,
+      segmentLabel: pickSegmentForExisting(r),
+    }));
+
+    // Fill remaining records per donut segment so every slice matches its exact count
+    if (targetCount > 0 && records.length < targetCount) {
       const tpl = DOMAIN_PENDING_TEMPLATES[currentDomain.id] || {
         prefix: currentDomain.id.toUpperCase().slice(0, 3),
         visits: ['Week 12', 'Week 24', 'Week 36', 'End of Study'],
@@ -319,16 +464,21 @@
         issues: ['Pending review'],
         owners: ['Site / CRA', 'DM'],
       };
-      const segments = currentDomain.donutSegments;
-      const needed = targetCount - records.length;
 
+      const segmentQueue: string[] = [];
+      for (const seg of segments) {
+        const rem = remainingBySeg.get(seg.label) || 0;
+        for (let k = 0; k < rem; k++) segmentQueue.push(seg.label);
+      }
+
+      const needed = targetCount - records.length;
       for (let i = 0; i < needed; i++) {
         const subj = orderedSubjects[i % orderedSubjects.length];
-        const seg = segments.length ? segments[i % segments.length] : null;
+        const segLabel = segmentQueue[i] || (segments.length ? segments[i % segments.length].label : '');
         const visit = tpl.visits[i % tpl.visits.length];
         const form = tpl.forms[(i + Math.floor(i / tpl.visits.length)) % tpl.forms.length];
         const baseIssue = tpl.issues[i % tpl.issues.length];
-        const issue = seg ? `${baseIssue} · ${seg.label}` : baseIssue;
+        const issue = segLabel ? `${baseIssue} · ${segLabel}` : baseIssue;
         const owner = tpl.owners[i % tpl.owners.length];
         const daysOpen = Math.max(1, ((i * 7 + Number(subj.siteId)) % 14) + 1);
         const criticality: 'Critical' | 'High' | 'Medium' =
@@ -339,7 +489,7 @@
             : 'Medium';
 
         records.push({
-          id: `${tpl.prefix}-${String(curated.length + extra.length + i + 1).padStart(4, '0')}`,
+          id: `${tpl.prefix}-${String(baseRecords.length + i + 1).padStart(4, '0')}`,
           subjectId: subj.id,
           siteId: subj.siteId,
           visit,
@@ -350,6 +500,7 @@
           owner,
           status: daysOpen >= 10 ? 'Escalated' : daysOpen >= 6 ? 'In Progress' : 'Open',
           actionLabel: 'Inspect',
+          segmentLabel: segLabel,
         });
       }
     }
@@ -385,19 +536,46 @@
       const matchesCrit = criticalityFilter === 'all' || r.criticality === criticalityFilter;
       const matchesSite = siteFilter === 'all' || r.siteId === siteFilter;
       const matchesOwner = ownerFilter === 'all' || r.owner === ownerFilter;
+      const matchesSegment = !selectedDonutSegment || r.segmentLabel === selectedDonutSegment;
       const matchesAging =
         agingFilter === 'all' ||
         (agingFilter === 'escalated' && r.daysOpen >= 10) ||
         (agingFilter === 'overdue' && r.daysOpen > 7) ||
         (agingFilter === 'recent' && r.daysOpen <= 7);
-      return matchesSearch && matchesCrit && matchesSite && matchesOwner && matchesAging;
+      return matchesSearch && matchesCrit && matchesSite && matchesOwner && matchesSegment && matchesAging;
     })
     .sort((a, b) => {
-      if (pendingSort === 'days_desc') return b.daysOpen - a.daysOpen;
-      if (pendingSort === 'site_asc') return a.siteId.localeCompare(b.siteId) || b.daysOpen - a.daysOpen;
-      if (pendingSort === 'subject_asc') return a.subjectId.localeCompare(b.subjectId);
+      const dir = pendingSortDir === 'asc' ? 1 : -1;
       const rank: Record<string, number> = { Critical: 3, High: 2, Medium: 1 };
-      return (rank[b.criticality] || 0) - (rank[a.criticality] || 0) || b.daysOpen - a.daysOpen;
+      let cmp = 0;
+      switch (pendingSortCol) {
+        case 'subjectId':
+          cmp = a.subjectId.localeCompare(b.subjectId);
+          break;
+        case 'siteId':
+          cmp = a.siteId.localeCompare(b.siteId, undefined, { numeric: true });
+          break;
+        case 'visit':
+          cmp = a.visit.localeCompare(b.visit);
+          break;
+        case 'form':
+          cmp = a.form.localeCompare(b.form);
+          break;
+        case 'issue':
+          cmp = a.issue.localeCompare(b.issue);
+          break;
+        case 'daysOpen':
+          cmp = a.daysOpen - b.daysOpen;
+          break;
+        case 'owner':
+          cmp = a.owner.localeCompare(b.owner);
+          break;
+        case 'criticality':
+        default:
+          cmp = (rank[a.criticality] || 0) - (rank[b.criticality] || 0);
+          break;
+      }
+      return cmp !== 0 ? cmp * dir : b.daysOpen - a.daysOpen;
     });
 
   $: activeFilterCount = (() => {
@@ -417,6 +595,7 @@
       if (siteFilter !== 'all') n++;
       if (ownerFilter !== 'all') n++;
       if (agingFilter !== 'all') n++;
+      if (selectedDonutSegment) n++;
     }
     return n;
   })();
@@ -896,14 +1075,24 @@
         >
           <div class="flex items-center justify-between gap-2 pb-2.5 mb-3 border-b border-slate-100">
             <h3 class="text-xs font-bold text-slate-900 truncate">{currentDomain.donutTitle}</h3>
-            {#if hoveredDonutIdx !== null && currentDomain.donutSegments[hoveredDonutIdx]}
+            {#if selectedDonutSegment}
+              <button
+                type="button"
+                on:click={() => (selectedDonutSegment = null)}
+                class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-blue-50 border border-blue-200 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 shrink-0 cursor-pointer"
+                title="Clear pie chart filter"
+              >
+                <span class="truncate max-w-[90px]">{selectedDonutSegment}</span>
+                <X size={10} />
+              </button>
+            {:else if hoveredDonutIdx !== null && currentDomain.donutSegments[hoveredDonutIdx]}
               {@const activeSeg = currentDomain.donutSegments[hoveredDonutIdx]}
               <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] font-semibold text-slate-700 shrink-0 max-w-[130px] truncate">
                 <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:{activeSeg.color}"></span>
                 <span class="truncate">{activeSeg.label}</span>
               </span>
             {:else}
-              <span class="text-[10px] font-semibold text-slate-400 shrink-0">Distribution</span>
+              <span class="text-[10px] font-semibold text-slate-400 shrink-0">Click slice to filter</span>
             {/if}
           </div>
           <div class="flex-1 flex items-center gap-4">
@@ -911,27 +1100,40 @@
               <circle cx="55" cy="55" r={R} fill="none" stroke="#f1f5f9" stroke-width="14" />
               {#each donutArcs as arc, idx}
                 {@const isHovered = hoveredDonutIdx === idx}
-                {@const isDimmed = hoveredDonutIdx !== null && !isHovered}
+                {@const isSelected = selectedDonutSegment === arc.label}
+                {@const isActive = isHovered || isSelected}
+                {@const hasFocus = hoveredDonutIdx !== null || selectedDonutSegment !== null}
+                {@const isDimmed = hasFocus && !isActive}
                 <circle
                   cx="55"
                   cy="55"
                   r={R}
                   fill="none"
                   stroke={arc.color}
-                  stroke-width={isHovered ? 17 : 14}
+                  stroke-width={isActive ? 17 : 14}
                   stroke-dasharray={arc.dasharray}
                   stroke-dashoffset={arc.dashoffset}
-                  opacity={isDimmed ? 0.35 : 1}
+                  opacity={isDimmed ? 0.3 : 1}
                   transform="rotate(-90 55 55)"
                   class="cursor-pointer transition-all duration-150"
-                  role="presentation"
+                  role="button"
+                  tabindex="0"
+                  aria-label="Filter by {arc.label} ({arc.count})"
                   on:mouseenter={() => (hoveredDonutIdx = idx)}
+                  on:click={() => handleDonutClick(arc.label)}
+                  on:keydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDonutClick(arc.label); } }}
                 />
               {/each}
               {#if hoveredDonutIdx !== null && currentDomain.donutSegments[hoveredDonutIdx]}
                 {@const activeSeg = currentDomain.donutSegments[hoveredDonutIdx]}
                 <text x="55" y="52" text-anchor="middle" font-size="13" font-weight="800" fill={activeSeg.color}>{activeSeg.count}</text>
                 <text x="55" y="64" text-anchor="middle" font-size="8" font-weight="700" fill="#475569">{activeSeg.pct}% share</text>
+              {:else if selectedDonutSegment}
+                {@const selSeg = currentDomain.donutSegments.find((s) => s.label === selectedDonutSegment)}
+                {#if selSeg}
+                  <text x="55" y="52" text-anchor="middle" font-size="13" font-weight="800" fill={selSeg.color}>{selSeg.count}</text>
+                  <text x="55" y="64" text-anchor="middle" font-size="8" font-weight="700" fill="#475569">{selSeg.pct}% filtered</text>
+                {/if}
               {:else}
                 <text x="55" y="53" text-anchor="middle" font-size="13" font-weight="800" fill="#0f172a">{currentDomain.donutCenterValue}</text>
                 <text x="55" y="65" text-anchor="middle" font-size="8" fill="#64748b">{currentDomain.donutCenterLabel}</text>
@@ -940,18 +1142,22 @@
             <div class="space-y-1 flex-1 min-w-0">
               {#each currentDomain.donutSegments as seg, idx}
                 {@const isHovered = hoveredDonutIdx === idx}
-                {@const isDimmed = hoveredDonutIdx !== null && !isHovered}
-                <div
-                  role="presentation"
+                {@const isSelected = selectedDonutSegment === seg.label}
+                {@const isActive = isHovered || isSelected}
+                {@const hasFocus = hoveredDonutIdx !== null || selectedDonutSegment !== null}
+                {@const isDimmed = hasFocus && !isActive}
+                <button
+                  type="button"
                   on:mouseenter={() => (hoveredDonutIdx = idx)}
-                  class="flex items-center justify-between text-[11px] gap-2 px-1.5 py-1 rounded-md cursor-pointer transition-all duration-150 {isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200/80' : 'hover:bg-slate-50'} {isDimmed ? 'opacity-50' : 'opacity-100'}"
+                  on:click={() => handleDonutClick(seg.label)}
+                  class="w-full flex items-center justify-between text-[11px] gap-2 px-1.5 py-1 rounded-md cursor-pointer transition-all duration-150 text-left {isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : isHovered ? 'bg-slate-100/90 ring-1 ring-slate-200/80' : 'hover:bg-slate-50'} {isDimmed ? 'opacity-50' : 'opacity-100'}"
                 >
-                  <span class="inline-flex items-center gap-1.5 truncate {isHovered ? 'text-slate-900 font-semibold' : 'text-slate-700'}">
-                    <span class="w-2 h-2 rounded-full shrink-0 transition-transform duration-150 {isHovered ? 'scale-125' : ''}" style="background:{seg.color}"></span>
+                  <span class="inline-flex items-center gap-1.5 truncate {isActive ? 'text-slate-900 font-semibold' : 'text-slate-700'}">
+                    <span class="w-2 h-2 rounded-full shrink-0 transition-transform duration-150 {isActive ? 'scale-125' : ''}" style="background:{seg.color}"></span>
                     <span class="truncate">{seg.label}</span>
                   </span>
                   <span class="font-semibold text-slate-900 shrink-0">{seg.count} <span class="text-slate-400 font-normal">({seg.pct}%)</span></span>
-                </div>
+                </button>
               {/each}
             </div>
           </div>
@@ -1018,35 +1224,32 @@
                 <RotateCcw size={11} /> Reset
               </button>
             {/if}
-            <div class="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg border border-slate-200 bg-slate-50/80 text-[11px] text-slate-600">
-              <ArrowUpDown size={11} class="text-slate-400 shrink-0" />
-              {#if subTab === 'site'}
-                <select bind:value={siteSort} class="bg-transparent text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer">
-                  <option value="pct_asc">Sort: Lowest % Complete</option>
-                  <option value="incomplete_desc">Sort: Most Incomplete</option>
-                  <option value="critical_desc">Sort: Most Critical</option>
-                  <option value="country_asc">Sort: Country / Source</option>
-                </select>
-              {:else if subTab === 'subject'}
-                <select bind:value={subjectSort} on:change={() => (subjectPage = 1)} class="bg-transparent text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer">
-                  <option value="pct_asc">Sort: Lowest Domain %</option>
-                  <option value="days_desc">Sort: Most Days Open</option>
-                  <option value="id_asc">Sort: Subject ID</option>
-                </select>
-              {:else}
-                <select bind:value={pendingSort} on:change={() => (pendingPage = 1)} class="bg-transparent text-xs font-medium text-slate-700 focus:outline-hidden cursor-pointer">
-                  <option value="crit_desc">Sort: Highest Criticality</option>
-                  <option value="days_desc">Sort: Oldest First</option>
-                  <option value="site_asc">Sort: Site ID</option>
-                  <option value="subject_asc">Sort: Subject ID</option>
-                </select>
-              {/if}
-            </div>
+            <span class="hidden sm:inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-slate-200/80 bg-slate-50/80 text-[10px] font-medium text-slate-500">
+              <ArrowUpDown size={10} class="text-slate-400" /> Click any column to sort
+            </span>
           </div>
         </div>
 
         <!-- Polished Top Filter Bar -->
         <div class="rounded-xl bg-slate-50/90 border border-slate-200/80 p-3 space-y-2.5">
+          {#if selectedDonutSegment && subTab === 'details'}
+            {@const segObj = currentDomain.donutSegments.find((s) => s.label === selectedDonutSegment)}
+            <div class="flex flex-wrap items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-blue-50/90 border border-blue-200/90 text-xs">
+              <div class="flex items-center gap-2 text-blue-900">
+                <span class="w-2.5 h-2.5 rounded-full shrink-0" style="background:{segObj?.color || '#2563eb'}"></span>
+                <span class="text-[11px] font-medium text-blue-700">Filtered by Pie Chart:</span>
+                <span class="font-bold text-blue-950">{selectedDonutSegment}</span>
+                <span class="px-1.5 py-0.5 rounded-full bg-blue-100 text-[10px] font-bold text-blue-700">{filteredPendingRecords.length} records</span>
+              </div>
+              <button
+                type="button"
+                on:click={() => { selectedDonutSegment = null; pendingPage = 1; }}
+                class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white border border-blue-200 text-[11px] font-semibold text-blue-700 hover:bg-blue-100 cursor-pointer"
+              >
+                <X size={11} /> Clear
+              </button>
+            </div>
+          {/if}
           <!-- Row 1: Quick Status / Criticality Segmented Pills -->
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div class="flex flex-wrap items-center gap-1.5">
@@ -1214,15 +1417,36 @@
             <table class="w-full text-xs">
               <thead class="bg-slate-50/90 border-b border-slate-200/80">
                 <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th class="px-3 py-2.5">Country / Source</th>
-                  <th class="px-3 py-2.5">Site ID</th>
-                  <th class="px-3 py-2.5 text-right">Subjects</th>
-                  <th class="px-3 py-2.5 text-right">Complete / Exp</th>
-                  <th class="px-3 py-2.5 text-right">Incomplete</th>
-                  <th class="px-3 py-2.5 text-right">% Complete</th>
-                  <th class="px-3 py-2.5 text-right">7d Trend</th>
-                  <th class="px-3 py-2.5 text-right">Critical</th>
-                  <th class="px-3 py-2.5 text-right">Status</th>
+                  {#each [
+                    { col: 'country' as SiteSortCol, label: 'Country / Source', align: 'left' },
+                    { col: 'siteId' as SiteSortCol, label: 'Site ID', align: 'left' },
+                    { col: 'subjects' as SiteSortCol, label: 'Subjects', align: 'right' },
+                    { col: 'complete' as SiteSortCol, label: 'Complete / Exp', align: 'right' },
+                    { col: 'incomplete' as SiteSortCol, label: 'Incomplete', align: 'right' },
+                    { col: 'pctComplete' as SiteSortCol, label: '% Complete', align: 'right' },
+                    { col: 'trend7d' as SiteSortCol, label: '7d Trend', align: 'right' },
+                    { col: 'criticalItems' as SiteSortCol, label: 'Critical', align: 'right' },
+                    { col: 'status' as SiteSortCol, label: 'Status', align: 'right' },
+                  ] as h}
+                    <th class="px-3 py-2.5 {h.align === 'right' ? 'text-right' : 'text-left'}">
+                      <button
+                        type="button"
+                        on:click={() => toggleSiteSort(h.col)}
+                        class="group inline-flex items-center gap-1 uppercase tracking-wider cursor-pointer transition-colors {h.align === 'right' ? 'justify-end ml-auto' : ''} {siteSortCol === h.col ? 'text-blue-700 font-bold' : 'text-slate-500 hover:text-slate-800'}"
+                      >
+                        <span>{h.label}</span>
+                        {#if siteSortCol === h.col}
+                          {#if siteSortDir === 'asc'}
+                            <ArrowUp size={11} class="text-blue-600 shrink-0" />
+                          {:else}
+                            <ArrowDown size={11} class="text-blue-600 shrink-0" />
+                          {/if}
+                        {:else}
+                          <ArrowUpDown size={10} class="text-slate-300 group-hover:text-slate-500 shrink-0" />
+                        {/if}
+                      </button>
+                    </th>
+                  {/each}
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
@@ -1287,14 +1511,35 @@
             <table class="w-full text-xs">
               <thead class="bg-slate-50/90 border-b border-slate-200/80">
                 <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th class="px-3 py-2.5">Subject ID</th>
-                  <th class="px-3 py-2.5">Site / Country</th>
-                  <th class="px-3 py-2.5">Domain Details</th>
-                  <th class="px-3 py-2.5 text-right">Domain %</th>
-                  <th class="px-3 py-2.5">Classification</th>
-                  <th class="px-3 py-2.5 text-right">Days Open</th>
-                  <th class="px-3 py-2.5">Owner</th>
-                  <th class="px-3 py-2.5 text-right">Status</th>
+                  {#each [
+                    { col: 'id' as SubjectSortCol, label: 'Subject ID', align: 'left' },
+                    { col: 'siteId' as SubjectSortCol, label: 'Site / Country', align: 'left' },
+                    { col: 'details' as SubjectSortCol, label: 'Domain Details', align: 'left' },
+                    { col: 'completion' as SubjectSortCol, label: 'Domain %', align: 'right' },
+                    { col: 'classification' as SubjectSortCol, label: 'Classification', align: 'left' },
+                    { col: 'daysOpen' as SubjectSortCol, label: 'Days Open', align: 'right' },
+                    { col: 'owner' as SubjectSortCol, label: 'Owner', align: 'left' },
+                    { col: 'domainStatus' as SubjectSortCol, label: 'Status', align: 'right' },
+                  ] as h}
+                    <th class="px-3 py-2.5 {h.align === 'right' ? 'text-right' : 'text-left'}">
+                      <button
+                        type="button"
+                        on:click={() => toggleSubjectSort(h.col)}
+                        class="group inline-flex items-center gap-1 uppercase tracking-wider cursor-pointer transition-colors {h.align === 'right' ? 'justify-end ml-auto' : ''} {subjectSortCol === h.col ? 'text-blue-700 font-bold' : 'text-slate-500 hover:text-slate-800'}"
+                      >
+                        <span>{h.label}</span>
+                        {#if subjectSortCol === h.col}
+                          {#if subjectSortDir === 'asc'}
+                            <ArrowUp size={11} class="text-blue-600 shrink-0" />
+                          {:else}
+                            <ArrowDown size={11} class="text-blue-600 shrink-0" />
+                          {/if}
+                        {:else}
+                          <ArrowUpDown size={10} class="text-slate-300 group-hover:text-slate-500 shrink-0" />
+                        {/if}
+                      </button>
+                    </th>
+                  {/each}
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100 bg-white">
@@ -1417,14 +1662,35 @@
             <table class="w-full text-xs">
               <thead class="bg-slate-50/90 border-b border-slate-200/80">
                 <tr class="text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
-                  <th class="px-3 py-2">Subject ID</th>
-                  <th class="px-3 py-2">Site</th>
-                  <th class="px-3 py-2">Visit / Scope</th>
-                  <th class="px-3 py-2">Form / Item</th>
-                  <th class="px-3 py-2">Issue</th>
-                  <th class="px-3 py-2 text-right">Days Open</th>
-                  <th class="px-3 py-2">Criticality</th>
-                  <th class="px-3 py-2">Owner</th>
+                  {#each [
+                    { col: 'subjectId' as PendingSortCol, label: 'Subject ID', align: 'left' },
+                    { col: 'siteId' as PendingSortCol, label: 'Site', align: 'left' },
+                    { col: 'visit' as PendingSortCol, label: 'Visit / Scope', align: 'left' },
+                    { col: 'form' as PendingSortCol, label: 'Form / Item', align: 'left' },
+                    { col: 'issue' as PendingSortCol, label: 'Issue', align: 'left' },
+                    { col: 'daysOpen' as PendingSortCol, label: 'Days Open', align: 'right' },
+                    { col: 'criticality' as PendingSortCol, label: 'Criticality', align: 'left' },
+                    { col: 'owner' as PendingSortCol, label: 'Owner', align: 'left' },
+                  ] as h}
+                    <th class="px-3 py-2 {h.align === 'right' ? 'text-right' : 'text-left'}">
+                      <button
+                        type="button"
+                        on:click={() => togglePendingSort(h.col)}
+                        class="group inline-flex items-center gap-1 uppercase tracking-wider cursor-pointer transition-colors {h.align === 'right' ? 'justify-end ml-auto' : ''} {pendingSortCol === h.col ? 'text-blue-700 font-bold' : 'text-slate-500 hover:text-slate-800'}"
+                      >
+                        <span>{h.label}</span>
+                        {#if pendingSortCol === h.col}
+                          {#if pendingSortDir === 'asc'}
+                            <ArrowUp size={11} class="text-blue-600 shrink-0" />
+                          {:else}
+                            <ArrowDown size={11} class="text-blue-600 shrink-0" />
+                          {/if}
+                        {:else}
+                          <ArrowUpDown size={10} class="text-slate-300 group-hover:text-slate-500 shrink-0" />
+                        {/if}
+                      </button>
+                    </th>
+                  {/each}
                   <th class="px-3 py-2 text-right">Action</th>
                 </tr>
               </thead>
