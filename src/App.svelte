@@ -20,11 +20,13 @@
   import PortfolioViewV3 from './components/PortfolioViewV3.svelte';
   import SiteInterventionV3 from './components/SiteInterventionV3.svelte';
   import SubjectDetailV3 from './components/SubjectDetailV3.svelte';
+  import DomainTargetSettingsModal from './components/DomainTargetSettingsModal.svelte';
 
   import { initialize } from './lib/workflow';
 
   // Active top-level tab
   let activeTab = 'portfolio';
+  let showTargetSettings = false;
 
   // Deep readiness category & domain drilldown state
   let selectedReadinessCategory: string | null = null;
@@ -168,7 +170,7 @@
 <div class="min-h-screen bg-[#f5f5f7] text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
   
   <!-- Unified Top Header Bar -->
-  <Header {activeTab} onSelectTab={handleSelectTab} />
+  <Header {activeTab} onSelectTab={handleSelectTab} onOpenTargetSettings={() => (showTargetSettings = true)} />
 
   <!-- Main View Container -->
   <main class="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-6 py-2">
@@ -337,5 +339,7 @@
     {/if}
 
   </main>
+
+  <DomainTargetSettingsModal bind:open={showTargetSettings} />
 
 </div>
