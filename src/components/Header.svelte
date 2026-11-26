@@ -113,34 +113,34 @@
         aria-haspopup="menu"
         aria-expanded={profileMenuOpen}
         aria-label="Darshan Bharat, Developer"
-        class="flex items-center gap-2.5 rounded-xl px-2 py-1 hover:bg-slate-100/90 transition-colors cursor-pointer"
+        class="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 hover:bg-slate-100/90 transition-colors cursor-pointer"
       >
-        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white" aria-hidden="true">
+        <div class="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-[11px] font-semibold text-white" aria-hidden="true">
           DB
         </div>
         <div class="hidden text-left xl:block" aria-hidden="true">
-          <strong class="block text-xs font-semibold leading-tight text-slate-900">Darshan Bharat</strong>
-          <small class="mt-0.5 block text-[11px] leading-none text-slate-500">Developer</small>
+          <strong class="block text-[11px] font-semibold leading-tight text-slate-900">Darshan Bharat</strong>
+          <small class="mt-0.5 block text-[10px] leading-none text-slate-500">Developer</small>
         </div>
-        <ChevronDown size={13} class="text-slate-400 transition-transform {profileMenuOpen ? 'rotate-180' : ''}" aria-hidden="true" />
+        <ChevronDown size={11} class="text-slate-400 transition-transform {profileMenuOpen ? 'rotate-180' : ''}" aria-hidden="true" />
       </button>
 
       {#if profileMenuOpen}
         <div
           role="menu"
-          class="absolute right-0 mt-1.5 w-56 rounded-xl border border-slate-200 bg-white shadow-lg py-1.5 z-50"
+          class="absolute right-0 mt-1 w-40 rounded-lg border border-slate-200 bg-white shadow-md py-1 z-50"
         >
-          <div class="px-3 py-2 border-b border-slate-100 xl:hidden">
-            <div class="text-xs font-semibold text-slate-900">Darshan Bharat</div>
-            <div class="text-[11px] text-slate-500">Developer</div>
+          <div class="px-2.5 py-1.5 border-b border-slate-100 xl:hidden">
+            <div class="text-[11px] font-semibold text-slate-900 leading-tight">Darshan Bharat</div>
+            <div class="text-[10px] text-slate-500">Developer</div>
           </div>
           <button
             type="button"
             role="menuitem"
             on:click={openTargetSettings}
-            class="w-full px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center gap-2 transition-colors cursor-pointer"
+            class="w-full px-2.5 py-1.5 text-left text-[11px] font-semibold text-slate-700 hover:bg-slate-50 hover:text-blue-700 flex items-center gap-1.5 transition-colors cursor-pointer"
           >
-            <Settings size={14} class="text-slate-500" />
+            <Settings size={13} class="text-slate-500" />
             <span>Target Settings</span>
           </button>
         </div>
